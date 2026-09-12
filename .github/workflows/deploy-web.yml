@@ -21,20 +21,36 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Prepare output
+      - name: Prepare Godot source
+        shell: bash
+        run: |
+          set -e
+          rm -rf game-src
+          mkdir -p game-src
+          if [ -f citylife_WEB001_SourceUpload.zip ]; then
+            echo "Found uploaded Godot source archive."
+            unzip -q citylife_WEB001_SourceUpload.zip -d game-src
+          elif [ -f project.godot ]; then
+            echo "Godot project already exists at repository root."
+            cp -a . game-src
+          else
+            echo "No Godot source archive yet; bootstrap preview will be published."
+          fi
+
+      - name: Export Godot Web
         shell: bash
         run: |
           set -e
           mkdir -p build/web
-          if [ -f project.godot ]; then
-            echo "Godot project found. Exporting Web with Godot 4.7.2..."
+          if [ -f game-src/project.godot ]; then
+            echo "Exporting CityLife Web with Godot 4.7.2..."
             docker run --rm \
-              -v "$PWD:/workspace" \
+              -v "$PWD/game-src:/workspace" \
               -w /workspace \
               barichello/godot-ci:4.7.2 \
               godot --headless --verbose --export-release "Web" build/web/index.html
+            cp -a game-src/build/web/. build/web/
           else
-            echo "Godot source has not been migrated yet; publishing bootstrap preview."
             cp -R web-preview/. build/web/
           fi
 
