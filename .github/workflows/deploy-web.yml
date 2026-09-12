@@ -41,17 +41,39 @@ jobs:
         shell: bash
         run: |
           set -e
-          if [ -f game-src/scripts/systems/LocationManager.gd ]; then
-            python3 - <<'PY'
+          python3 - <<'PY'
           from pathlib import Path
-          p = Path('game-src/scripts/systems/LocationManager.gd')
-          s = p.read_text(encoding='utf-8')
-          s = s.replace('\tactive = true\n\t_visit_and_unlock("home")', '\tset_active(true)\n\t_visit_and_unlock("home")')
-          s = s.replace('\tactive = true\n\t_refresh()', '\tset_active(true)\n\t_refresh()')
-          p.write_text(s, encoding='utf-8')
+
+          loc = Path('game-src/scripts/systems/LocationManager.gd')
+          if loc.exists():
+              s = loc.read_text(encoding='utf-8')
+              # Ensure the independent location layer becomes visible on new game/load.
+              s = s.replace('\tactive = true\n\t_visit_and_unlock("home")', '\tset_active(true)\n\t_visit_and_unlock("home")')
+              s = s.replace('\tactive = true\n\t_refresh()', '\tset_active(true)\n\t_refresh()')
+              # Godot 4.7 TimeManager API compatibility.
+              s = s.replace('var minute: int = int(time_source.minute_of_day)', 'var minute: int = int(time_source.get_minute_of_day())')
+              # Opening location should feel like a residential district, not a single indoor room.
+              s = s.replace('res://assets/backgrounds/dialogue/home/rental_apartment_rain_night.webp', 'res://assets/backgrounds/dialogue/city/street_corner_rain_night.webp')
+              # Defensive visibility: refreshing an active scene must always reveal it.
+              needle = 'func _refresh() -> void:\n\tif not LOCATIONS.has(current_location):'
+              repl = 'func _refresh() -> void:\n\tif root != null and active:\n\t\troot.visible = true\n\tif not LOCATIONS.has(current_location):'
+              s = s.replace(needle, repl)
+              # Make footer guidance more useful for browser/mobile testing.
+              s = s.replace('点击地面 / WASD / 方向键移动 · 已解锁地点', '点击地面移动 · 电脑可用 WASD / 方向键 · 下方切换已解锁地点')
+              loc.write_text(s, encoding='utf-8')
+
+          game = Path('game-src/scripts/Game.gd')
+          if game.exists():
+              s = game.read_text(encoding='utf-8')
+              # Convenience store should draw from street events, not cafe events.
+              s = s.replace('"store": "cafe",', '"store": "street",')
+              # Travel toast should show a human-readable location name.
+              old = '\t_show_toast("已到达：%s" % location_id)'
+              new = '\tvar location_name: String = location_id\n\tif location_sys != null and location_sys.LOCATIONS.has(location_id):\n\t\tlocation_name = str(location_sys.LOCATIONS[location_id].get("name", location_id))\n\t_show_toast("已到达：%s" % location_name)'
+              s = s.replace(old, new)
+              game.write_text(s, encoding='utf-8')
           PY
-            echo "LocationManager visibility hotfix applied."
-          fi
+          echo "Web gameplay hotfixes applied."
 
       - name: Export Godot Web
         shell: bash
@@ -76,6 +98,8 @@ jobs:
         run: |
           set -e
           test -f build/web/index.html
+          test -f build/web/index.pck
+          test -f build/web/index.wasm
           echo "Web build files:"
           ls -lah build/web
 
