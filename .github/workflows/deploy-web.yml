@@ -25,8 +25,8 @@ jobs:
         shell: bash
         run: |
           set -e
-          rm -rf game-src
-          mkdir -p game-src
+          rm -rf game-src build/web
+          mkdir -p game-src build/web
           if [ -f citylife_WEB001_SourceUpload.zip ]; then
             echo "Found uploaded Godot source archive."
             unzip -q citylife_WEB001_SourceUpload.zip -d game-src
@@ -41,18 +41,27 @@ jobs:
         shell: bash
         run: |
           set -e
-          mkdir -p build/web
           if [ -f game-src/project.godot ]; then
             echo "Exporting CityLife Web with Godot 4.7.2..."
+            mkdir -p game-src/build/web
+            rm -rf game-src/.godot
             docker run --rm \
               -v "$PWD/game-src:/workspace" \
               -w /workspace \
               barichello/godot-ci:4.7.2 \
-              godot --headless --verbose --export-release "Web" build/web/index.html
+              godot --headless --export-release "Web" /workspace/build/web/index.html
             cp -a game-src/build/web/. build/web/
           else
             cp -R web-preview/. build/web/
           fi
+
+      - name: Verify Web build
+        shell: bash
+        run: |
+          set -e
+          test -f build/web/index.html
+          echo "Web build files:"
+          ls -lah build/web
 
       - name: Disable Jekyll
         run: touch build/web/.nojekyll
