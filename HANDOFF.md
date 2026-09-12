@@ -70,6 +70,17 @@
 - 复跑全绿：`verify_home_activities`（含道具断言）、`verify_home_edges` 6252 项、`verify_navigation` 6646 项、`verify_locations` 九图。
 - 尚未做：专属活动姿态动画（现仍是行走动画定格）、音效（无音频资产）。
 
+## 2026-09-13 再后续：阶段 2 每日循环骨架（单元 1）
+
+- 新增 `scripts/systems/DailyRoutine.gd`：每日目标（通勤/工作/吃饭/休息）、完成标记、跨天重置、存档字典。**只跟踪一天之内的进度，不推进年龄、不触发年度结算**，与旧人生系统分离。
+- 新增 `scripts/systems/OfficeActivities.gd`：公司工位互动（距离校验、防重复结算、朝向、活动锁）。结算放在 `Game._on_office_activity`：工资+120、健康−6、心情−4、耗时 4 小时，完成后标记 work。站位 `Vector2(700, 470)` 为粗略标定，尚未对照美术校正。
+- `Game` 接入：`daily_routine` 与 `office_activities` 初始化、监听 `time_sys.day_changed` 重置每日目标、存档新增 `daily` 字段、抵达公司标记通勤。
+- HUD 新增“今日”行显示目标摘要（`refresh_daily`）；因 HUD 加高一行，地点标题整体下移 20px 保持与 HUD 分离，`verify_locations` 的布局断言已复跑通过。
+- 阶段 2 第 2 项说明：`_on_location_travel` 原本已有通勤时间消耗（地铁 20 分钟、其他 35 分钟），本次只补齐“抵达公司标记通勤”，未改动既有数值。
+- 新增 `tools/verify_daily_routine.gd`：目标状态与存档往返、通勤标记、工位可达、工作结算（只结算一次）、跨午夜重置。
+- 五套测试全绿：`verify_daily_routine`、`verify_home_activities`、`verify_home_edges` 6252、`verify_navigation` 6646、`verify_locations`。
+- 已知限制：通勤若在跨午夜完成，通勤标记会被当日重置清掉（边缘情况，未处理）。
+
 ## 尚未完成
 
 - 全部行走方向的身体比例与动画接地视觉抽查：碰撞与可达已由 `verify_home_edges.gd` 自动覆盖，姿态观感仍需人工看截图与试玩。

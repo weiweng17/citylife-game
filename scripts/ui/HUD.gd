@@ -13,6 +13,7 @@ var money_label: Label
 var time_label: Label
 var weather_label: Label
 var goal_label: Label
+var daily_label: Label
 var health_bar: ProgressBar
 var mood_bar: ProgressBar
 var health_fill: StyleBoxFlat
@@ -113,6 +114,12 @@ func _build_ui() -> void:
 	mood_fill = mood_bar.get_theme_stylebox("fill") as StyleBoxFlat
 	row2.add_child(mood_bar)
 
+	daily_label = Label.new()
+	daily_label.name = "DailyRow"
+	daily_label.add_theme_font_size_override("font_size", 12)
+	daily_label.add_theme_color_override("font_color", Color(0.98, 0.86, 0.56))
+	root.add_child(daily_label)
+
 	goal_label = Label.new()
 	goal_label.add_theme_font_size_override("font_size", 12)
 	goal_label.add_theme_color_override("font_color", Color(0.82, 0.85, 0.92))
@@ -123,7 +130,7 @@ func _build_ui() -> void:
 func _sync_viewport() -> void:
 	var viewport_size: Vector2 = get_viewport().get_visible_rect().size
 	position = Vector2(14.0, 10.0)
-	size = Vector2(maxf(320.0, viewport_size.x - 28.0), 94.0)
+	size = Vector2(maxf(320.0, viewport_size.x - 28.0), 112.0)
 
 
 func refresh(state, stage_name: String, stage_goal: String, dark_clue_total: int) -> void:
@@ -157,6 +164,12 @@ func refresh(state, stage_name: String, stage_goal: String, dark_clue_total: int
 	mood_bar.value = state.mood
 	if mood_fill:
 		mood_fill.bg_color = _mood_color(state.mood)
+
+
+## 每日循环目标：与上方的人生阶段目标是两套系统，分开显示避免混淆。
+func refresh_daily(text: String) -> void:
+	if daily_label:
+		daily_label.text = "今日：%s" % text
 
 
 func refresh_time(day: int, clock_text: String, period_name: String) -> void:

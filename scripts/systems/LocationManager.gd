@@ -303,8 +303,9 @@ func _build_ui() -> void:
 	header.set_anchors_preset(Control.PRESET_TOP_WIDE)
 	header.offset_left = 24
 	header.offset_right = -24
-	header.offset_top = 112
-	header.offset_bottom = 184
+	# 标题整体下移，给 HUD 多出来的“今日目标”一行留位置，避免两者贴边重叠。
+	header.offset_top = 132
+	header.offset_bottom = 204
 	header.mouse_filter = Control.MOUSE_FILTER_STOP
 	header.z_index = 2000
 	root.add_child(header)

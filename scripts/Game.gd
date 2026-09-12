@@ -20,6 +20,8 @@ const DarkLocationSystemScript = preload("res://scripts/systems/DarkLocationSyst
 const EncounterSystemScript = preload("res://scripts/systems/EncounterSystem.gd")
 const SaveManagerScript = preload("res://scripts/systems/SaveManager.gd")
 const WeatherSystemScript = preload("res://scripts/systems/WeatherSystem.gd")
+const DailyRoutineScript = preload("res://scripts/systems/DailyRoutine.gd")
+const OfficeActivitiesScript = preload("res://scripts/systems/OfficeActivities.gd")
 const LocationManagerScript = preload("res://scripts/systems/LocationManager.gd")
 
 const SCHEDULE_LOCATION_ALIASES := {
@@ -109,6 +111,8 @@ var save_sys
 var weather_sys
 var location_sys
 var home_activities
+var office_activities
+var daily_routine
 var activity_running: bool = false
 var interaction_sys
 var events_sys: Node
@@ -182,6 +186,17 @@ func _ready() -> void:
 	add_child(home_activities)
 	home_activities.configure(location_sys)
 	home_activities.activity_requested.connect(_on_home_activity)
+	office_activities = OfficeActivitiesScript.new()
+	office_activities.name = "OfficeActivities"
+	add_child(office_activities)
+	office_activities.configure(location_sys)
+	office_activities.activity_requested.connect(_on_office_activity)
+	# 每日循环只跟踪一天内的目标，不推进年龄、不触发年度结算。
+	daily_routine = DailyRoutineScript.new()
+	daily_routine.name = "DailyRoutine"
+	add_child(daily_routine)
+	daily_routine.reset(time_sys.day)
+	time_sys.day_changed.connect(_on_day_changed)
 	npc_schedule_sys = NPCScheduleSystemScript.new()
 	npc_schedule_sys.name = "NPCScheduleSys"
 	add_child(npc_schedule_sys)
@@ -257,6 +272,8 @@ func _setup_ui() -> void:
 
 
 func _refresh_ui() -> void:
+	if hud and daily_routine:
+		hud.refresh_daily(daily_routine.summary())
 	var stage: Dictionary = story_sys.current_stage(_state()) if story_sys else {}
 	if hud and not stage.is_empty():
 		hud.refresh(game_state, str(stage.get("name", "")), str(stage.get("goal", "")), Data.DARK_CLUE_TOTAL)
@@ -313,6 +330,8 @@ func _choose_origin(o: Dictionary) -> void:
 		player.set_target(Vector2(300, 400))
 	if location_sys:
 		location_sys.reset_new_game()
+	if daily_routine:
+		daily_routine.reset(1)
 	origin_open_pending = str(o.get("open", ""))
 	# 对话链：梦 → 出身开场白（旁白）→ 新手引导（操作指引）
 	if str(o.get("open", "")) != "":
@@ -350,6 +369,7 @@ func _save_game() -> void:
 		"encounters": encounter_sys.to_save_dict() if encounter_sys else {},
 		"world": world_manager.to_save_dict(player) if world_manager else {},
 		"locations": location_sys.to_save_dict() if location_sys else {},
+		"daily": daily_routine.to_save_dict() if daily_routine else {},
 		"origin": origin.duplicate(true),
 	}
 	var result: Dictionary = save_sys.save_game(payload)
@@ -388,6 +408,8 @@ func _load_game() -> void:
 		world_manager.apply_save_dict(payload.get("world", {}), player)
 	if location_sys:
 		location_sys.apply_save_dict(payload.get("locations", {}))
+	if daily_routine:
+		daily_routine.apply_save_dict(payload.get("daily", {}))
 	if npc_schedule_sys:
 		npc_schedule_sys.reset(time_sys, weather_sys)
 	if dark_location_sys:
@@ -465,6 +487,7 @@ func _process(delta: float) -> void:
 	ui_busy = ui_busy or activity_running
 	location_sys.input_blocked = ui_busy
 	home_activities.blocked = ui_busy
+	office_activities.blocked = ui_busy
 	if time_sys:
 		time_sys.set_paused(ui_busy)
 		time_sys.tick(delta)
@@ -539,10 +562,48 @@ func _on_home_activity(id: String) -> void:
 	_refresh_ui()
 	_show_toast(feedback)
 
+func _on_office_activity(id: String) -> void:
+	if activity_running or not game_started or game_over or dialog_ui.is_busy() or event_ui.is_busy():
+		return
+	if location_sys.current_location != "office" or not office_activities.SPOTS.has(id):
+		return
+	activity_running = true
+	location_sys.input_blocked = true
+	home_activities.blocked = true
+	office_activities.blocked = true
+	location_sys.set_activity_feedback("工作中", true, id)
+	for step in range(10):
+		office_activities.prompt.text = "上班中… %d%%" % ((step + 1) * 10)
+		await get_tree().create_timer(0.12).timeout
+	money += 120
+	health = maxi(0, health - 6)
+	mood = maxi(0, mood - 4)
+	time_sys.advance_minutes(240)
+	if daily_routine:
+		daily_routine.complete("work")
+	activity_running = false
+	location_sys.set_activity_feedback("", false)
+	var still_busy: bool = dialog_ui.is_busy() or event_ui.is_busy() or game_over
+	location_sys.input_blocked = still_busy
+	home_activities.blocked = still_busy
+	office_activities.blocked = still_busy
+	_refresh_ui()
+	_show_toast("上了一天班 · 工资+120元，健康−6，心情−4，耗时4小时")
+
+
+func _on_day_changed(day: int) -> void:
+	# 只重置每日目标；年龄与年度事件由旧人生系统负责，这里不碰。
+	if daily_routine:
+		daily_routine.reset(day)
+		_show_toast("第 %d 天 · 今日目标已重置" % day)
+
+
 func _on_location_travel(location_id: String) -> void:
 	# 第一次抵达地铁/公司等地点即完成“地图解锁”的体验；旅行本身消耗少量时间。
 	if time_sys:
 		time_sys.advance_minutes(20 if location_id == "subway" else 35)
+	if daily_routine and location_id == "office":
+		daily_routine.complete("commute")
 	var location_name: String = location_id
 	if location_sys != null and location_sys.LOCATIONS.has(location_id):
 		location_name = str(location_sys.LOCATIONS[location_id].get("name", location_id))

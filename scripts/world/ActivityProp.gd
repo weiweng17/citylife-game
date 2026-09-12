@@ -6,6 +6,7 @@ const PROP_FOR := {
 	"rest": "pillow",
 	"study": "book",
 	"meal": "pot",
+	"work": "laptop",
 }
 
 var kind: String = ""
@@ -27,6 +28,14 @@ func _draw() -> void:
 			_draw_pot()
 		"pillow":
 			_draw_pillow()
+		"laptop":
+			_draw_laptop()
+
+func _draw_laptop() -> void:
+	draw_rect(Rect2(-11.0, -8.0, 22.0, 13.0), Color(0.28, 0.31, 0.38))
+	draw_rect(Rect2(-9.0, -6.0, 18.0, 9.0), Color(0.52, 0.70, 0.86))
+	draw_rect(Rect2(-9.0, -6.0, 18.0, 3.0), Color(0.68, 0.82, 0.94))
+	draw_rect(Rect2(-13.0, 5.0, 26.0, 2.5), Color(0.38, 0.41, 0.48))
 
 func _draw_book() -> void:
 	draw_rect(Rect2(-13.0, -6.0, 12.0, 9.0), Color(0.55, 0.34, 0.22))
