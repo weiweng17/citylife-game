@@ -37,7 +37,7 @@
 ## 2026-09-13 本地保存内容
 
 - 保存提交：`2b1de0a feat: save home interaction feedback handoff`。
-- 补跑提交：`58d8d1e test: assert door facing before travel resets pose`（当前 HEAD，仅改测试文件与本文档）。
+- 补跑提交：`58d8d1e test: assert door facing before travel resets pose`（仅改 `tools/verify_home_activities.gd`）。此后只改本文件提交号的提交不再逐条列出，最新号以 `git log -1 --oneline` 为准。
 - 已改动：
   - `scripts/systems/HomeActivities.gd`：为出租屋床、书桌、厨房、房门互动点增加 `facing`，触发互动前让角色面向家具/出口。
   - `scripts/systems/LocationManager.gd`：增加方向到动画的统一映射、静止朝向接口、玩家头顶活动反馈标签；反馈标签挂在根层并跟随脚底坐标，避免随角色缩放变小。
