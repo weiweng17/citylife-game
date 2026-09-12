@@ -37,6 +37,22 @@ jobs:
             echo "No Godot source archive yet; bootstrap preview will be published."
           fi
 
+      - name: Apply Web hotfixes
+        shell: bash
+        run: |
+          set -e
+          if [ -f game-src/scripts/systems/LocationManager.gd ]; then
+            python3 - <<'PY'
+          from pathlib import Path
+          p = Path('game-src/scripts/systems/LocationManager.gd')
+          s = p.read_text(encoding='utf-8')
+          s = s.replace('\tactive = true\n\t_visit_and_unlock("home")', '\tset_active(true)\n\t_visit_and_unlock("home")')
+          s = s.replace('\tactive = true\n\t_refresh()', '\tset_active(true)\n\t_refresh()')
+          p.write_text(s, encoding='utf-8')
+          PY
+            echo "LocationManager visibility hotfix applied."
+          fi
+
       - name: Export Godot Web
         shell: bash
         run: |
