@@ -47,27 +47,39 @@ jobs:
           loc = Path('game-src/scripts/systems/LocationManager.gd')
           if loc.exists():
               s = loc.read_text(encoding='utf-8')
-              # Ensure the independent location layer becomes visible on new game/load.
+              # Always reactivate the independent location layer on new game/load.
               s = s.replace('\tactive = true\n\t_visit_and_unlock("home")', '\tset_active(true)\n\t_visit_and_unlock("home")')
               s = s.replace('\tactive = true\n\t_refresh()', '\tset_active(true)\n\t_refresh()')
               # Godot 4.7 TimeManager API compatibility.
               s = s.replace('var minute: int = int(time_source.minute_of_day)', 'var minute: int = int(time_source.get_minute_of_day())')
               # Opening location should feel like a residential district, not a single indoor room.
               s = s.replace('res://assets/backgrounds/dialogue/home/rental_apartment_rain_night.webp', 'res://assets/backgrounds/dialogue/city/street_corner_rain_night.webp')
-              # Defensive visibility: refreshing an active scene must always reveal it.
+              # Defensive visibility.
               needle = 'func _refresh() -> void:\n\tif not LOCATIONS.has(current_location):'
-              repl = 'func _refresh() -> void:\n\tif root != null and active:\n\t\troot.visible = true\n\tif not LOCATIONS.has(current_location):'
+              repl = 'func _refresh() -> void:\n\t_sync_web_layout()\n\tif root != null and active:\n\t\troot.visible = true\n\tif not LOCATIONS.has(current_location):'
               s = s.replace(needle, repl)
-              # Make footer guidance more useful for browser/mobile testing.
+              # Explicit browser viewport sizing. Controls created directly under CanvasLayer can otherwise stay at zero size on Web.
+              marker = 'func _make_player_frames() -> SpriteFrames:'
+              helper = '''func _sync_web_layout() -> void:\n\tvar viewport_size: Vector2 = get_viewport().get_visible_rect().size\n\tif viewport_size.x < 2.0 or viewport_size.y < 2.0:\n\t\tviewport_size = Vector2(1280, 720)\n\tif root != null:\n\t\troot.position = Vector2.ZERO\n\t\troot.size = viewport_size\n\tif background != null:\n\t\tbackground.position = Vector2.ZERO\n\t\tbackground.size = viewport_size\n\tif shade != null:\n\t\tshade.position = Vector2.ZERO\n\t\tshade.size = viewport_size\n\tif npc_layer != null:\n\t\tnpc_layer.position = Vector2.ZERO\n\t\tnpc_layer.size = viewport_size\n\n'''
+              if 'func _sync_web_layout() -> void:' not in s:
+                  s = s.replace(marker, helper + marker)
+              # Call layout sync once after UI construction.
+              end_build = '\taction_button.pressed.connect(_on_action_pressed)\n\tfv.add_child(action_button)'
+              s = s.replace(end_build, end_build + '\n\t_sync_web_layout()')
+              # Keep browser resize/fullscreen changes in sync.
+              proc = 'func _process(delta: float) -> void:\n\tif not active or player_sprite == null:'
+              s = s.replace(proc, 'func _process(delta: float) -> void:\n\t_sync_web_layout()\n\tif not active or player_sprite == null:')
+              # Add a visible fallback when a location background ever fails to load.
+              old_bg = '\tbackground.texture = load(path) as Texture2D if not path.is_empty() else null'
+              new_bg = '\tvar loaded_background: Texture2D = load(path) as Texture2D if not path.is_empty() else null\n\tbackground.texture = loaded_background\n\tif loaded_background == null:\n\t\tshade.color = Color(0.05, 0.08, 0.12, 1.0)\n\t\tsubtitle_label.text = "场景资源加载失败：%s" % path\n\telse:\n\t\tshade.color = Color(0.01, 0.015, 0.025, 0.08)'
+              s = s.replace(old_bg, new_bg)
               s = s.replace('点击地面 / WASD / 方向键移动 · 已解锁地点', '点击地面移动 · 电脑可用 WASD / 方向键 · 下方切换已解锁地点')
               loc.write_text(s, encoding='utf-8')
 
           game = Path('game-src/scripts/Game.gd')
           if game.exists():
               s = game.read_text(encoding='utf-8')
-              # Convenience store should draw from street events, not cafe events.
               s = s.replace('"store": "cafe",', '"store": "street",')
-              # Travel toast should show a human-readable location name.
               old = '\t_show_toast("已到达：%s" % location_id)'
               new = '\tvar location_name: String = location_id\n\tif location_sys != null and location_sys.LOCATIONS.has(location_id):\n\t\tlocation_name = str(location_sys.LOCATIONS[location_id].get("name", location_id))\n\t_show_toast("已到达：%s" % location_name)'
               s = s.replace(old, new)
