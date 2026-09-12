@@ -22,6 +22,11 @@ const SaveManagerScript = preload("res://scripts/systems/SaveManager.gd")
 const WeatherSystemScript = preload("res://scripts/systems/WeatherSystem.gd")
 const LocationManagerScript = preload("res://scripts/systems/LocationManager.gd")
 
+const SCHEDULE_LOCATION_ALIASES := {
+	"convenience_store": "store",
+	"old_alley": "alley",
+}
+
 # 地点（与 tools/gen_scene.py 的 BUILDINGS / POI 坐标一致；都落在建筑脚下的可走地面）
 const POI_DATA := [
 	{"id": "home", "pos": Vector2(310, 392), "name": "回家", "scene": "rent"},
@@ -485,6 +490,15 @@ func _on_location_travel(location_id: String) -> void:
 
 
 func _on_location_action(location_id: String) -> void:
+	if not game_started:
+		_show_toast("请先选择出身开始游戏。")
+		return
+	if dialog_ui != null and dialog_ui.is_busy():
+		_show_toast("请先结束当前对话。")
+		return
+	if event_ui != null and event_ui.is_busy():
+		_show_toast("当前事件尚未结束。")
+		return
 	var scene_map: Dictionary = {
 		"home": "rent",
 		"subway": "subway",
@@ -539,7 +553,9 @@ func _sync_location_npcs() -> void:
 		var state: Dictionary = npc_schedule_sys.get_state_for(npc_id, time_sys, weather_sys)
 		if not bool(state.get("visible", false)):
 			continue
-		if str(state.get("location", "")) != location_sys.current_location:
+		var scheduled_location: String = str(state.get("location", ""))
+		scheduled_location = str(SCHEDULE_LOCATION_ALIASES.get(scheduled_location, scheduled_location))
+		if scheduled_location != location_sys.current_location:
 			continue
 		visible_items.append({"id": npc_id, "name": str(npc.get("name", npc_id))})
 	location_sys.set_visible_npcs(visible_items)

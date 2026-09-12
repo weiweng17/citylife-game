@@ -26,7 +26,7 @@ const LOCATIONS := {
 		"name": "居民区 · 出租屋",
 		"subtitle": "故事从这里开始。雨落在窗外，你刚在这座城市安顿下来。",
 		"background": "res://assets/backgrounds/dialogue/home/rental_apartment_rain_night.webp",
-		"spawn": Vector2(640, 455),
+		"spawn": Vector2(850, 460),
 	},
 	"subway": {
 		"name": "城南地铁站",
@@ -50,7 +50,7 @@ const LOCATIONS := {
 		"name": "街角便利店",
 		"subtitle": "二十四小时亮着灯，总有人比你更晚回家。",
 		"background": "res://assets/backgrounds/dialogue/life/convenience_store_rain_night.webp",
-		"spawn": Vector2(610, 475),
+		"spawn": Vector2(535, 525),
 	},
 	"cafe": {
 		"name": "雨巷咖啡馆",
@@ -112,14 +112,67 @@ const LOCATION_LIGHTING := {
 	"alley": Color(0.62, 0.70, 0.84, 1.0),
 }
 
-# NPC 在每个独立场景中的屏幕位置。
-const NPC_SCREEN_POS := {
-	"xiaoyu": Vector2(430, 410),
-	"chenjie": Vector2(890, 400),
-	"laozhang": Vector2(905, 430),
-	"laozhou": Vector2(410, 415),
-	"azhe": Vector2(900, 430),
-	"daoshi": Vector2(930, 430),
+# 从背景原图截取这些前景区域并按物体落地点排序，形成真正的前后遮挡。
+# rect 是屏幕坐标，depth 是物体最前沿的脚底深度。
+const OCCLUDERS := {
+	"home": [
+		{"rect": Rect2(30, 250, 390, 310), "depth": 535},
+		{"rect": Rect2(420, 345, 320, 180), "depth": 515},
+		{"rect": Rect2(350, 475, 520, 190), "depth": 625},
+		{"rect": Rect2(585, 150, 320, 210), "depth": 355},
+		{"rect": Rect2(960, 135, 310, 315), "depth": 445},
+	],
+	"subway": [
+		{"rect": Rect2(165, 60, 150, 485), "depth": 535},
+		{"rect": Rect2(895, 65, 135, 500), "depth": 555},
+		{"rect": Rect2(0, 420, 250, 225), "depth": 610},
+		{"rect": Rect2(1050, 380, 230, 275), "depth": 620},
+	],
+	"office": [
+		{"rect": Rect2(0, 175, 270, 310), "depth": 470},
+		{"rect": Rect2(505, 170, 775, 270), "depth": 425},
+		{"rect": Rect2(970, 280, 310, 300), "depth": 560},
+	],
+	"park": [
+		{"rect": Rect2(0, 220, 320, 300), "depth": 500},
+		{"rect": Rect2(470, 250, 310, 210), "depth": 450},
+		{"rect": Rect2(880, 190, 400, 340), "depth": 515},
+	],
+	"store": [
+		{"rect": Rect2(35, 300, 355, 355), "depth": 620},
+		{"rect": Rect2(350, 245, 355, 250), "depth": 485},
+		{"rect": Rect2(615, 385, 370, 255), "depth": 615},
+		{"rect": Rect2(990, 175, 290, 465), "depth": 610},
+	],
+	"cafe": [
+		{"rect": Rect2(0, 275, 380, 330), "depth": 575},
+		{"rect": Rect2(375, 300, 210, 185), "depth": 475},
+		{"rect": Rect2(700, 260, 310, 240), "depth": 490},
+		{"rect": Rect2(1010, 185, 270, 420), "depth": 580},
+	],
+	"hospital": [
+		{"rect": Rect2(0, 215, 390, 310), "depth": 510},
+		{"rect": Rect2(485, 265, 330, 230), "depth": 485},
+		{"rect": Rect2(970, 170, 310, 430), "depth": 575},
+	],
+	"rooftop": [
+		{"rect": Rect2(0, 235, 290, 290), "depth": 510},
+		{"rect": Rect2(970, 220, 310, 310), "depth": 515},
+	],
+	"alley": [
+		{"rect": Rect2(0, 185, 365, 350), "depth": 515},
+		{"rect": Rect2(975, 170, 305, 365), "depth": 515},
+	],
+}
+
+# NPC 按地点配置脚底位置，避免同一坐标在不同背景中落进家具或前景遮挡。
+const NPC_LOCATION_POS := {
+	"home": {"xiaoyu": Vector2(760, 420)},
+	"store": {"chenjie": Vector2(845, 315)},
+	"office": {"laozhang": Vector2(370, 455)},
+	"park": {"laozhou": Vector2(420, 455)},
+	"subway": {"laozhang": Vector2(735, 430), "azhe": Vector2(510, 475)},
+	"alley": {"daoshi": Vector2(845, 455)},
 }
 
 var current_location: String = "home"
@@ -136,9 +189,10 @@ var travel_box: HBoxContainer
 var action_button: Button
 var hint_label: Label
 var player_sprite: AnimatedSprite2D
-var player_shadow: Polygon2D
+var player_shadow: Sprite2D
 var player_target: Vector2 = Vector2.ZERO
 var npc_layer: Control
+var foreground_layer: Control
 var npc_signature: String = ""
 var current_lighting: Color = Color.WHITE
 
@@ -150,10 +204,11 @@ func _ready() -> void:
 func _build_ui() -> void:
 	root = Control.new()
 	root.name = "LocationView"
-	root.set_anchors_preset(Control.PRESET_FULL_RECT)
+	root.set_anchors_preset(Control.PRESET_TOP_LEFT)
 	root.mouse_filter = Control.MOUSE_FILTER_PASS
 	root.gui_input.connect(_on_root_gui_input)
 	add_child(root)
+	get_viewport().size_changed.connect(_sync_web_layout)
 
 	background = TextureRect.new()
 	background.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -167,6 +222,7 @@ func _build_ui() -> void:
 	shade.set_anchors_preset(Control.PRESET_FULL_RECT)
 	shade.color = Color(0.01, 0.015, 0.025, 0.08)
 	shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	shade.z_index = 1900
 	root.add_child(shade)
 
 	player_shadow = _make_ground_shadow(27.0, 8.0, Color(0.0, 0.0, 0.0, 0.34))
@@ -194,13 +250,21 @@ func _build_ui() -> void:
 	npc_layer.mouse_filter = Control.MOUSE_FILTER_PASS
 	root.add_child(npc_layer)
 
+	foreground_layer = Control.new()
+	foreground_layer.name = "ForegroundOcclusion"
+	foreground_layer.set_anchors_preset(Control.PRESET_FULL_RECT)
+	foreground_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.add_child(foreground_layer)
+
 	var header: PanelContainer = PanelContainer.new()
+	header.name = "LocationHeader"
 	header.set_anchors_preset(Control.PRESET_TOP_WIDE)
 	header.offset_left = 24
 	header.offset_right = -24
-	header.offset_top = 74
-	header.offset_bottom = 150
+	header.offset_top = 112
+	header.offset_bottom = 184
 	header.mouse_filter = Control.MOUSE_FILTER_STOP
+	header.z_index = 2000
 	root.add_child(header)
 	var hv: VBoxContainer = VBoxContainer.new()
 	header.add_child(hv)
@@ -213,12 +277,14 @@ func _build_ui() -> void:
 	hv.add_child(subtitle_label)
 
 	var footer: PanelContainer = PanelContainer.new()
+	footer.name = "LocationFooter"
 	footer.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
 	footer.offset_left = 20
 	footer.offset_right = -20
 	footer.offset_top = -112
 	footer.offset_bottom = -16
 	footer.mouse_filter = Control.MOUSE_FILTER_STOP
+	footer.z_index = 2000
 	root.add_child(footer)
 	var fv: VBoxContainer = VBoxContainer.new()
 	footer.add_child(fv)
@@ -236,10 +302,9 @@ func _build_ui() -> void:
 	_sync_web_layout()
 
 func _sync_web_layout() -> void:
-	# 这些节点都使用全屏锚点。这里只保证浏览器重绘后回到原点，避免手动改尺寸
-	# 导致 Godot 覆盖锚点尺寸并产生布局警告。
 	if root != null:
 		root.position = Vector2.ZERO
+		root.size = get_viewport().get_visible_rect().size
 
 func _make_player_frames() -> SpriteFrames:
 	var frames: SpriteFrames = SpriteFrames.new()
@@ -259,14 +324,25 @@ func _make_player_frames() -> SpriteFrames:
 			frames.add_frame(anim, atlas)
 	return frames
 
-func _make_ground_shadow(width: float, height: float, color: Color) -> Polygon2D:
-	var shadow := Polygon2D.new()
-	var points := PackedVector2Array()
-	for i in range(20):
-		var angle: float = TAU * float(i) / 20.0
-		points.append(Vector2(cos(angle) * width, sin(angle) * height))
-	shadow.polygon = points
-	shadow.color = color
+func _make_ground_shadow(width: float, height: float, color: Color) -> Sprite2D:
+	var gradient := Gradient.new()
+	gradient.offsets = PackedFloat32Array([0.0, 0.48, 1.0])
+	gradient.colors = PackedColorArray([
+		color,
+		Color(color.r, color.g, color.b, color.a * 0.48),
+		Color(color.r, color.g, color.b, 0.0),
+	])
+	var texture := GradientTexture2D.new()
+	texture.gradient = gradient
+	texture.width = 96
+	texture.height = 32
+	texture.fill = GradientTexture2D.FILL_RADIAL
+	texture.fill_from = Vector2(0.5, 0.5)
+	texture.fill_to = Vector2(1.0, 0.5)
+	var shadow := Sprite2D.new()
+	shadow.texture = texture
+	shadow.scale = Vector2(width * 2.0 / 96.0, height * 2.0 / 32.0)
+	shadow.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	return shadow
 
 func reset_new_game() -> void:
@@ -322,8 +398,9 @@ func _refresh() -> void:
 	subtitle_label.text = str(info.get("subtitle", ""))
 	var path: String = str(info.get("background", ""))
 	background.texture = load(path) as Texture2D if not path.is_empty() else null
+	_rebuild_foreground()
 	action_button.text = "在%s行动" % str(info.get("name", current_location)).split(" · ")[0]
-	var spawn: Vector2 = info.get("spawn", Vector2(640, 460))
+	var spawn: Vector2 = _clamp_walk_position(info.get("spawn", Vector2(640, 460)))
 	player_sprite.position = spawn
 	player_sprite.modulate = current_lighting
 	_update_player_grounding()
@@ -334,6 +411,45 @@ func _refresh() -> void:
 	npc_signature = ""
 	_clear_npcs()
 	_refresh_travel_buttons()
+
+func _rebuild_foreground() -> void:
+	if foreground_layer == null:
+		return
+	for child in foreground_layer.get_children():
+		child.queue_free()
+	var texture: Texture2D = background.texture
+	if texture == null:
+		return
+	var viewport_size := Vector2(1280.0, 720.0)
+	var source_size := Vector2(float(texture.get_width()), float(texture.get_height()))
+	# 与 TextureRect.STRETCH_KEEP_ASPECT_COVERED 使用同一套等比放大 + 居中裁切换算。
+	var cover_scale: float = maxf(viewport_size.x / source_size.x, viewport_size.y / source_size.y)
+	var crop_offset: Vector2 = (source_size * cover_scale - viewport_size) * 0.5
+	for raw_item in OCCLUDERS.get(current_location, []):
+		if not raw_item is Dictionary:
+			continue
+		var item: Dictionary = raw_item
+		var rect: Rect2 = item.get("rect", Rect2())
+		if rect.size.x <= 0.0 or rect.size.y <= 0.0:
+			continue
+		var source_rect := Rect2((rect.position + crop_offset) / cover_scale, rect.size / cover_scale)
+		var overlay := Polygon2D.new()
+		overlay.texture = texture
+		overlay.polygon = PackedVector2Array([
+			rect.position,
+			Vector2(rect.end.x, rect.position.y),
+			rect.end,
+			Vector2(rect.position.x, rect.end.y),
+		])
+		overlay.uv = PackedVector2Array([
+			source_rect.position,
+			Vector2(source_rect.end.x, source_rect.position.y),
+			source_rect.end,
+			Vector2(source_rect.position.x, source_rect.end.y),
+		])
+		overlay.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+		overlay.z_index = int(item.get("depth", rect.end.y))
+		foreground_layer.add_child(overlay)
 
 func _refresh_travel_buttons() -> void:
 	if travel_box == null:
@@ -389,7 +505,8 @@ func _process(delta: float) -> void:
 		player_sprite.frame = 0
 
 func _move_player(direction: Vector2, delta: float) -> void:
-	var next_pos: Vector2 = player_sprite.position + direction * PLAYER_SPEED * delta
+	# 限制低帧率下的单步距离，避免一次位移跨过狭窄碰撞区。
+	var next_pos: Vector2 = player_sprite.position + direction * PLAYER_SPEED * minf(delta, 0.033)
 	player_sprite.position = _clamp_walk_position(next_pos)
 	_update_player_grounding()
 	var anim: String = "walk_down"
@@ -414,33 +531,37 @@ func _clamp_walk_position(pos: Vector2) -> Vector2:
 	var profile: Dictionary = NAVIGATION.get(current_location, {})
 	var bounds: Rect2 = profile.get("bounds", Rect2(85, 205, 1110, 360))
 	var radius: float = 13.0
+	var safe_bounds: Rect2 = bounds.grow(-radius)
 	var result := Vector2(
-		clampf(pos.x, bounds.position.x + radius, bounds.end.x - radius),
-		clampf(pos.y, bounds.position.y + radius, bounds.end.y - radius)
+		clampf(pos.x, safe_bounds.position.x, safe_bounds.end.x),
+		clampf(pos.y, safe_bounds.position.y, safe_bounds.end.y)
 	)
-	for raw_obstacle in profile.get("blocked", []):
-		if raw_obstacle is Rect2:
-			result = _push_out_of_obstacle(result, (raw_obstacle as Rect2).grow(radius))
+	# 两轮即可处理相邻障碍：第一次推出当前障碍，第二次处理可能碰到的邻接区。
+	for pass_index in range(2):
+		for raw_obstacle in profile.get("blocked", []):
+			if raw_obstacle is Rect2:
+				var obstacle: Rect2 = (raw_obstacle as Rect2).grow(radius).intersection(safe_bounds)
+				result = _push_out_of_obstacle(result, obstacle, safe_bounds)
 	return result
 
-func _push_out_of_obstacle(pos: Vector2, obstacle: Rect2) -> Vector2:
+func _push_out_of_obstacle(pos: Vector2, obstacle: Rect2, safe_bounds: Rect2) -> Vector2:
 	if not obstacle.has_point(pos):
 		return pos
-	var distances := {
-		"left": absf(pos.x - obstacle.position.x),
-		"right": absf(obstacle.end.x - pos.x),
-		"top": absf(pos.y - obstacle.position.y),
-		"bottom": absf(obstacle.end.y - pos.y),
-	}
-	var side: String = "left"
-	for candidate in distances:
-		if float(distances[candidate]) < float(distances[side]):
-			side = candidate
-	match side:
-		"left": return Vector2(obstacle.position.x - 0.5, pos.y)
-		"right": return Vector2(obstacle.end.x + 0.5, pos.y)
-		"top": return Vector2(pos.x, obstacle.position.y - 0.5)
-		_: return Vector2(pos.x, obstacle.end.y + 0.5)
+	var candidates: Array[Vector2] = [
+		Vector2(obstacle.position.x - 0.5, pos.y),
+		Vector2(obstacle.end.x + 0.5, pos.y),
+		Vector2(pos.x, obstacle.position.y - 0.5),
+		Vector2(pos.x, obstacle.end.y + 0.5),
+	]
+	var nearest := pos
+	var nearest_distance := INF
+	for candidate in candidates:
+		if safe_bounds.grow(0.6).has_point(candidate) and not obstacle.has_point(candidate):
+			var distance: float = pos.distance_squared_to(candidate)
+			if distance < nearest_distance:
+				nearest = candidate
+				nearest_distance = distance
+	return nearest
 
 func set_visible_npcs(items: Array) -> void:
 	var parts: Array[String] = []
@@ -458,7 +579,8 @@ func set_visible_npcs(items: Array) -> void:
 			continue
 		var item: Dictionary = raw
 		var npc_id: String = str(item.get("id", ""))
-		var pos: Vector2 = NPC_SCREEN_POS.get(npc_id, Vector2(900, 420))
+		var location_positions: Dictionary = NPC_LOCATION_POS.get(current_location, {})
+		var pos: Vector2 = location_positions.get(npc_id, Vector2(900, 420))
 		_add_npc_entity(npc_id, str(item.get("name", npc_id)), pos)
 
 
@@ -472,6 +594,7 @@ func _add_npc_entity(npc_id: String, display_name: String, pos: Vector2) -> void
 	var button := Button.new()
 	button.name = "Npc_%s" % npc_id
 	button.flat = true
+	button.focus_mode = Control.FOCUS_NONE
 	button.tooltip_text = "与%s交谈" % display_name
 	button.position = pos - Vector2(42.0, 76.0)
 	button.size = Vector2(84.0, 110.0)
@@ -491,6 +614,7 @@ func _add_npc_entity(npc_id: String, display_name: String, pos: Vector2) -> void
 
 	var label := Label.new()
 	label.text = display_name
+	label.visible = false
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.position = Vector2(-6.0, -19.0)
 	label.size = Vector2(96.0, 20.0)
@@ -501,6 +625,8 @@ func _add_npc_entity(npc_id: String, display_name: String, pos: Vector2) -> void
 	label.add_theme_constant_override("shadow_offset_y", 2)
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	button.add_child(label)
+	button.mouse_entered.connect(func(): label.visible = true)
+	button.mouse_exited.connect(func(): label.visible = false)
 
 
 func _npc_texture(npc_id: String) -> Texture2D:

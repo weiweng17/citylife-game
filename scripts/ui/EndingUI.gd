@@ -9,11 +9,9 @@ var desc_label: Label
 func _ready() -> void:
 	name = "EndingPanel"
 	visible = false
-	set_anchors_preset(Control.PRESET_FULL_RECT)
-	offset_left = 28
-	offset_right = -28
-	offset_top = 90
-	offset_bottom = -90
+	set_anchors_preset(Control.PRESET_TOP_LEFT)
+	get_viewport().size_changed.connect(_sync_viewport)
+	_sync_viewport()
 	var vbox := VBoxContainer.new()
 	add_child(vbox)
 	title_label = Label.new()
@@ -28,6 +26,11 @@ func _ready() -> void:
 	again.text = "再活一次"
 	again.pressed.connect(func(): restart_requested.emit())
 	vbox.add_child(again)
+
+func _sync_viewport() -> void:
+	var viewport_size: Vector2 = get_viewport().get_visible_rect().size
+	position = Vector2(28.0, 90.0)
+	size = Vector2(maxf(300.0, viewport_size.x - 56.0), maxf(260.0, viewport_size.y - 180.0))
 
 func show_ending(title_text: String, description: String) -> void:
 	title_label.text = title_text

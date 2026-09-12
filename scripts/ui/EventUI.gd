@@ -23,8 +23,10 @@ func _ready() -> void:
 func _build_ui() -> void:
 	name = "EventUI"
 	visible = false
-	set_anchors_preset(Control.PRESET_FULL_RECT)
+	set_anchors_preset(Control.PRESET_TOP_LEFT)
 	mouse_filter = Control.MOUSE_FILTER_STOP
+	get_viewport().size_changed.connect(_sync_viewport)
+	_sync_viewport()
 
 	background_rect = TextureRect.new()
 	background_rect.name = "Background"
@@ -48,6 +50,7 @@ func _build_ui() -> void:
 	panel.offset_bottom = -10
 	panel.offset_left = 12
 	panel.offset_right = -12
+	panel.clip_contents = true
 	add_child(panel)
 
 	var vbox := VBoxContainer.new()
@@ -59,7 +62,8 @@ func _build_ui() -> void:
 
 	body_label = Label.new()
 	body_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	body_label.custom_minimum_size = Vector2(0, 120)
+	body_label.custom_minimum_size = Vector2(0, 100)
+	body_label.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	vbox.add_child(body_label)
 
 	options_box = VBoxContainer.new()
@@ -70,6 +74,11 @@ func _build_ui() -> void:
 	continue_button.visible = false
 	continue_button.pressed.connect(_on_continue_pressed)
 	vbox.add_child(continue_button)
+
+
+func _sync_viewport() -> void:
+	position = Vector2.ZERO
+	size = get_viewport().get_visible_rect().size
 
 
 func show_event(header: String, body: String, option_views: Array, background: Texture2D = null) -> void:

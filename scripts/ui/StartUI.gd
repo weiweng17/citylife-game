@@ -8,7 +8,7 @@ var load_button: Button
 
 func setup(origins: Array, money_formatter: Callable) -> void:
 	name = "StartPanel"
-	set_anchors_preset(Control.PRESET_FULL_RECT)
+	set_anchors_preset(Control.PRESET_TOP_LEFT)
 	visible = false
 	var sb := StyleBoxFlat.new()
 	sb.bg_color = Color(0.07, 0.08, 0.11, 0.985)
@@ -38,6 +38,14 @@ func setup(origins: Array, money_formatter: Callable) -> void:
 	load_button.visible = false
 	load_button.pressed.connect(func(): load_requested.emit())
 	vbox.add_child(load_button)
+
+func _ready() -> void:
+	get_viewport().size_changed.connect(_sync_viewport)
+	_sync_viewport()
+
+func _sync_viewport() -> void:
+	position = Vector2.ZERO
+	size = get_viewport().get_visible_rect().size
 
 func _make_origin_card(o: Dictionary, money_formatter: Callable) -> Control:
 	var card := PanelContainer.new()

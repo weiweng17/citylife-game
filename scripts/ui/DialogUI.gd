@@ -21,11 +21,9 @@ func _ready() -> void:
 func _build_ui() -> void:
 	name = "Dialog"
 	visible = false
-	set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
-	offset_top = -230
-	offset_bottom = -10
-	offset_left = 16
-	offset_right = -16
+	set_anchors_preset(Control.PRESET_TOP_LEFT)
+	get_viewport().size_changed.connect(_sync_viewport)
+	_sync_viewport()
 
 	var vbox := VBoxContainer.new()
 	add_child(vbox)
@@ -42,6 +40,12 @@ func _build_ui() -> void:
 	next_button.text = "继续"
 	next_button.pressed.connect(_on_next_pressed)
 	vbox.add_child(next_button)
+
+
+func _sync_viewport() -> void:
+	var viewport_size: Vector2 = get_viewport().get_visible_rect().size
+	position = Vector2(16.0, maxf(0.0, viewport_size.y - 230.0))
+	size = Vector2(maxf(300.0, viewport_size.x - 32.0), 220.0)
 
 
 func show_dialog(speaker: String, lines: Array) -> void:

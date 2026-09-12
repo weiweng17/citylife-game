@@ -25,8 +25,9 @@ func _ready() -> void:
 
 func _build_ui() -> void:
 	name = "HUD"
-	set_anchors_preset(Control.PRESET_TOP_WIDE)
-	offset_bottom = 96
+	set_anchors_preset(Control.PRESET_TOP_LEFT)
+	get_viewport().size_changed.connect(_sync_viewport)
+	_sync_viewport()
 
 	var panel_style := StyleBoxFlat.new()
 	panel_style.bg_color = Color(0.05, 0.06, 0.10, 0.86)
@@ -35,13 +36,17 @@ func _build_ui() -> void:
 	add_theme_stylebox_override("panel", panel_style)
 
 	var root := VBoxContainer.new()
+	root.name = "HUDContent"
 	root.add_theme_constant_override("separation", 4)
 	add_child(root)
 
 	var row1 := HBoxContainer.new()
+	row1.name = "PrimaryRow"
+	row1.add_theme_constant_override("separation", 10)
 	root.add_child(row1)
 
 	age_label = Label.new()
+	age_label.custom_minimum_size = Vector2(180, 0)
 	age_label.add_theme_font_size_override("font_size", 16)
 	row1.add_child(age_label)
 
@@ -86,6 +91,7 @@ func _build_ui() -> void:
 	row1.add_child(quit_btn)
 
 	var row2 := HBoxContainer.new()
+	row2.name = "StatusRow"
 	row2.add_theme_constant_override("separation", 6)
 	root.add_child(row2)
 
@@ -112,6 +118,12 @@ func _build_ui() -> void:
 	goal_label.add_theme_color_override("font_color", Color(0.82, 0.85, 0.92))
 	goal_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	root.add_child(goal_label)
+
+
+func _sync_viewport() -> void:
+	var viewport_size: Vector2 = get_viewport().get_visible_rect().size
+	position = Vector2(14.0, 10.0)
+	size = Vector2(maxf(320.0, viewport_size.x - 28.0), 94.0)
 
 
 func refresh(state, stage_name: String, stage_goal: String, dark_clue_total: int) -> void:
