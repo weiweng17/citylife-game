@@ -510,7 +510,7 @@ func _on_home_activity(id: String) -> void:
 	location_sys.input_blocked = true
 	home_activities.blocked = true
 	var activity_icons := {"rest": "Zzz", "study": "专注中", "meal": "烹饪中"}
-	location_sys.set_activity_feedback(str(activity_icons.get(id, "进行中")), true)
+	location_sys.set_activity_feedback(str(activity_icons.get(id, "进行中")), true, id)
 	for step in range(10):
 		home_activities.prompt.text = "%s… %d%%" % [home_activities.SPOTS[id].label, (step + 1) * 10]
 		await get_tree().create_timer(0.12).timeout

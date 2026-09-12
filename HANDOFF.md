@@ -29,7 +29,7 @@
 ## 已验证
 
 - `tools/verify_navigation.gd`：九张地图配置、每图 350 次低帧率位移、全部出租屋互动路径、键盘松开、不可达墙、多边形斜边。
-- `tools/verify_home_activities.gd`：距离限制、防重复结算、时间与属性、出门切图；已含互动反馈显示/清理与床/书桌/厨房/房门四个朝向断言。
+- `tools/verify_home_activities.gd`：距离限制、防重复结算、时间与属性、出门切图；已含互动反馈显示/清理与床/书桌/厨房/房门四个朝向断言，以及活动道具显示/匹配/清理断言。
 - `tools/verify_home_input.gd`：渲染窗口真实鼠标/键盘输入；该测试不能用 `--headless`。
 - `tools/verify_locations.gd`：HUD、地点标题、居民区行动入口及原地图回归。
 - 详细证据与限制见 `docs/QA_2026-09-12.md`。
@@ -60,6 +60,15 @@
 - 发现并修复三块死区（角色站得住、点击却走不到）：床头上方墙根、床尾木架整片、沙发左侧窄缝；对照美术截图确认均为床头/实体家具/窄缝，已在 `LocationManager.NAVIGATION` home 配置追加两个贴边封堵多边形，而非打通。
 - 封堵后复跑全部通过：`verify_home_edges` 6252 项 0 失败、`verify_navigation` 6646 项 0 失败、`verify_home_activities` 全过、`verify_locations` 九图全过。
 - 遮挡诊断结论：目前无前景遮挡的三件家具（椅子、右侧厨房柜、床头柜）都贴墙，角色走不到其后方，暂不需要补前景遮挡。
+
+## 2026-09-13 再后续：活动道具反馈
+
+- 新增 `scripts/world/ActivityProp.gd`：休息/学习/做饭时在角色手部显示程序化绘制的枕头/书/锅（深色衬底 + 金边，1.35 倍缩放），随角色脚底坐标移动；项目无音频资源，音效仍缺位。
+- `LocationManager.set_activity_feedback` 增加第三个参数 `activity_id`，`Game._on_home_activity` 传入活动 id；道具位置在 `_update_player_grounding` 中同步，z 在角色之上。
+- `tools/verify_home_activities.gd` 新增三条断言：活动中道具可见且种类匹配、活动结束后清理。
+- 新增 `tools/capture_activity_props.gd`：截取三个活动进行中的画面到 `build/qa/home_prop_*.png`。注意脚本必须等 `activity_running` 复位再触发下一个活动，否则活动锁会拒掉后续激活，截到上一次的反馈。
+- 复跑全绿：`verify_home_activities`（含道具断言）、`verify_home_edges` 6252 项、`verify_navigation` 6646 项、`verify_locations` 九图。
+- 尚未做：专属活动姿态动画（现仍是行走动画定格）、音效（无音频资产）。
 
 ## 尚未完成
 

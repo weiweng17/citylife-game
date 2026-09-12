@@ -20,6 +20,7 @@ func run() -> void:
 	activities._activate("rest")
 	assert(not main.activity_running, "Remote activation must be rejected")
 	var expected_animations := {"rest": &"walk_left", "study": &"walk_up", "meal": &"walk_right"}
+	var expected_props := {"rest": "pillow", "study": "book", "meal": "pot"}
 	for id in ["rest", "study", "meal"]:
 		main.location_sys.player_sprite.position = activities.SPOTS[id].position
 		main.location_sys.player_target = main.location_sys.player_sprite.position
@@ -29,10 +30,13 @@ func run() -> void:
 		assert(main.activity_running)
 		assert(main.location_sys.player_sprite.animation == expected_animations[id], "Activity facing must match furniture: " + id)
 		assert(main.location_sys.player_feedback.visible, "Activity feedback must be visible: " + id)
+		assert(main.location_sys.activity_prop.visible, "Activity prop must be visible: " + id)
+		assert(main.location_sys.activity_prop.kind == expected_props[id], "Activity prop must match activity: " + id)
 		activities._activate(id)
 		await create_timer(1.5).timeout
 		assert(not main.activity_running)
 		assert(not main.location_sys.player_feedback.visible, "Activity feedback must clear: " + id)
+		assert(not main.location_sys.activity_prop.visible, "Activity prop must clear: " + id)
 		var elapsed: int = main.time_sys.get_minute_of_day() - before_minutes
 		assert(elapsed == {"rest":120, "study":60, "meal":30}[id], "Activity must settle only once")
 		print("PASS proximity and single settlement: ", id)

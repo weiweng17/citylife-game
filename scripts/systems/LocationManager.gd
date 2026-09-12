@@ -8,6 +8,7 @@ signal travel_requested(location_id: String)
 signal npc_requested(npc_id: String)
 
 const PLAYER_SHEET := "res://assets/characters/sprites/gameplay/protagonist_walk_4x4.png"
+const ActivityPropScript := preload("res://scripts/world/ActivityProp.gd")
 const PLAYER_FRAME := 256
 const PLAYER_SPEED := 260.0
 const NPC_HIRES_SHEETS := {
@@ -210,6 +211,7 @@ var hint_label: Label
 var player_sprite: AnimatedSprite2D
 var player_shadow: Sprite2D
 var player_feedback: Label
+var activity_prop: Node2D
 var player_target: Vector2 = Vector2.ZERO
 var npc_layer: Control
 var foreground_layer: Control
@@ -277,6 +279,12 @@ func _build_ui() -> void:
 	player_feedback.add_theme_constant_override("shadow_offset_y", 2)
 	player_feedback.z_index = 7
 	root.add_child(player_feedback)
+
+	activity_prop = ActivityPropScript.new()
+	activity_prop.name = "ActivityProp"
+	activity_prop.visible = false
+	activity_prop.z_index = 8
+	root.add_child(activity_prop)
 
 	npc_layer = Control.new()
 	npc_layer.name = "NpcHotspots"
@@ -555,7 +563,7 @@ func face_direction(direction: Vector2) -> void:
 	player_sprite.animation = _animation_for_direction(direction)
 	player_sprite.frame = 0
 
-func set_activity_feedback(text: String, active_feedback: bool) -> void:
+func set_activity_feedback(text: String, active_feedback: bool, activity_id: String = "") -> void:
 	if player_feedback == null or player_sprite == null:
 		return
 	player_feedback.text = text
@@ -563,6 +571,8 @@ func set_activity_feedback(text: String, active_feedback: bool) -> void:
 	player_sprite.scale = Vector2(0.33, 0.31) if active_feedback else Vector2(0.32, 0.32)
 	if player_shadow != null:
 		player_shadow.modulate.a = 0.82 if active_feedback else 1.0
+	if activity_prop != null:
+		activity_prop.setup(activity_id)
 	_update_player_grounding()
 
 func _process(delta: float) -> void:
@@ -628,6 +638,10 @@ func _update_player_grounding() -> void:
 	if player_feedback != null:
 		player_feedback.position = player_sprite.position + Vector2(-64.0, -102.0)
 		player_feedback.z_index = player_sprite.z_index + 2
+	if activity_prop != null:
+		# 道具挂在角色手部高度，随脚底坐标走，避免随角色缩放变小。
+		activity_prop.position = player_sprite.position + Vector2(16.0, -50.0)
+		activity_prop.z_index = player_sprite.z_index + 3
 
 func _clamp_walk_position(pos: Vector2) -> Vector2:
 	_ensure_navigation()
