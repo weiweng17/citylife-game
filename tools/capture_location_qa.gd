@@ -6,6 +6,7 @@ const Data = preload("res://scripts/Data.gd")
 var main: Node
 var frame_count: int = 0
 var phase: int = 0
+var capture_spot: String = ""
 
 
 func _init() -> void:
@@ -25,11 +26,27 @@ func _process(_delta: float) -> bool:
 		main.get("game_state").flags = {}
 		main.get("location_sys").current_location = "home"
 		main.get("location_sys")._refresh()
+		for argument in OS.get_cmdline_user_args():
+			if argument.begins_with("--spot="):
+				capture_spot = argument.trim_prefix("--spot=")
+				if main.home_activities.SPOTS.has(capture_spot):
+					var location = main.location_sys
+					location.player_sprite.position = location._clamp_walk_position(main.home_activities.SPOTS[capture_spot].position)
+					location.stop_walking()
+					location._update_player_grounding()
+		if OS.get_cmdline_user_args().has("--desk-edge"):
+			var location = main.get("location_sys")
+			location.player_sprite.position = Vector2(700, 360)
+			location.player_target = location.player_sprite.position
+			location._update_player_grounding()
 		print("[INFO] home texture=%s viewport=%s" % [main.get("location_sys").background.texture.get_size(), get_root().get_visible_rect().size])
 		phase = 1
 		frame_count = 0
 	elif phase == 1 and frame_count >= 8:
-		_capture("res://build/qa/home.png")
+		_capture("res://build/qa/home%s.png" % ("_" + capture_spot if not capture_spot.is_empty() else ""))
+		if not capture_spot.is_empty():
+			quit(0)
+			return true
 		main.get("events_sys").reset_used()
 		main.get("location_sys").action_button.pressed.emit()
 		phase = 2

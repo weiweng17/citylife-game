@@ -89,7 +89,18 @@ const VISIT_UNLOCKS := {
 # 每张美术背景对应的可行走地面与实体阻挡区。坐标均以 1280 × 720 视口计算，
 # 角色的脚底（而非立绘中心）不会进入家具、柜台、墙面、站台设施或画面边缘。
 const NAVIGATION := {
-	"home": {"bounds": Rect2(70, 250, 1110, 335), "blocked": [Rect2(72, 360, 330, 210), Rect2(455, 448, 270, 118), Rect2(620, 228, 270, 170), Rect2(380, 535, 470, 120), Rect2(975, 210, 220, 375)]},
+	"home": {"bounds": Rect2(70, 250, 1110, 335), "blocked": [], "polygons": [
+		# 床、茶几、沙发按斜向轮廓标定，不再用横平竖直的大框截断走道。
+		[Vector2(48, 323), Vector2(237, 283), Vector2(315, 356), Vector2(393, 477), Vector2(387, 522), Vector2(215, 570), Vector2(65, 415)],
+		[Vector2(436, 389), Vector2(565, 350), Vector2(666, 401), Vector2(668, 444), Vector2(532, 505), Vector2(435, 450)],
+		[Vector2(363, 523), Vector2(422, 487), Vector2(479, 536), Vector2(791, 480), Vector2(829, 491), Vector2(832, 607), Vector2(472, 719), Vector2(361, 636)],
+		# 书桌及椅子；右侧厨房柜台、冰箱与门边鞋柜。
+		[Vector2(680, 245), Vector2(797, 219), Vector2(798, 338), Vector2(747, 350), Vector2(684, 318)],
+		[Vector2(568, 253), Vector2(626, 237), Vector2(674, 283), Vector2(651, 322), Vector2(588, 314)],
+		[Vector2(950, 250), Vector2(1280, 250), Vector2(1280, 585), Vector2(1003, 585), Vector2(1003, 428), Vector2(1078, 394), Vector2(958, 325)],
+		# 左侧床头柜和上方靠墙区域。
+		[Vector2(239, 250), Vector2(324, 250), Vector2(342, 316), Vector2(280, 335)],
+	]},
 	"subway": {"bounds": Rect2(70, 325, 1140, 275), "blocked": [Rect2(175, 305, 135, 230), Rect2(910, 285, 105, 265), Rect2(0, 480, 235, 150), Rect2(1060, 420, 220, 230)]},
 	"office": {"bounds": Rect2(95, 335, 1085, 245), "blocked": [Rect2(0, 280, 245, 185), Rect2(540, 245, 740, 175), Rect2(990, 330, 290, 230)]},
 	"park": {"bounds": Rect2(85, 315, 1110, 270), "blocked": [Rect2(0, 285, 300, 200), Rect2(890, 260, 390, 225), Rect2(490, 330, 270, 110)]},
@@ -116,11 +127,10 @@ const LOCATION_LIGHTING := {
 # rect 是屏幕坐标，depth 是物体最前沿的脚底深度。
 const OCCLUDERS := {
 	"home": [
-		{"rect": Rect2(30, 250, 390, 310), "depth": 535},
-		{"rect": Rect2(420, 345, 320, 180), "depth": 515},
-		{"rect": Rect2(350, 475, 520, 190), "depth": 625},
-		{"rect": Rect2(585, 150, 320, 210), "depth": 355},
-		{"rect": Rect2(960, 135, 310, 315), "depth": 445},
+		{"points": [Vector2(35, 287), Vector2(163, 256), Vector2(255, 302), Vector2(387, 464), Vector2(373, 513), Vector2(212, 554), Vector2(70, 410)], "depth": 514},
+		{"points": [Vector2(430, 382), Vector2(565, 340), Vector2(666, 397), Vector2(660, 437), Vector2(528, 480), Vector2(439, 415)], "depth": 480},
+		{"points": [Vector2(365, 495), Vector2(424, 483), Vector2(477, 541), Vector2(791, 474), Vector2(826, 489), Vector2(826, 596), Vector2(461, 719), Vector2(361, 632)], "depth": 650},
+		{"points": [Vector2(574, 166), Vector2(648, 154), Vector2(796, 216), Vector2(794, 326), Vector2(744, 341), Vector2(736, 253), Vector2(577, 194)], "depth": 341},
 	],
 	"subway": [
 		{"rect": Rect2(165, 60, 150, 485), "depth": 535},
@@ -179,6 +189,11 @@ var current_location: String = "home"
 var unlocked: Dictionary = {"home": true}
 var visited: Dictionary = {}
 var active: bool = false
+var input_blocked: bool = false
+var navigation = preload("res://scripts/systems/LocationNavigation.gd").new()
+var navigation_location: String = ""
+var walk_path := PackedVector2Array()
+var travel_signature: String = ""
 
 var root: Control
 var background: TextureRect
@@ -405,6 +420,7 @@ func _refresh() -> void:
 	player_sprite.modulate = current_lighting
 	_update_player_grounding()
 	player_target = spawn
+	walk_path.clear()
 	player_sprite.stop()
 	player_sprite.animation = "walk_down"
 	player_sprite.frame = 0
@@ -430,23 +446,18 @@ func _rebuild_foreground() -> void:
 			continue
 		var item: Dictionary = raw_item
 		var rect: Rect2 = item.get("rect", Rect2())
-		if rect.size.x <= 0.0 or rect.size.y <= 0.0:
+		var points: PackedVector2Array = PackedVector2Array(item.get("points", []))
+		if points.is_empty() and rect.size.x > 0.0 and rect.size.y > 0.0:
+			points = PackedVector2Array([rect.position, Vector2(rect.end.x, rect.position.y), rect.end, Vector2(rect.position.x, rect.end.y)])
+		if points.size() < 3:
 			continue
-		var source_rect := Rect2((rect.position + crop_offset) / cover_scale, rect.size / cover_scale)
 		var overlay := Polygon2D.new()
 		overlay.texture = texture
-		overlay.polygon = PackedVector2Array([
-			rect.position,
-			Vector2(rect.end.x, rect.position.y),
-			rect.end,
-			Vector2(rect.position.x, rect.end.y),
-		])
-		overlay.uv = PackedVector2Array([
-			source_rect.position,
-			Vector2(source_rect.end.x, source_rect.position.y),
-			source_rect.end,
-			Vector2(source_rect.position.x, source_rect.end.y),
-		])
+		overlay.polygon = points
+		var uv := PackedVector2Array()
+		for point in points:
+			uv.append((point + crop_offset) / cover_scale)
+		overlay.uv = uv
 		overlay.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 		overlay.z_index = int(item.get("depth", rect.end.y))
 		foreground_layer.add_child(overlay)
@@ -454,7 +465,14 @@ func _rebuild_foreground() -> void:
 func _refresh_travel_buttons() -> void:
 	if travel_box == null:
 		return
+	var keys := unlocked.keys()
+	keys.sort()
+	var signature := str(keys) + current_location
+	if signature == travel_signature:
+		return
+	travel_signature = signature
 	for child in travel_box.get_children():
+		travel_box.remove_child(child)
 		child.queue_free()
 	var order: Array[String] = ["home", "subway", "office", "park", "store", "cafe", "hospital", "rooftop", "alley"]
 	for id in order:
@@ -468,22 +486,50 @@ func _refresh_travel_buttons() -> void:
 		travel_box.add_child(btn)
 
 func _on_travel_pressed(id: String) -> void:
-	travel_to(id)
+	if not input_blocked:
+		travel_to(id)
 
 func _on_action_pressed() -> void:
-	action_requested.emit(current_location)
+	if not input_blocked:
+		action_requested.emit(current_location)
 
 func _on_root_gui_input(event: InputEvent) -> void:
-	if not active:
+	if not active or input_blocked:
 		return
 	if event is InputEventMouseButton:
 		var mouse_event: InputEventMouseButton = event as InputEventMouseButton
 		if mouse_event.button_index == MOUSE_BUTTON_LEFT and mouse_event.pressed:
-			player_target = _clamp_walk_position(mouse_event.position)
+			walk_to(mouse_event.position)
+
+func _ensure_navigation() -> void:
+	if navigation_location != current_location:
+		navigation.configure(NAVIGATION.get(current_location, {}))
+		navigation_location = current_location
+
+func walk_to(target: Vector2) -> bool:
+	if input_blocked or not active:
+		return false
+	_ensure_navigation()
+	walk_path = navigation.find_path(player_sprite.position, target)
+	if walk_path.is_empty():
+		player_target = player_sprite.position
+		hint_label.text = "这里无法到达，请选择另一处地面。"
+		return false
+	player_target = walk_path[walk_path.size() - 1]
+	return true
+
+func stop_walking() -> void:
+	walk_path.clear()
+	player_target = player_sprite.position
+	player_sprite.stop()
+	player_sprite.frame = 0
 
 func _process(delta: float) -> void:
 	_sync_web_layout()
 	if not active or player_sprite == null:
+		return
+	if input_blocked:
+		stop_walking()
 		return
 	var direction: Vector2 = Input.get_vector("ui_left", "ui_right", "ui_up", "ui_down")
 	if Input.is_key_pressed(KEY_A): direction.x -= 1.0
@@ -492,23 +538,39 @@ func _process(delta: float) -> void:
 	if Input.is_key_pressed(KEY_S): direction.y += 1.0
 	if direction.length() > 0.05:
 		direction = direction.normalized()
-		player_target = player_sprite.position
+		walk_path.clear()
 		_move_player(direction, delta)
+		player_target = player_sprite.position
 		return
-	var offset: Vector2 = player_target - player_sprite.position
-	if offset.length() > 5.0:
-		_move_player(offset.normalized(), delta)
-	else:
-		player_sprite.position = player_target
-		_update_player_grounding()
-		player_sprite.stop()
-		player_sprite.frame = 0
+	_advance_path(delta)
+
+func _advance_path(delta: float) -> void:
+	var remaining := PLAYER_SPEED * minf(delta, 0.033)
+	while not walk_path.is_empty() and remaining > 0.001:
+		var offset: Vector2 = walk_path[0] - player_sprite.position
+		if offset.length() < 0.01:
+			walk_path.remove_at(0)
+			continue
+		var distance := minf(remaining, offset.length())
+		var before := player_sprite.position
+		_move_player(offset.normalized(), distance / PLAYER_SPEED)
+		remaining -= distance
+		if before.distance_to(player_sprite.position) < 0.001:
+			stop_walking()
+			break
+	if walk_path.is_empty():
+		stop_walking()
 
 func _move_player(direction: Vector2, delta: float) -> void:
-	# 限制低帧率下的单步距离，避免一次位移跨过狭窄碰撞区。
-	var next_pos: Vector2 = player_sprite.position + direction * PLAYER_SPEED * minf(delta, 0.033)
-	player_sprite.position = _clamp_walk_position(next_pos)
+	_ensure_navigation()
+	var before := player_sprite.position
+	var displacement := direction * PLAYER_SPEED * minf(delta, 0.033)
+	player_sprite.position = navigation.move_safely(before, displacement)
 	_update_player_grounding()
+	if before.distance_to(player_sprite.position) < 0.001:
+		player_sprite.stop()
+		player_sprite.frame = 0
+		return
 	var anim: String = "walk_down"
 	if abs(direction.x) > abs(direction.y):
 		anim = "walk_right" if direction.x > 0.0 else "walk_left"
@@ -528,40 +590,8 @@ func _update_player_grounding() -> void:
 		player_shadow.z_index = maxi(4, player_sprite.z_index - 1)
 
 func _clamp_walk_position(pos: Vector2) -> Vector2:
-	var profile: Dictionary = NAVIGATION.get(current_location, {})
-	var bounds: Rect2 = profile.get("bounds", Rect2(85, 205, 1110, 360))
-	var radius: float = 13.0
-	var safe_bounds: Rect2 = bounds.grow(-radius)
-	var result := Vector2(
-		clampf(pos.x, safe_bounds.position.x, safe_bounds.end.x),
-		clampf(pos.y, safe_bounds.position.y, safe_bounds.end.y)
-	)
-	# 两轮即可处理相邻障碍：第一次推出当前障碍，第二次处理可能碰到的邻接区。
-	for pass_index in range(2):
-		for raw_obstacle in profile.get("blocked", []):
-			if raw_obstacle is Rect2:
-				var obstacle: Rect2 = (raw_obstacle as Rect2).grow(radius).intersection(safe_bounds)
-				result = _push_out_of_obstacle(result, obstacle, safe_bounds)
-	return result
-
-func _push_out_of_obstacle(pos: Vector2, obstacle: Rect2, safe_bounds: Rect2) -> Vector2:
-	if not obstacle.has_point(pos):
-		return pos
-	var candidates: Array[Vector2] = [
-		Vector2(obstacle.position.x - 0.5, pos.y),
-		Vector2(obstacle.end.x + 0.5, pos.y),
-		Vector2(pos.x, obstacle.position.y - 0.5),
-		Vector2(pos.x, obstacle.end.y + 0.5),
-	]
-	var nearest := pos
-	var nearest_distance := INF
-	for candidate in candidates:
-		if safe_bounds.grow(0.6).has_point(candidate) and not obstacle.has_point(candidate):
-			var distance: float = pos.distance_squared_to(candidate)
-			if distance < nearest_distance:
-				nearest = candidate
-				nearest_distance = distance
-	return nearest
+	_ensure_navigation()
+	return navigation.nearest_valid(pos)
 
 func set_visible_npcs(items: Array) -> void:
 	var parts: Array[String] = []
@@ -648,7 +678,8 @@ func _clear_npcs() -> void:
 		child.queue_free()
 
 func _on_npc_pressed(npc_id: String) -> void:
-	npc_requested.emit(npc_id)
+	if not input_blocked:
+		npc_requested.emit(npc_id)
 
 func apply_story_unlocks(state: Dictionary, time_source = null) -> void:
 	if int(state.get("age", 22)) >= 40 or bool(state.get("flags", {}).get("dark_pursued", false)):

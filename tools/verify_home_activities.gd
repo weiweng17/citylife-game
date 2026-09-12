@@ -1,0 +1,43 @@
+extends SceneTree
+
+func _init() -> void:
+	call_deferred("run")
+
+func run() -> void:
+	var main = load("res://scenes/Main.tscn").instantiate()
+	root.add_child(main)
+	await process_frame
+	main._choose_origin(main.Data.ORIGINS[0])
+	main.dialog_queue.clear()
+	main.dialog_ui.close_dialog()
+	main.set_process(false)
+	main.health = 50
+	main.mood = 50
+	main.money = 100
+	var activities = main.home_activities
+	main.location_sys.player_sprite.position = Vector2(850, 460)
+	await process_frame
+	activities._activate("rest")
+	assert(not main.activity_running, "Remote activation must be rejected")
+	for id in ["rest", "study", "meal"]:
+		main.location_sys.player_sprite.position = activities.SPOTS[id].position
+		main.location_sys.player_target = main.location_sys.player_sprite.position
+		activities.blocked = false
+		var before_minutes: int = main.time_sys.get_minute_of_day()
+		activities._activate(id)
+		assert(main.activity_running)
+		activities._activate(id)
+		await create_timer(1.5).timeout
+		assert(not main.activity_running)
+		var elapsed: int = main.time_sys.get_minute_of_day() - before_minutes
+		assert(elapsed == {"rest":120, "study":60, "meal":30}[id], "Activity must settle only once")
+		print("PASS proximity and single settlement: ", id)
+	assert(main.health == 67)
+	assert(main.mood == 55)
+	assert(main.money == 80)
+	main.location_sys.player_sprite.position = activities.SPOTS.leave.position
+	activities.blocked = false
+	activities._activate("leave")
+	assert(main.location_sys.current_location == "subway")
+	print("PASS effects and door travel")
+	quit()

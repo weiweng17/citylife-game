@@ -108,6 +108,8 @@ var encounter_sys
 var save_sys
 var weather_sys
 var location_sys
+var home_activities
+var activity_running: bool = false
 var interaction_sys
 var events_sys: Node
 var story_sys: Node
@@ -176,6 +178,10 @@ func _ready() -> void:
 	location_sys.travel_requested.connect(_on_location_travel)
 	location_sys.npc_requested.connect(_on_location_npc_requested)
 	location_sys.set_active(false)
+	home_activities = preload("res://scripts/systems/HomeActivities.gd").new()
+	add_child(home_activities)
+	home_activities.configure(location_sys)
+	home_activities.activity_requested.connect(_on_home_activity)
 	npc_schedule_sys = NPCScheduleSystemScript.new()
 	npc_schedule_sys.name = "NPCScheduleSys"
 	add_child(npc_schedule_sys)
@@ -327,6 +333,9 @@ func _quit_game() -> void:
 	get_tree().quit()
 
 func _save_game() -> void:
+	if activity_running:
+		_show_toast("行动完成后即可保存。")
+		return
 	if save_sys == null or not game_started or game_over:
 		_show_toast("当前没有可以保存的游戏进度。")
 		return
@@ -350,6 +359,9 @@ func _save_game() -> void:
 
 
 func _load_game() -> void:
+	if activity_running:
+		_show_toast("请等待当前行动完成，再读取存档。")
+		return
 	if save_sys == null:
 		_show_toast("存档系统尚未初始化。")
 		return
@@ -450,6 +462,9 @@ func _process(delta: float) -> void:
 	_refresh_ui()
 	_check_stage()
 	var ui_busy: bool = (dialog_ui != null and dialog_ui.is_busy()) or (event_ui != null and event_ui.is_busy()) or (ending_ui != null and ending_ui.visible)
+	ui_busy = ui_busy or activity_running
+	location_sys.input_blocked = ui_busy
+	home_activities.blocked = ui_busy
 	if time_sys:
 		time_sys.set_paused(ui_busy)
 		time_sys.tick(delta)
@@ -479,6 +494,48 @@ func _update_near_target() -> void:
 
 # ---------------------------------------------------------------- 分场景地图
 
+func _on_home_activity(id: String) -> void:
+	if activity_running or not game_started or game_over or dialog_ui.is_busy() or event_ui.is_busy():
+		return
+	if location_sys.current_location != "home" or not home_activities.SPOTS.has(id):
+		return
+	if id == "leave":
+		location_sys.unlock("subway")
+		location_sys.travel_to("subway")
+		return
+	if id == "meal" and money < 20:
+		_show_toast("食材需要20元，当前余额不足。")
+		return
+	activity_running = true
+	location_sys.input_blocked = true
+	home_activities.blocked = true
+	for step in range(10):
+		home_activities.prompt.text = "%s… %d%%" % [home_activities.SPOTS[id].label, (step + 1) * 10]
+		await get_tree().create_timer(0.12).timeout
+	var feedback: String = ""
+	match id:
+		"rest":
+			health = mini(100, health + 12)
+			mood = mini(100, mood + 8)
+			time_sys.advance_minutes(120)
+			feedback = "休息了2小时 · 健康+12，心情+8（最高100）"
+		"study":
+			skill = mini(100, skill + 3)
+			mood = maxi(0, mood - 3)
+			time_sys.advance_minutes(60)
+			feedback = "学习了1小时 · 技能+3（最高100），心情−3"
+		"meal":
+			money -= 20
+			health = mini(100, health + 5)
+			time_sys.advance_minutes(30)
+			feedback = "做好了一顿饭 · −20元，健康+5（最高100），耗时30分钟"
+	activity_running = false
+	var still_busy: bool = dialog_ui.is_busy() or event_ui.is_busy() or game_over
+	location_sys.input_blocked = still_busy
+	home_activities.blocked = still_busy
+	_refresh_ui()
+	_show_toast(feedback)
+
 func _on_location_travel(location_id: String) -> void:
 	# 第一次抵达地铁/公司等地点即完成“地图解锁”的体验；旅行本身消耗少量时间。
 	if time_sys:
@@ -490,6 +547,8 @@ func _on_location_travel(location_id: String) -> void:
 
 
 func _on_location_action(location_id: String) -> void:
+	if activity_running:
+		return
 	if not game_started:
 		_show_toast("请先选择出身开始游戏。")
 		return
@@ -536,6 +595,8 @@ func _on_location_action(location_id: String) -> void:
 
 
 func _on_location_npc_requested(npc_id: String) -> void:
+	if activity_running:
+		return
 	for npc in Data.NPCS:
 		if str(npc.get("id", "")) == npc_id:
 			_talk_to(npc)
@@ -761,6 +822,9 @@ func _show_ending(reason: String, st: Dictionary) -> void:
 
 
 func _restart() -> void:
+	if activity_running:
+		_show_toast("请等待当前行动完成。")
+		return
 	if ending_ui:
 		ending_ui.close()
 	game_state.reset_default()
