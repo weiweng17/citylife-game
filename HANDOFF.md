@@ -29,7 +29,7 @@
 ## 已验证
 
 - `tools/verify_navigation.gd`：九张地图配置、每图 350 次低帧率位移、全部出租屋互动路径、键盘松开、不可达墙、多边形斜边。
-- `tools/verify_home_activities.gd`：距离限制、防重复结算、时间与属性、出门切图。
+- `tools/verify_home_activities.gd`：距离限制、防重复结算、时间与属性、出门切图；已含互动反馈显示/清理与床/书桌/厨房/房门四个朝向断言。
 - `tools/verify_home_input.gd`：渲染窗口真实鼠标/键盘输入；该测试不能用 `--headless`。
 - `tools/verify_locations.gd`：HUD、地点标题、居民区行动入口及原地图回归。
 - 详细证据与限制见 `docs/QA_2026-09-12.md`。
@@ -45,14 +45,19 @@
 - 已验证：
   - 修改后已通过 `tools/verify_navigation.gd`：Navigation checks: 6630; failures: 0。
   - 修改后已通过一次 `tools/verify_home_activities.gd`，覆盖反馈显示/清理，但当时尚未加入朝向断言。
-- 未完成验证：
-  - 加入朝向断言后准备重跑 `tools/verify_home_activities.gd`，但运行被用户中断；下一位接手请先重跑该脚本。
+- 补跑结果（加入朝向断言后，2026-09-13 后续）：
+  - 首次失败：`Door facing must point toward exit` 断言读到 `walk_down`。
+  - 原因：`_activate("leave")` 先 `face_direction(Vector2(1, 0))` 转向右，`Game._on_home_activity` 随即切图，`_refresh()` 把动画复位成落地朝向 `walk_down`；断言测到的是落地朝向，不是房门朝向。
+  - 处理：只改测试观测点，未改运行时行为。先用 `main.game_started = false` 拦住 `_on_home_activity` 的切图分支验证房门朝向，再放开验证切图；测试内已写注释说明。
+  - 现状：四个断言全通过（rest/study/meal 朝向与一次结算、房门朝向、出门切到 subway）。同轮复跑 `verify_navigation.gd`（6630 项 0 失败）与 `verify_locations.gd`（九图全通过）均通过。
+  - 已知限制：房门朝向在玩家侧几乎不可见——转身与切图在同一帧，切图后角色按落地朝向 `walk_down` 显示。等阶段 2 做“走到门口再出门”或跨场景保留朝向时再解决。
 
 ## 尚未完成
 
 - 出租屋所有家具边缘的实走视觉复核，以及全部方向动画的接地检查。
 - 角色活动姿态、物品反馈和音效；当前活动主要是移动、进度文字与数值反馈。
 - 2026-09-13 已增加最小头顶互动反馈，但尚不是正式姿态/物品/音效系统。
+- 房门等"触发即切图"的互动，转身朝向与切图同帧发生，玩家看不到转身；当前朝向只对不切图的家具（床/书桌/厨房）有实际观感。
 - NPC 尺寸、脚点、方向动画尚未全面统一。
 - 出租屋以外的碰撞及遮挡多数仍为矩形近似，不能宣称全地图无视觉穿模。
 - 阶段 2 的完整一天流程尚未实现：家→地铁→公司工作→便利店购买→回家休息→次日结算。

@@ -41,8 +41,13 @@ func run() -> void:
 	assert(main.money == 80)
 	main.location_sys.player_sprite.position = activities.SPOTS.leave.position
 	activities.blocked = false
+	# 出门会立刻切图，切图时 _refresh() 会把动画复位成落地朝向 walk_down。
+	# 先用“未开局”守卫拦住 _on_home_activity 的切图分支，单独验证房门朝向，再放开验证切图。
+	main.game_started = false
+	activities._activate("leave")
+	assert(main.location_sys.player_sprite.animation == &"walk_right", "Door facing must point toward exit")
+	main.game_started = true
 	activities._activate("leave")
 	assert(main.location_sys.current_location == "subway")
-	assert(main.location_sys.player_sprite.animation == &"walk_right", "Door facing must point toward exit")
 	print("PASS effects and door travel")
 	quit()
