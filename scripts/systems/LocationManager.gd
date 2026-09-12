@@ -86,6 +86,32 @@ const VISIT_UNLOCKS := {
 	"store": ["hospital"],
 }
 
+# 每张美术背景对应的可行走地面与实体阻挡区。坐标均以 1280 × 720 视口计算，
+# 角色的脚底（而非立绘中心）不会进入家具、柜台、墙面、站台设施或画面边缘。
+const NAVIGATION := {
+	"home": {"bounds": Rect2(70, 250, 1110, 335), "blocked": [Rect2(72, 360, 330, 210), Rect2(455, 448, 270, 118), Rect2(620, 228, 270, 170), Rect2(380, 535, 470, 120), Rect2(975, 210, 220, 375)]},
+	"subway": {"bounds": Rect2(70, 325, 1140, 275), "blocked": [Rect2(175, 305, 135, 230), Rect2(910, 285, 105, 265), Rect2(0, 480, 235, 150), Rect2(1060, 420, 220, 230)]},
+	"office": {"bounds": Rect2(95, 335, 1085, 245), "blocked": [Rect2(0, 280, 245, 185), Rect2(540, 245, 740, 175), Rect2(990, 330, 290, 230)]},
+	"park": {"bounds": Rect2(85, 315, 1110, 270), "blocked": [Rect2(0, 285, 300, 200), Rect2(890, 260, 390, 225), Rect2(490, 330, 270, 110)]},
+	"store": {"bounds": Rect2(60, 270, 1130, 310), "blocked": [Rect2(55, 385, 320, 245), Rect2(365, 300, 315, 175), Rect2(640, 455, 325, 180), Rect2(1005, 245, 275, 395)]},
+	"cafe": {"bounds": Rect2(75, 295, 1125, 285), "blocked": [Rect2(0, 330, 355, 235), Rect2(390, 350, 170, 105), Rect2(730, 320, 250, 155), Rect2(1030, 250, 250, 345)]},
+	"hospital": {"bounds": Rect2(95, 300, 1085, 275), "blocked": [Rect2(0, 250, 365, 245), Rect2(515, 325, 270, 135), Rect2(1000, 230, 280, 360)]},
+	"rooftop": {"bounds": Rect2(85, 320, 1110, 250), "blocked": [Rect2(0, 280, 270, 205), Rect2(990, 260, 290, 225)]},
+	"alley": {"bounds": Rect2(105, 305, 1055, 285), "blocked": [Rect2(0, 235, 340, 260), Rect2(1000, 220, 280, 285)]},
+}
+
+const LOCATION_LIGHTING := {
+	"home": Color(1.0, 0.88, 0.73, 1.0),
+	"subway": Color(0.79, 0.86, 1.0, 1.0),
+	"office": Color(0.69, 0.76, 0.92, 1.0),
+	"park": Color(0.72, 0.80, 0.89, 1.0),
+	"store": Color(1.0, 0.90, 0.76, 1.0),
+	"cafe": Color(1.0, 0.84, 0.67, 1.0),
+	"hospital": Color(0.86, 0.91, 0.98, 1.0),
+	"rooftop": Color(0.65, 0.73, 0.88, 1.0),
+	"alley": Color(0.62, 0.70, 0.84, 1.0),
+}
+
 # NPC 在每个独立场景中的屏幕位置。
 const NPC_SCREEN_POS := {
 	"xiaoyu": Vector2(430, 410),
@@ -114,6 +140,7 @@ var player_shadow: Polygon2D
 var player_target: Vector2 = Vector2.ZERO
 var npc_layer: Control
 var npc_signature: String = ""
+var current_lighting: Color = Color.WHITE
 
 func _ready() -> void:
 	layer = 0
@@ -152,7 +179,10 @@ func _build_ui() -> void:
 	player_sprite.sprite_frames = _make_player_frames()
 	player_sprite.animation = "walk_down"
 	player_sprite.frame = 0
-	player_sprite.scale = Vector2(0.42, 0.42)
+	# 立绘以脚底为定位点；缩小至与背景中原有行人相同的透视尺度。
+	player_sprite.centered = false
+	player_sprite.offset = Vector2(-128.0, -248.0)
+	player_sprite.scale = Vector2(0.32, 0.32)
 	player_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	player_sprite.modulate = Color(0.82, 0.87, 0.94, 1.0)
 	player_sprite.z_index = 5
@@ -206,13 +236,10 @@ func _build_ui() -> void:
 	_sync_web_layout()
 
 func _sync_web_layout() -> void:
-	var viewport_size: Vector2 = get_viewport().get_visible_rect().size
-	if viewport_size.x < 2.0 or viewport_size.y < 2.0:
-		viewport_size = Vector2(1280.0, 720.0)
-	for item in [root, background, shade, npc_layer]:
-		if item != null:
-			item.position = Vector2.ZERO
-			item.size = viewport_size
+	# 这些节点都使用全屏锚点。这里只保证浏览器重绘后回到原点，避免手动改尺寸
+	# 导致 Godot 覆盖锚点尺寸并产生布局警告。
+	if root != null:
+		root.position = Vector2.ZERO
 
 func _make_player_frames() -> SpriteFrames:
 	var frames: SpriteFrames = SpriteFrames.new()
@@ -290,6 +317,7 @@ func _refresh() -> void:
 	if not LOCATIONS.has(current_location):
 		current_location = "home"
 	var info: Dictionary = LOCATIONS[current_location]
+	current_lighting = LOCATION_LIGHTING.get(current_location, Color.WHITE)
 	title_label.text = str(info.get("name", current_location))
 	subtitle_label.text = str(info.get("subtitle", ""))
 	var path: String = str(info.get("background", ""))
@@ -297,6 +325,7 @@ func _refresh() -> void:
 	action_button.text = "在%s行动" % str(info.get("name", current_location)).split(" · ")[0]
 	var spawn: Vector2 = info.get("spawn", Vector2(640, 460))
 	player_sprite.position = spawn
+	player_sprite.modulate = current_lighting
 	_update_player_grounding()
 	player_target = spawn
 	player_sprite.stop()
@@ -378,12 +407,40 @@ func _update_player_grounding() -> void:
 		return
 	player_sprite.z_index = maxi(5, int(player_sprite.position.y))
 	if player_shadow != null:
-		player_shadow.position = player_sprite.position + Vector2(0.0, 34.0)
+		player_shadow.position = player_sprite.position + Vector2(0.0, 4.0)
 		player_shadow.z_index = maxi(4, player_sprite.z_index - 1)
 
 func _clamp_walk_position(pos: Vector2) -> Vector2:
-	# 保留 HUD / 页脚空间；每个背景目前使用同一可行走安全区。
-	return Vector2(clampf(pos.x, 85.0, 1195.0), clampf(pos.y, 205.0, 565.0))
+	var profile: Dictionary = NAVIGATION.get(current_location, {})
+	var bounds: Rect2 = profile.get("bounds", Rect2(85, 205, 1110, 360))
+	var radius: float = 13.0
+	var result := Vector2(
+		clampf(pos.x, bounds.position.x + radius, bounds.end.x - radius),
+		clampf(pos.y, bounds.position.y + radius, bounds.end.y - radius)
+	)
+	for raw_obstacle in profile.get("blocked", []):
+		if raw_obstacle is Rect2:
+			result = _push_out_of_obstacle(result, (raw_obstacle as Rect2).grow(radius))
+	return result
+
+func _push_out_of_obstacle(pos: Vector2, obstacle: Rect2) -> Vector2:
+	if not obstacle.has_point(pos):
+		return pos
+	var distances := {
+		"left": absf(pos.x - obstacle.position.x),
+		"right": absf(obstacle.end.x - pos.x),
+		"top": absf(pos.y - obstacle.position.y),
+		"bottom": absf(obstacle.end.y - pos.y),
+	}
+	var side: String = "left"
+	for candidate in distances:
+		if float(distances[candidate]) < float(distances[side]):
+			side = candidate
+	match side:
+		"left": return Vector2(obstacle.position.x - 0.5, pos.y)
+		"right": return Vector2(obstacle.end.x + 0.5, pos.y)
+		"top": return Vector2(pos.x, obstacle.position.y - 0.5)
+		_: return Vector2(pos.x, obstacle.end.y + 0.5)
 
 func set_visible_npcs(items: Array) -> void:
 	var parts: Array[String] = []
@@ -428,7 +485,7 @@ func _add_npc_entity(npc_id: String, display_name: String, pos: Vector2) -> void
 	avatar.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	avatar.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	avatar.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
-	avatar.modulate = Color(0.82, 0.87, 0.94, 1.0)
+	avatar.modulate = current_lighting
 	avatar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	button.add_child(avatar)
 
