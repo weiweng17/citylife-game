@@ -1,0 +1,79 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://scripts/world/InteriorScene.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/world/NPC.gd" id="2"]
+[ext_resource type="Texture2D" path="res://assets/scene/office_inside.png" id="3"]
+[ext_resource type="Texture2D" path="res://assets/sprites/npc_laozhang.png" id="4"]
+[ext_resource type="Texture2D" path="res://assets/sprites/poi.png" id="5"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_boss"]
+radius = 30.0
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_door"]
+radius = 42.0
+
+[node name="Company" type="Node2D"]
+visible = false
+script = ExtResource("1")
+interior_id = "office"
+player_spawn = Vector2(540, 900)
+world_exit_position = Vector2(935, 565)
+
+[node name="InteriorBG" type="Sprite2D" parent="."]
+texture_filter = 0
+z_index = -100
+texture = ExtResource("3")
+centered = false
+light_mask = 0
+
+[node name="NPCs" type="Node2D" parent="."]
+
+[node name="Boss" type="Area2D" parent="NPCs"]
+position = Vector2(540, 480)
+script = ExtResource("2")
+metadata/npc = {"id": "boss", "name": "老板", "pos": Vector2(540, 480), "title": "部门主管"}
+metadata/interior_npc = {"id": "boss", "name": "老板", "pos": Vector2(540, 480), "title": "部门主管"}
+
+[node name="Sprite2D" type="Sprite2D" parent="NPCs/Boss"]
+texture_filter = 1
+texture = ExtResource("4")
+centered = false
+position = Vector2(-24, -80)
+light_mask = 0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="NPCs/Boss"]
+shape = SubResource("CircleShape2D_boss")
+
+[node name="Label" type="Label" parent="NPCs/Boss"]
+offset_left = -70.0
+offset_top = -96.0
+offset_right = 70.0
+offset_bottom = -70.0
+custom_minimum_size = Vector2(140, 0)
+theme_override_colors/font_color = Color(0.95, 0.96, 1, 1)
+theme_override_colors/font_outline_color = Color(0.05, 0.06, 0.11, 0.95)
+theme_override_constants/outline_size = 4
+theme_override_font_sizes/font_size = 13
+text = "老板 · 部门主管"
+horizontal_alignment = 1
+
+[node name="InteriorDoor" type="Area2D" parent="."]
+position = Vector2(540, 1000)
+metadata/interior_door = true
+
+[node name="Icon" type="Sprite2D" parent="InteriorDoor"]
+texture = ExtResource("5")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="InteriorDoor"]
+shape = SubResource("CircleShape2D_door")
+
+[node name="Label" type="Label" parent="InteriorDoor"]
+offset_left = -16.0
+offset_top = 42.0
+offset_right = 40.0
+offset_bottom = 66.0
+theme_override_colors/font_color = Color(0.96, 0.97, 1, 1)
+theme_override_colors/font_outline_color = Color(0.05, 0.06, 0.11, 0.95)
+theme_override_constants/outline_size = 4
+theme_override_font_sizes/font_size = 12
+text = "出门"

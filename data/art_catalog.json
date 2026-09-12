@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "backgrounds": {
+    "rent": "res://assets/backgrounds/dialogue/home/rental_apartment_rain_night.webp",
+    "home": "res://assets/backgrounds/dialogue/home/rental_apartment_rain_night.webp",
+    "office": "res://assets/backgrounds/dialogue/company/open_office_rain_night.webp",
+    "cafe": "res://assets/backgrounds/dialogue/life/cafe_rain_night.webp",
+    "street": "res://assets/backgrounds/dialogue/city/street_corner_rain_night.webp",
+    "park": "res://assets/backgrounds/dialogue/life/park_pavilion_rain_night.webp",
+    "gym": "res://assets/backgrounds/dialogue/life/park_pavilion_rain_night.webp",
+    "subway": "res://assets/backgrounds/dialogue/transport/subway_platform_rain_night.webp",
+    "hospital": "res://assets/backgrounds/dialogue/hospital/clinic_room_rain_night.webp",
+    "rooftop": "res://assets/backgrounds/dialogue/city/rooftop_rain_night.webp",
+    "alley": "res://assets/backgrounds/dialogue/city/old_alley_rain_night.webp"
+  },
+  "event_overrides": {
+    "e_layoff": "meeting_room_rain_night",
+    "e_promote": "meeting_room_rain_night",
+    "e_promotion_lose": "meeting_room_rain_night",
+    "e_office_politics": "meeting_room_rain_night",
+    "e_boss_talk": "boss_office_rain_night",
+    "e_final_health": "ward_room_rain_night",
+    "e_oldfriend_ill": "ward_room_rain_night",
+    "dark_alley": "old_alley_rain_night",
+    "dark_rooftop": "rooftop_rain_night"
+  },
+  "prototype_sprites_active": false
+}

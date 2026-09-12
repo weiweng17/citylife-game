@@ -1,0 +1,297 @@
+{
+  "const": {
+    "start_age": 22,
+    "end_age": 60,
+    "bankrupt_limit": -600000,
+    "lifestyle_base": 0.25,
+    "lifestyle_age_step": 0.007,
+    "lifestyle_age_from": 30,
+    "income_base": 0.85,
+    "income_skill_div": 280,
+    "income_network_div": 550,
+    "recover_base": 3.2,
+    "recover_age_step": 0.05,
+    "mood_recover": 1.4,
+    "promote_skill": 68,
+    "promote_network": 50,
+    "promote_chance": 0.12,
+    "rehire_min_years": 2,
+    "rehire_base": 0.35,
+    "rehire_step": 0.12,
+    "ipo_skill": 66,
+    "ipo_network": 58,
+    "ipo_chance": 0.07,
+    "ipo_bonus": 500000
+  },
+  "jobs": {
+    "intern": {
+      "name": "实习生",
+      "salary": 70000,
+      "dHealth": -1,
+      "dMood": 0
+    },
+    "operator": {
+      "name": "运营专员",
+      "salary": 130000,
+      "dHealth": -1.5,
+      "dMood": -1
+    },
+    "coder": {
+      "name": "程序员",
+      "salary": 175000,
+      "dHealth": -3,
+      "dMood": -1.5
+    },
+    "pm": {
+      "name": "产品经理",
+      "salary": 190000,
+      "dHealth": -2.5,
+      "dMood": -2
+    },
+    "designer": {
+      "name": "设计师",
+      "salary": 140000,
+      "dHealth": -2,
+      "dMood": -1.5
+    },
+    "sales": {
+      "name": "销售",
+      "salary": 130000,
+      "dHealth": -1.5,
+      "dMood": -1.5
+    },
+    "teacher": {
+      "name": "教师",
+      "salary": 120000,
+      "dHealth": 0,
+      "dMood": 1
+    },
+    "civil": {
+      "name": "公务员",
+      "salary": 125000,
+      "dHealth": 0.5,
+      "dMood": 1.5
+    },
+    "rider": {
+      "name": "外卖骑手",
+      "salary": 100000,
+      "dHealth": -4,
+      "dMood": -1
+    },
+    "freelance": {
+      "name": "自由职业",
+      "salary": 95000,
+      "dHealth": -1,
+      "dMood": 1.5
+    },
+    "manager": {
+      "name": "部门经理",
+      "salary": 210000,
+      "dHealth": -3,
+      "dMood": -1.5
+    },
+    "director": {
+      "name": "总监",
+      "salary": 300000,
+      "dHealth": -3.5,
+      "dMood": -2
+    },
+    "founder": {
+      "name": "创业者",
+      "salary": 70000,
+      "dHealth": -4.5,
+      "dMood": -1
+    },
+    "boss": {
+      "name": "公司老板",
+      "salary": 400000,
+      "dHealth": -2.5,
+      "dMood": -1
+    },
+    "unemployed": {
+      "name": "待业",
+      "salary": 0,
+      "dHealth": 2,
+      "dMood": -4
+    },
+    "retired": {
+      "name": "退休",
+      "salary": 70000,
+      "dHealth": 1.5,
+      "dMood": 2
+    },
+    "shop": {
+      "name": "个体户",
+      "salary": 110000,
+      "dHealth": -1,
+      "dMood": 1
+    },
+    "office": {
+      "name": "公司职员",
+      "salary": 130000,
+      "dHealth": -1.5,
+      "dMood": -1
+    }
+  },
+  "living_cost": 72000,
+  "living_cost_own": 32000,
+  "mortgage_year": 48000,
+  "promote_path": {
+    "intern": "operator",
+    "operator": "manager",
+    "coder": "manager",
+    "pm": "manager",
+    "designer": "manager",
+    "sales": "manager",
+    "teacher": "manager",
+    "civil": "manager",
+    "rider": "operator",
+    "freelance": "manager",
+    "manager": "director"
+  },
+  "endings": [
+    {
+      "id": "end_dark_lucid",
+      "name": "清醒的人",
+      "desc": "你把那个记号设成了手机壁纸。它不再是一个谜，而是一个提醒——你走的这条路，是你自己选的。梦来过，你看见了，然后你关上门，继续过日子。这或许就是成年人最体面的勇敢。",
+      "cond": {
+        "flags": [
+          "dark_path_lucid"
+        ]
+      }
+    },
+    {
+      "id": "end_dark_mad",
+      "name": "裂痕里的人",
+      "desc": "你凿了那道墙。墙后面没有房间，只有一面镜子，镜子里是你自己，背对着你。你终于看清了那张脸——然后你笑出了声。城市把「疯子」的标签贴在你背上，你却觉得，自己这一生从没这么自由过。",
+      "cond": {
+        "flags": [
+          "dark_path_mad"
+        ]
+      }
+    },
+    {
+      "id": "end_dark_awakened",
+      "name": "走进裂缝的人",
+      "desc": "你在巷子深处闭眼、迈步，直到听见自己的脚步从背后传来。你没有回头——你不需要了。你顺着那条裂缝走了进去，去见了那个「如果当初」的你。两个你，在雨里，握了握手。这一世，你活得比谁都清楚。",
+      "cond": {
+        "flags": [
+          "dark_path_awakened"
+        ]
+      }
+    },
+    {
+      "id": "end_legend",
+      "name": "都市传奇",
+      "desc": "",
+      "cond": {
+        "money_min": 4500000,
+        "mood_min": 65
+      }
+    },
+    {
+      "id": "end_founder",
+      "name": "创业幸存者",
+      "desc": "",
+      "cond": {
+        "money_min": 1200000,
+        "flags": [
+          "startedBusiness"
+        ]
+      }
+    },
+    {
+      "id": "end_elite",
+      "name": "写字楼顶层",
+      "desc": "",
+      "cond": {
+        "money_min": 2500000,
+        "network_min": 70
+      }
+    },
+    {
+      "id": "end_home",
+      "name": "回乡的人",
+      "desc": "",
+      "cond": {
+        "money_min": 300000,
+        "mood_min": 58,
+        "flags": [
+          "backHome"
+        ]
+      }
+    },
+    {
+      "id": "end_standard",
+      "name": "标准答案",
+      "desc": "",
+      "cond": {
+        "money_min": 400000,
+        "flags": [
+          "married",
+          "hasChild",
+          "hasHouse"
+        ]
+      }
+    },
+    {
+      "id": "end_free",
+      "name": "自由的代价",
+      "desc": "",
+      "cond": {
+        "money_min": 300000,
+        "mood_min": 60,
+        "flags": [
+          "noChild"
+        ]
+      }
+    },
+    {
+      "id": "end_burnout",
+      "name": "透支",
+      "desc": "",
+      "cond": {
+        "health_max": 24
+      }
+    },
+    {
+      "id": "end_alone",
+      "name": "一个人的城市",
+      "desc": "",
+      "cond": {
+        "network_max": 24
+      }
+    },
+    {
+      "id": "end_regret",
+      "name": "如果当初",
+      "desc": "",
+      "cond": {
+        "mood_max": 34
+      }
+    },
+    {
+      "id": "end_poor",
+      "name": "一场空",
+      "desc": "",
+      "cond": {
+        "money_max": 99999
+      }
+    },
+    {
+      "id": "end_ordinary",
+      "name": "普通的一生",
+      "desc": "",
+      "cond": {
+        "health_min": 30,
+        "mood_min": 40
+      }
+    },
+    {
+      "id": "end_default",
+      "name": "未完待续",
+      "desc": "",
+      "cond": null
+    }
+  ]
+}

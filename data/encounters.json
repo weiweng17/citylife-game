@@ -1,0 +1,301 @@
+[
+  {
+    "id": "enc_subway_last_train",
+    "scene": "subway",
+    "speaker": "陌生乘客",
+    "title": "末班车里的空座",
+    "text": "雨水顺着车窗往下爬。末班车几乎空了，只有一个提着旧公文包的人坐在你对面。他忽然问：如果可以回到二十二岁，你还会走现在这条路吗？",
+    "periods": [
+      "night"
+    ],
+    "hour_min": 22.0,
+    "hour_max": 4.0,
+    "weather": [
+      "rain",
+      "storm"
+    ],
+    "chance": 0.42,
+    "weight": 4,
+    "once": true,
+    "time_cost": 70,
+    "options": [
+      {
+        "text": "认真回答他",
+        "effects": {
+          "mood": 6,
+          "network": 2
+        },
+        "flags": {
+          "enc_last_train_reflected": true
+        },
+        "result": "你们聊到下一站。他下车前只说了一句：别把今天活成以后最想回来的那一天。"
+      },
+      {
+        "text": "笑笑，不接话",
+        "effects": {
+          "mood": 1
+        },
+        "result": "车门打开，那个人消失在人群里。你忽然发现自己一直攥着手机，却没有一条真正想回的消息。"
+      }
+    ]
+  },
+  {
+    "id": "enc_office_server_light",
+    "scene": "office",
+    "speaker": "夜班机房",
+    "title": "凌晨还亮着的屏幕",
+    "text": "所有工位都暗了，机房里却还有一台监控屏亮着。你发现一份没人认领的异常报告，里面的问题如果解决，也许能避免下周的大事故。",
+    "periods": [
+      "night"
+    ],
+    "cond": {
+      "skill_min": 50
+    },
+    "chance": 0.34,
+    "weight": 4,
+    "once": true,
+    "time_cost": 120,
+    "options": [
+      {
+        "text": "留下来把问题查清楚",
+        "effects": {
+          "skill": 5,
+          "mood": -4,
+          "network": 3
+        },
+        "flags": {
+          "enc_saved_project": true
+        },
+        "result": "凌晨两点，你终于定位到问题。第二天没人知道你熬到了几点，但项目没有炸。"
+      },
+      {
+        "text": "拍照留档，明天再说",
+        "effects": {
+          "skill": 1
+        },
+        "result": "你把报告保存下来。至少，这次你没有假装什么都没看见。"
+      }
+    ]
+  },
+  {
+    "id": "enc_park_old_photo",
+    "scene": "park",
+    "speaker": "长椅下的照片",
+    "title": "被雨打湿的合影",
+    "text": "长椅下面压着一张旧合影，背后只写着一句：‘如果你捡到它，替我们再看一次这座城。’照片上的几个人都很年轻。",
+    "periods": [
+      "dawn",
+      "day"
+    ],
+    "chance": 0.26,
+    "weight": 3,
+    "once": true,
+    "time_cost": 35,
+    "options": [
+      {
+        "text": "把照片收好",
+        "effects": {
+          "mood": 4
+        },
+        "flags": {
+          "enc_old_photo": true
+        },
+        "result": "你把照片夹进钱包。陌生人的青春忽然有了一个短暂的保管者。"
+      },
+      {
+        "text": "放回原处",
+        "effects": {
+          "mood": 2
+        },
+        "result": "你把照片压回长椅下。也许它还在等真正认识照片里那些人的人。"
+      }
+    ],
+    "weather": [
+      "rain",
+      "cloudy"
+    ]
+  },
+  {
+    "id": "enc_cafe_wrong_letter",
+    "scene": "cafe",
+    "speaker": "咖啡师",
+    "title": "拿错的信封",
+    "text": "咖啡师把一个牛皮信封和你的咖啡一起递来。几秒后她脸色一变：那不是你的东西。信封上没有姓名，只有一行手写地址。",
+    "periods": [
+      "dusk",
+      "night"
+    ],
+    "chance": 0.24,
+    "weight": 3,
+    "once": true,
+    "time_cost": 45,
+    "options": [
+      {
+        "text": "立刻还给她",
+        "effects": {
+          "network": 2,
+          "mood": 2
+        },
+        "result": "她明显松了口气，坚持免了你的咖啡钱。你没有追问那封信属于谁。"
+      },
+      {
+        "text": "看一眼地址再还",
+        "effects": {
+          "mood": -2
+        },
+        "flags": {
+          "enc_saw_letter_address": true
+        },
+        "result": "那个地址在旧城区。奇怪的是，你好像在哪里见过相同的门牌号。"
+      }
+    ]
+  },
+  {
+    "id": "enc_hospital_night_corridor",
+    "scene": "hospital",
+    "speaker": "夜班护士",
+    "title": "走廊尽头的自动贩卖机",
+    "text": "深夜的医院只剩消毒水味和机器声。一个夜班护士站在坏掉的自动贩卖机前，疲惫得连硬币掉在地上都没发现。",
+    "periods": [
+      "night"
+    ],
+    "cond": {
+      "health_max": 70
+    },
+    "chance": 0.32,
+    "weight": 3,
+    "once": true,
+    "time_cost": 50,
+    "options": [
+      {
+        "text": "帮她捡起来，聊两句",
+        "effects": {
+          "health": 2,
+          "mood": 5,
+          "network": 2
+        },
+        "result": "她告诉你，身体发出的警告从来不会因为工作忙就消失。你第一次认真听进去了。"
+      },
+      {
+        "text": "安静离开",
+        "effects": {
+          "mood": 1
+        },
+        "result": "走廊很长。你忽然开始注意自己的脚步声和呼吸。"
+      }
+    ]
+  },
+  {
+    "id": "enc_rooftop_radio",
+    "scene": "rooftop",
+    "speaker": "旧收音机",
+    "title": "没有频率的广播",
+    "text": "天台角落里有一台早该坏掉的收音机。旋钮没有刻度，却传出一段模糊的人声：‘你不是第一次站在这里。’",
+    "periods": [
+      "night"
+    ],
+    "age_min": 32,
+    "clues_min": 2,
+    "chance": 0.38,
+    "weight": 2,
+    "once": true,
+    "time_cost": 40,
+    "options": [
+      {
+        "text": "继续调频",
+        "effects": {
+          "mood": -3
+        },
+        "flags": {
+          "enc_rooftop_radio": true
+        },
+        "result": "噪音里，你听见了自己的名字。下一秒，收音机彻底没了声音。"
+      },
+      {
+        "text": "关掉它",
+        "effects": {
+          "mood": 2
+        },
+        "result": "你拔掉电池。可下楼时，那句声音仍然在脑子里重复。"
+      }
+    ]
+  },
+  {
+    "id": "enc_home_knock",
+    "scene": "rent",
+    "speaker": "门外",
+    "title": "凌晨三点的敲门声",
+    "text": "三声很轻的敲门声把你从沙发上惊醒。猫眼外没有人，门把手上却挂着一把你从没见过的旧钥匙。",
+    "periods": [
+      "night"
+    ],
+    "hour_min": 1.0,
+    "hour_max": 4.0,
+    "chance": 0.3,
+    "weight": 2,
+    "once": true,
+    "time_cost": 30,
+    "options": [
+      {
+        "text": "把钥匙收起来",
+        "effects": {
+          "mood": -2
+        },
+        "flags": {
+          "enc_unknown_key": true
+        },
+        "result": "钥匙很冰。第二天你再看时，上面多了一道像数字‘6’的划痕。"
+      },
+      {
+        "text": "把钥匙放回门外",
+        "effects": {
+          "mood": 1
+        },
+        "result": "你关灯回床。五分钟后再看猫眼，钥匙已经不见了。"
+      }
+    ]
+  },
+  {
+    "id": "enc_alley_red_umbrella",
+    "scene": "alley",
+    "speaker": "红伞女人",
+    "title": "雨里的另一条巷子",
+    "text": "旧巷深处站着一个撑红伞的女人。她背对着你，说这里以前还有一条路，只是大多数人后来都忘了。",
+    "periods": [
+      "night"
+    ],
+    "clues_min": 3,
+    "cond": {
+      "flags_not": [
+        "dark_alley_done"
+      ]
+    },
+    "chance": 0.46,
+    "weight": 2,
+    "once": true,
+    "time_cost": 50,
+    "options": [
+      {
+        "text": "问她那条路通向哪里",
+        "effects": {
+          "mood": -4
+        },
+        "flags": {
+          "enc_red_umbrella": true
+        },
+        "result": "她没有回答，只指向一堵没有门的墙。闪电亮起时，你看见墙上有六个很浅的凹痕。"
+      },
+      {
+        "text": "转身离开",
+        "effects": {
+          "mood": 1
+        },
+        "result": "走出巷口后你回头看了一眼。那里没有红伞，也没有人。"
+      }
+    ],
+    "weather": [
+      "rain",
+      "storm"
+    ]
+  }
+]

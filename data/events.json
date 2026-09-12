@@ -1,0 +1,3033 @@
+[
+  {
+    "id": "e_rent",
+    "scene": "rent",
+    "speaker": "中介陈哥",
+    "title": "第一间房",
+    "text": "「这间朝北，三平米阳台，押一付一，一月两千八。」\n中介把钥匙在你面前晃了晃，「隔壁那间有窗户，贵八百。」",
+    "age": [
+      22,
+      26
+    ],
+    "weight": 1,
+    "cond": {
+      "flags_not": [
+        "localHome",
+        "hasHouse"
+      ]
+    },
+    "options": [
+      {
+        "text": "租朝北的，省八百是一千",
+        "cond": null,
+        "effects": {
+          "money": -3400,
+          "mood": -6
+        },
+        "flags": null,
+        "job": null,
+        "result": "你住进了冬天没有太阳的房间。后来的两年里，你只在周末见过阳光。"
+      },
+      {
+        "text": "多花八百，要那扇窗",
+        "cond": null,
+        "effects": {
+          "money": -4400,
+          "mood": 6,
+          "health": 3
+        },
+        "flags": null,
+        "job": null,
+        "result": "那扇窗后来救过你很多次。加班到凌晨回家，你会站在窗边抽完一整根烟。"
+      }
+    ]
+  },
+  {
+    "id": "e_firstday",
+    "scene": "office",
+    "speaker": "带教导师",
+    "title": "入职第一周",
+    "text": "导师把一份四十页的文档丢给你：「先看，不懂的_collected 起来问。」\n你翻了一夜，发现文档是三年前的。",
+    "age": [
+      22,
+      25
+    ],
+    "weight": 1,
+    "cond": null,
+    "options": [
+      {
+        "text": "熬一夜把它看完，做好笔记",
+        "cond": null,
+        "effects": {
+          "skill": 8,
+          "health": -6,
+          "mood": -2
+        },
+        "flags": null,
+        "job": null,
+        "result": "你把错误的地方全标了出来。半年后这份笔记成了新人的入职必读。"
+      },
+      {
+        "text": "先去认识人，文档慢慢看",
+        "cond": null,
+        "effects": {
+          "network": 10,
+          "skill": -2
+        },
+        "flags": null,
+        "job": null,
+        "result": "你一周记住了全公司三十二个人的名字。后来你才知道，这比看文档有用。"
+      }
+    ]
+  },
+  {
+    "id": "e_996",
+    "scene": "office",
+    "speaker": "项目群消息",
+    "title": "凌晨十一点的消息",
+    "text": "「@所有人 明早上线，辛苦大家再对一遍数据。」\n你看了眼时间：23:07。地铁末班车是 23:20。",
+    "age": [
+      23,
+      32
+    ],
+    "weight": 3,
+    "cond": null,
+    "options": [
+      {
+        "text": "留下来，干到两点",
+        "cond": null,
+        "effects": {
+          "skill": 6,
+          "health": -9,
+          "mood": -6,
+          "money": 300
+        },
+        "flags": null,
+        "job": null,
+        "result": "你打车回家，报销单被驳回：非工作时间打车需提前申请。"
+      },
+      {
+        "text": "抱歉，我今天得先走",
+        "cond": null,
+        "effects": {
+          "health": 3,
+          "mood": 4,
+          "network": -6,
+          "skill": -2
+        },
+        "flags": null,
+        "job": null,
+        "result": "你在地铁上收到了三个未接来电。第二天没人提这件事，但你知道有人记着。"
+      }
+    ]
+  },
+  {
+    "id": "e_subway",
+    "scene": "subway",
+    "speaker": "早高峰",
+    "title": "四号线",
+    "text": "你被挤在两个人中间，脸贴着别人的背包拉链。\n车厢广播在报站，你离公司还有十一站。",
+    "age": [
+      22,
+      35
+    ],
+    "weight": 2,
+    "cond": null,
+    "options": [
+      {
+        "text": "戴上耳机，听英语",
+        "cond": null,
+        "effects": {
+          "skill": 4,
+          "mood": -2
+        },
+        "flags": null,
+        "job": null,
+        "result": "你坚持了三个月，听力没什么长进，但学会了在人群里保持平静。"
+      },
+      {
+        "text": "观察周围的人",
+        "cond": null,
+        "effects": {
+          "mood": 3,
+          "network": 2
+        },
+        "flags": null,
+        "job": null,
+        "result": "你开始能一眼认出谁是去面试的、谁是刚吵完架、谁已经连续加班一周。"
+      },
+      {
+        "text": "闭眼补觉",
+        "cond": null,
+        "effects": {
+          "health": 4
+        },
+        "flags": null,
+        "job": null,
+        "result": "你练出了站着睡着的技能。这项技能你用了八年。"
+      }
+    ]
+  },
+  {
+    "id": "e_love1",
+    "scene": "cafe",
+    "speaker": "同事",
+    "title": "一个提议",
+    "text": "「我有个朋友，人挺好的，要不要认识一下？」\n同事把手机推过来，屏幕上是一张笑得很开的照片。",
+    "age": [
+      23,
+      30
+    ],
+    "weight": 2,
+    "cond": {
+      "flags_not": [
+        "married"
+      ]
+    },
+    "options": [
+      {
+        "text": "好啊，加个微信",
+        "cond": null,
+        "effects": {
+          "mood": 10,
+          "network": 4,
+          "money": -400
+        },
+        "flags": {
+          "dating": true
+        },
+        "job": null,
+        "result": "你们约在一家人均一百二的咖啡馆。你心疼钱，但那天笑了很多次。"
+      },
+      {
+        "text": "算了，现在我顾不上",
+        "cond": null,
+        "effects": {
+          "mood": -5,
+          "skill": 5,
+          "money": 800
+        },
+        "flags": null,
+        "job": null,
+        "result": "你把那个周末用来加班。很多年后你偶尔会想起那张照片。"
+      }
+    ]
+  },
+  {
+    "id": "e_parents_call",
+    "scene": "rent",
+    "speaker": "母亲",
+    "title": "家里的电话",
+    "text": "「吃饭了吗？工作累不累？」\n「你张叔家的儿子，今年在县城买了房。」\n你听着，筷子戳着外卖盒里的最后几粒米饭。",
+    "age": [
+      23,
+      40
+    ],
+    "weight": 2,
+    "cond": null,
+    "options": [
+      {
+        "text": "「挺好的，一切都好」",
+        "cond": null,
+        "effects": {
+          "mood": -3,
+          "network": 2
+        },
+        "flags": null,
+        "job": null,
+        "result": "这是你学会的第一句城市谎言。后来你说得非常熟练。"
+      },
+      {
+        "text": "说实话，我有点撑不住",
+        "cond": null,
+        "effects": {
+          "mood": 4,
+          "health": 2,
+          "network": -3
+        },
+        "flags": null,
+        "job": null,
+        "result": "电话那头沉默了几秒，然后说：「不行就回来吧。」你说：「没事，我说着玩的。」"
+      }
+    ]
+  },
+  {
+    "id": "e_sidejob",
+    "scene": "rent",
+    "speaker": "大学同学",
+    "title": "私活",
+    "text": "「有个外包的活儿，八千，两周能做完，接不接？」\n你已经连着两周没有在零点前睡过了。",
+    "age": [
+      24,
+      34
+    ],
+    "weight": 2,
+    "cond": null,
+    "options": [
+      {
+        "text": "接，钱不烫手",
+        "cond": null,
+        "effects": {
+          "money": 8000,
+          "health": -8,
+          "mood": -4,
+          "skill": 3
+        },
+        "flags": null,
+        "job": null,
+        "result": "你做完了。那八千块后来变成了你妈的一台洗衣机。"
+      },
+      {
+        "text": "不接，先保住身体",
+        "cond": null,
+        "effects": {
+          "health": 6,
+          "mood": 3
+        },
+        "flags": null,
+        "job": null,
+        "result": "你睡了三个月好觉。这是你进入都市以来最奢侈的三个月。"
+      }
+    ]
+  },
+  {
+    "id": "e_promote",
+    "scene": "office",
+    "speaker": "主管",
+    "title": "晋升名额",
+    "text": "「今年组里有一个晋升名额，你和小王都在名单上。」\n主管顿了顿，「周五之前，把述职材料给我。」",
+    "age": [
+      27,
+      38
+    ],
+    "weight": 3,
+    "cond": {
+      "skill_min": 55
+    },
+    "options": [
+      {
+        "text": "通宵做一份漂亮的 PPT",
+        "cond": null,
+        "effects": {
+          "skill": 6,
+          "health": -6,
+          "mood": 2,
+          "network": 3
+        },
+        "flags": null,
+        "job": "manager",
+        "result": "你的材料被总监当着全组念了一遍。你晋升了，小王三个月后离职。"
+      },
+      {
+        "text": "约主管吃饭，聊聊想法",
+        "cond": null,
+        "effects": {
+          "network": 12,
+          "money": -600,
+          "mood": 3
+        },
+        "flags": null,
+        "job": null,
+        "result": "饭桌上你什么都没说，但主管记住了你。有些事不需要说。"
+      },
+      {
+        "text": "主动让给小王",
+        "cond": null,
+        "effects": {
+          "network": 15,
+          "mood": 6,
+          "skill": -3
+        },
+        "flags": null,
+        "job": null,
+        "result": "很多人觉得你傻。三年后小王跳去大厂，把你推荐了过去。"
+      }
+    ]
+  },
+  {
+    "id": "e_house",
+    "scene": "street",
+    "speaker": "房产顾问",
+    "title": "首付",
+    "text": "「这套八十平，总价四百二十万，首付三成，一百二十六万。」\n她把计算器推给你，「你们家能凑多少？」",
+    "age": [
+      27,
+      40
+    ],
+    "weight": 3,
+    "cond": {
+      "flags_not": [
+        "hasHouse"
+      ]
+    },
+    "options": [
+      {
+        "text": "掏空六个钱包，买",
+        "cond": {
+          "money_min": 600000
+        },
+        "effects": {
+          "money": -700000,
+          "mood": 8,
+          "health": -5,
+          "network": -5
+        },
+        "flags": {
+          "hasHouse": true,
+          "mortgage": true
+        },
+        "job": null,
+        "result": "你拿到了钥匙。那天晚上你在空房子里坐到凌晨，什么都没想。"
+      },
+      {
+        "text": "再等等，房价会降的",
+        "cond": null,
+        "effects": {
+          "money": 20000,
+          "mood": -8
+        },
+        "flags": null,
+        "job": null,
+        "result": "你等了。房价降了一点，然后你又等了。这个故事没有下文。"
+      },
+      {
+        "text": "不买，租一辈子也挺好",
+        "cond": null,
+        "effects": {
+          "mood": 5,
+          "money": 30000,
+          "network": -3
+        },
+        "flags": null,
+        "job": null,
+        "result": "你把首付拿去学了两年东西，然后去了另一座城市。"
+      }
+    ]
+  },
+  {
+    "id": "e_marry",
+    "scene": "park",
+    "speaker": "恋人",
+    "title": "一个决定",
+    "text": "「我们要不……就这样过下去吧。」\n她说完这句话，看着湖面，没有看你。",
+    "age": [
+      26,
+      38
+    ],
+    "weight": 3,
+    "cond": {
+      "flags": [
+        "dating"
+      ],
+      "flags_not": [
+        "married"
+      ]
+    },
+    "options": [
+      {
+        "text": "好，我们结婚",
+        "cond": null,
+        "effects": {
+          "money": -80000,
+          "mood": 15,
+          "network": -5,
+          "health": 3
+        },
+        "flags": {
+          "married": true
+        },
+        "job": null,
+        "result": "婚礼办得不大。你敬酒敬到一半，跑到洗手间哭了三分钟，然后回去继续笑。"
+      },
+      {
+        "text": "再给我两年时间",
+        "cond": null,
+        "effects": {
+          "mood": -12,
+          "skill": 6,
+          "money": 40000
+        },
+        "flags": {
+          "dating": false
+        },
+        "job": null,
+        "result": "两年后她结婚了，新郎不是你。你在朋友圈点了个赞。"
+      }
+    ]
+  },
+  {
+    "id": "e_child",
+    "scene": "home",
+    "speaker": "妻子",
+    "title": "要不要",
+    "text": "「我妈又问了。」她把手机放下，「你到底怎么想的？」\n你算了一下：月供一万二，幼儿园一个月五千。",
+    "age": [
+      28,
+      40
+    ],
+    "weight": 2,
+    "cond": {
+      "flags": [
+        "married"
+      ],
+      "flags_not": [
+        "hasChild"
+      ]
+    },
+    "options": [
+      {
+        "text": "要，咬咬牙就过来了",
+        "cond": null,
+        "effects": {
+          "money": -60000,
+          "mood": 10,
+          "health": -5,
+          "network": -4
+        },
+        "flags": {
+          "hasChild": true
+        },
+        "job": null,
+        "result": "孩子出生那天，你在产房外把银行卡余额看了十七遍。"
+      },
+      {
+        "text": "再等三年，我还没准备好",
+        "cond": null,
+        "effects": {
+          "mood": -6,
+          "money": 50000,
+          "skill": 4
+        },
+        "flags": {
+          "hasChild": true
+        },
+        "job": null,
+        "result": "三年后你们要了孩子。医生说，算是高龄了。"
+      },
+      {
+        "text": "我们不要孩子",
+        "cond": null,
+        "effects": {
+          "mood": 8,
+          "money": 80000,
+          "network": -8
+        },
+        "flags": {
+          "noChild": true
+        },
+        "job": null,
+        "result": "你们养了两只猫。每年过年都要跟父母解释一遍，解释了二十年。"
+      }
+    ]
+  },
+  {
+    "id": "e_startup",
+    "scene": "cafe",
+    "speaker": "前同事",
+    "title": "出来干",
+    "text": "「我们仨出来做，我投五十万，你出技术，股份三七开。」\n他把商业计划书推过来，第一页写着「千亿赛道」。",
+    "age": [
+      28,
+      40
+    ],
+    "weight": 2,
+    "cond": null,
+    "options": [
+      {
+        "text": "干，这辈子得冲一次",
+        "cond": {
+          "money_min": 150000
+        },
+        "effects": {
+          "money": -150000,
+          "health": -12,
+          "mood": 8,
+          "network": 6
+        },
+        "flags": {
+          "startedBusiness": true
+        },
+        "job": "founder",
+        "result": "你辞了职。第一个月你瘦了八斤，第二个月你学会了跟投资人说谎。"
+      },
+      {
+        "text": "再想想，我现在走不开",
+        "cond": null,
+        "effects": {
+          "skill": 5,
+          "money": 60000,
+          "mood": -6
+        },
+        "flags": null,
+        "job": null,
+        "result": "他们的公司活了两年，然后死了。你松了一口气，又有点遗憾。"
+      }
+    ]
+  },
+  {
+    "id": "e_headhunter",
+    "scene": "cafe",
+    "speaker": "猎头",
+    "title": "一个机会",
+    "text": "「对方给到三十五 K，十六薪，还有期权。」\n「唯一的问题是，他们在西二旗，您现在住通州。」",
+    "age": [
+      27,
+      42
+    ],
+    "weight": 3,
+    "cond": null,
+    "options": [
+      {
+        "text": "去，钱到位就行",
+        "cond": null,
+        "effects": {
+          "money": 90000,
+          "health": -8,
+          "mood": -3,
+          "network": 5
+        },
+        "flags": null,
+        "job": "coder",
+        "result": "你每天通勤三小时。你用这三小时看完了四十七本书。"
+      },
+      {
+        "text": "不去了，我图个安稳",
+        "cond": null,
+        "effects": {
+          "mood": 5,
+          "health": 4,
+          "skill": -3
+        },
+        "flags": null,
+        "job": null,
+        "result": "你留在了原地。三年后这家公司被收购，你的期权是零。"
+      }
+    ]
+  },
+  {
+    "id": "e_health_check",
+    "scene": "hospital",
+    "speaker": "体检医生",
+    "title": "体检报告",
+    "text": "「脂肪肝，中度。尿酸偏高。颈椎生理曲度变直。」\n医生抬头看你一眼，「小伙子，你实际年龄多少？」\n你说：三十二。医生说：「报告上写的是四十五。」",
+    "age": [
+      29,
+      45
+    ],
+    "weight": 2,
+    "cond": null,
+    "options": [
+      {
+        "text": "办张健身卡，认真练",
+        "cond": null,
+        "effects": {
+          "money": -5000,
+          "health": 12,
+          "mood": 4
+        },
+        "flags": null,
+        "job": null,
+        "result": "你去了十一次。卡还在钱包里，有效期到明年。"
+      },
+      {
+        "text": "知道了，先忙过这阵",
+        "cond": null,
+        "effects": {
+          "health": -8,
+          "mood": -4,
+          "money": 20000
+        },
+        "flags": null,
+        "job": null,
+        "result": "「这阵」持续了六年，直到下一次体检。"
+      }
+    ]
+  },
+  {
+    "id": "e_layoff",
+    "scene": "office",
+    "speaker": "HRBP",
+    "title": "会议室",
+    "text": "「公司业务调整，这个决定也很难。」\n她把协议推过来，N+1，一个月缓冲期。\n你的工牌在桌上，照片是五年前拍的。",
+    "age": [
+      33,
+      48
+    ],
+    "weight": 3,
+    "cond": null,
+    "options": [
+      {
+        "text": "签字，拿钱走人",
+        "cond": null,
+        "effects": {
+          "money": 120000,
+          "health": 4,
+          "mood": -10,
+          "network": -5
+        },
+        "flags": {
+          "fired": true
+        },
+        "job": "unemployed",
+        "result": "你抱着纸箱走出大楼，阳光特别好。你在门口站了很久。"
+      },
+      {
+        "text": "争取转岗，留下来",
+        "cond": null,
+        "effects": {
+          "money": -40000,
+          "mood": -6,
+          "network": 8,
+          "skill": -4
+        },
+        "flags": null,
+        "job": null,
+        "result": "你转去了一个边缘部门。你安全了，也消失了。"
+      },
+      {
+        "text": "要求赔偿到 N+3，谈判",
+        "cond": {
+          "skill_min": 70,
+          "network_min": 70
+        },
+        "effects": {
+          "money": 200000,
+          "mood": 3,
+          "network": -8,
+          "skill": 5
+        },
+        "flags": {
+          "fired": true
+        },
+        "job": "unemployed",
+        "result": "你赢了，条件是签一份三年竞业协议。你第一次觉得自己值钱。"
+      }
+    ]
+  },
+  {
+    "id": "e_35",
+    "scene": "street",
+    "speaker": "招聘软件",
+    "title": "年龄：35",
+    "text": "你投了四十三份简历，已读二十九，回复三条。\n其中一条写着：「我们团队平均年龄 26 岁，氛围年轻有活力。」",
+    "age": [
+      34,
+      40
+    ],
+    "weight": 3,
+    "cond": {
+      "flags_not": [
+        "startedBusiness"
+      ]
+    },
+    "options": [
+      {
+        "text": "降薪去一家小公司",
+        "cond": null,
+        "effects": {
+          "money": -60000,
+          "mood": -5,
+          "network": 4
+        },
+        "flags": null,
+        "job": null,
+        "result": "老板比你小六岁，管你叫「X 哥」，但工资只开到八折。"
+      },
+      {
+        "text": "去跑外卖过渡一下",
+        "cond": null,
+        "effects": {
+          "money": 45000,
+          "health": -10,
+          "mood": -6,
+          "network": 3
+        },
+        "flags": null,
+        "job": "rider",
+        "result": "你送了四个月外卖，瘦了十五斤，认识了很多跟你一样的人。"
+      },
+      {
+        "text": "报班学新东西，转赛道",
+        "cond": null,
+        "effects": {
+          "money": -30000,
+          "skill": 15,
+          "mood": 3,
+          "health": -5
+        },
+        "flags": null,
+        "job": null,
+        "result": "你三十五岁重新开始。班里的同学平均二十四岁，你考了第一。"
+      }
+    ]
+  },
+  {
+    "id": "e_parent_sick",
+    "scene": "hospital",
+    "speaker": "父亲",
+    "title": "电话",
+    "text": "「没事，就是个小手术，你别回来了，耽误工作。」\n你听出他声音不对。护士在旁边喊：「三床家属来一下。」",
+    "age": [
+      34,
+      52
+    ],
+    "weight": 3,
+    "cond": null,
+    "options": [
+      {
+        "text": "请假回去，什么都放一放",
+        "cond": null,
+        "effects": {
+          "money": -40000,
+          "mood": 6,
+          "network": -6,
+          "health": 3
+        },
+        "flags": null,
+        "job": null,
+        "result": "你在病房陪了十一天。这十一天，是你成年后跟父亲说话最多的一段时间。"
+      },
+      {
+        "text": "打钱，请个护工",
+        "cond": null,
+        "effects": {
+          "money": -25000,
+          "mood": -8,
+          "network": 2
+        },
+        "flags": null,
+        "job": null,
+        "result": "钱转过去了。你那天加了个通宵的班，不知道在跟谁较劲。"
+      }
+    ]
+  },
+  {
+    "id": "e_kid_school",
+    "scene": "home",
+    "speaker": "妻子",
+    "title": "学区房",
+    "text": "「对口的那个小学，今年分数线又涨了。」\n她把一张表格摊开，「换房要加一百八十万。」",
+    "age": [
+      33,
+      45
+    ],
+    "weight": 2,
+    "cond": {
+      "flags": [
+        "hasChild"
+      ]
+    },
+    "options": [
+      {
+        "text": "换，砸锅卖铁也换",
+        "cond": {
+          "money_min": 500000
+        },
+        "effects": {
+          "money": -900000,
+          "mood": -6,
+          "health": -6
+        },
+        "flags": {
+          "hasHouse": true,
+          "goodSchool": true
+        },
+        "job": null,
+        "result": "你们搬进了五十平的老房子。孩子后来考上了不错的中学。"
+      },
+      {
+        "text": "不换，快乐教育",
+        "cond": null,
+        "effects": {
+          "money": -30000,
+          "mood": 8,
+          "network": -5
+        },
+        "flags": null,
+        "job": null,
+        "result": "孩子上了家门口的小学。他很快乐，你偶尔会怀疑自己的决定。"
+      }
+    ]
+  },
+  {
+    "id": "e_invest",
+    "scene": "street",
+    "speaker": "理财经理",
+    "title": "稳健增值",
+    "text": "「年化四个点，随时可取，比放银行强。」\n他递过来一支笔。你想起上个月同事在群里晒的那支基金。",
+    "age": [
+      30,
+      50
+    ],
+    "weight": 2,
+    "cond": {
+      "money_min": 200001
+    },
+    "options": [
+      {
+        "text": "全仓，搏一把",
+        "cond": null,
+        "effects": {
+          "mood": -10
+        },
+        "flags": null,
+        "job": null,
+        "result": "你买在了山顶。它后来跌了四成，你没敢看账户。"
+      },
+      {
+        "text": "稳健为主，买理财",
+        "cond": null,
+        "effects": {
+          "money": 25000,
+          "mood": 2
+        },
+        "flags": null,
+        "job": null,
+        "result": "年化三点八。你不激动，但睡得着。"
+      },
+      {
+        "text": "什么都不买，存着",
+        "cond": null,
+        "effects": {
+          "mood": 4,
+          "health": 2
+        },
+        "flags": null,
+        "job": null,
+        "result": "你错过了三次牛市，也躲过了四次暴跌。"
+      }
+    ]
+  },
+  {
+    "id": "e_boss_talk",
+    "scene": "office",
+    "speaker": "老板",
+    "title": "谈话",
+    "text": "「公司要年轻化，你的位置……」他没有说完。\n窗外下着雨，你注意到他今年也四十九了。",
+    "age": [
+      40,
+      55
+    ],
+    "weight": 2,
+    "cond": {
+      "network_min": 50
+    },
+    "options": [
+      {
+        "text": "主动退，拿股份走人",
+        "cond": null,
+        "effects": {
+          "money": 600000,
+          "mood": -8,
+          "network": 5,
+          "health": 4
+        },
+        "flags": null,
+        "job": "unemployed",
+        "result": "你签了字。走出办公楼时，你给老婆发了条微信：「晚上我做饭。」"
+      },
+      {
+        "text": "据理力争，要个说法",
+        "cond": null,
+        "effects": {
+          "money": -30000,
+          "mood": 5,
+          "skill": 4,
+          "network": -10
+        },
+        "flags": null,
+        "job": null,
+        "result": "你赢了这场谈话，然后在公司多待了两年，什么都没做成。"
+      }
+    ]
+  },
+  {
+    "id": "e_backhome",
+    "scene": "street",
+    "speaker": "老同学",
+    "title": "回老家吗",
+    "text": "「我去年回的成都，买了套一百四的，上班骑车十分钟。」\n他发了张照片，阳台上种着三角梅。",
+    "age": [
+      36,
+      50
+    ],
+    "weight": 1,
+    "cond": null,
+    "options": [
+      {
+        "text": "回，这城市不留我",
+        "cond": null,
+        "effects": {
+          "money": 400000,
+          "mood": 12,
+          "health": 8,
+          "network": -15,
+          "skill": -5
+        },
+        "flags": {
+          "backHome": true
+        },
+        "job": null,
+        "result": "你卖掉了房子，回了老家。第一年你很不适应，第二年你开始种花。"
+      },
+      {
+        "text": "不走，我还能再撑撑",
+        "cond": null,
+        "effects": {
+          "mood": -6,
+          "health": -5,
+          "money": 80000
+        },
+        "flags": null,
+        "job": null,
+        "result": "你留下了。你不确定这是坚持还是惯性。"
+      }
+    ]
+  },
+  {
+    "id": "e_kid_grow",
+    "scene": "home",
+    "speaker": "孩子",
+    "title": "志愿",
+    "text": "「我想学画画。」\n孩子把志愿表放在桌上，眼神躲着你。\n你想起自己二十五岁时，也想学过点什么。",
+    "age": [
+      45,
+      56
+    ],
+    "weight": 2,
+    "cond": {
+      "flags": [
+        "hasChild"
+      ]
+    },
+    "options": [
+      {
+        "text": "支持你，喜欢就去做",
+        "cond": null,
+        "effects": {
+          "money": -120000,
+          "mood": 12,
+          "network": -4
+        },
+        "flags": null,
+        "job": null,
+        "result": "他去了美院。十年后他办了第一个展，请柬上写着你的名字。"
+      },
+      {
+        "text": "学个好就业的吧",
+        "cond": null,
+        "effects": {
+          "money": 30000,
+          "mood": -6,
+          "network": 3
+        },
+        "flags": null,
+        "job": null,
+        "result": "他学了会计，做得很稳。他从来没提过画画这件事。"
+      }
+    ]
+  },
+  {
+    "id": "e_midlife_hobby",
+    "scene": "park",
+    "speaker": "你自己",
+    "title": "周三下午三点",
+    "text": "你请了半天假，坐在公园长椅上。\n旁边的老人在下棋，鸟在叫，你发现自己很久没听过鸟叫了。",
+    "age": [
+      42,
+      58
+    ],
+    "weight": 2,
+    "cond": null,
+    "options": [
+      {
+        "text": "开始钓鱼 / 摄影 / 跑步",
+        "cond": null,
+        "effects": {
+          "health": 12,
+          "mood": 14,
+          "money": -8000,
+          "network": 4
+        },
+        "flags": null,
+        "job": null,
+        "result": "你有了第一个不为了赚钱的爱好。你用它熬过了后面很多年。"
+      },
+      {
+        "text": "坐一会儿就回公司",
+        "cond": null,
+        "effects": {
+          "money": 15000,
+          "health": -4,
+          "mood": -3
+        },
+        "flags": null,
+        "job": null,
+        "result": "你回到了工位。那个下午什么都没发生。"
+      }
+    ]
+  },
+  {
+    "id": "e_divorce",
+    "scene": "home",
+    "speaker": "妻子",
+    "title": "我们谈谈",
+    "text": "「我们已经很久没有说过话了。」\n她说得很平静，像在讨论明天的天气。",
+    "age": [
+      38,
+      55
+    ],
+    "weight": 2,
+    "cond": {
+      "mood_max": 51,
+      "flags": [
+        "married"
+      ]
+    },
+    "options": [
+      {
+        "text": "好聚好散",
+        "cond": null,
+        "effects": {
+          "money": -300000,
+          "mood": 4,
+          "health": 2,
+          "network": -10
+        },
+        "flags": {
+          "married": false,
+          "divorced": true
+        },
+        "job": null,
+        "result": "你们分了财产，孩子跟她。你搬进了一间一居室，重新学会了做饭。"
+      },
+      {
+        "text": "再试一次，去看咨询",
+        "cond": null,
+        "effects": {
+          "money": -30000,
+          "mood": 12,
+          "health": 3
+        },
+        "flags": null,
+        "job": null,
+        "result": "你们去了六次咨询。你第一次知道，有些话是可以说出来的。"
+      }
+    ]
+  },
+  {
+    "id": "e_retire_plan",
+    "scene": "rooftop",
+    "speaker": "自己",
+    "title": "再过几年",
+    "text": "你算了一下：再干四年，社保就交满了。\n楼上那家公司的年轻人，今年平均二十四岁。",
+    "age": [
+      52,
+      60
+    ],
+    "weight": 3,
+    "cond": null,
+    "options": [
+      {
+        "text": "开始培养接班人",
+        "cond": null,
+        "effects": {
+          "network": 12,
+          "mood": 8,
+          "skill": -4
+        },
+        "flags": null,
+        "job": null,
+        "result": "你把会的都教了出去。离岗那天，他们送了你一块表。"
+      },
+      {
+        "text": "再多干几年，攒点钱",
+        "cond": null,
+        "effects": {
+          "money": 120000,
+          "health": -8,
+          "mood": -4
+        },
+        "flags": null,
+        "job": null,
+        "result": "你干到了六十三岁。多攒的钱，后来都交给了医院。"
+      },
+      {
+        "text": "提前退休，去旅行",
+        "cond": null,
+        "effects": {
+          "health": 14,
+          "mood": 18,
+          "money": -150000
+        },
+        "flags": {
+          "earlyRetire": true
+        },
+        "job": null,
+        "result": "你去了年轻时想去却没去的地方。照片里你笑得很像二十二岁。"
+      }
+    ]
+  },
+  {
+    "id": "e_classmate",
+    "scene": "cafe",
+    "speaker": "班长",
+    "title": "二十年同学会",
+    "text": "来了十九个人。有人开了公司，有人离了两次婚，有一个同学没来——大家沉默了三秒，然后继续喝酒。",
+    "age": [
+      42,
+      60
+    ],
+    "weight": 2,
+    "cond": null,
+    "options": [
+      {
+        "text": "认真听每个人说话",
+        "cond": null,
+        "effects": {
+          "mood": 12,
+          "network": 10,
+          "health": -3
+        },
+        "flags": null,
+        "job": null,
+        "result": "你发现没有谁的人生是轻松的。这个认知让你好了很多。"
+      },
+      {
+        "text": "早早离场",
+        "cond": null,
+        "effects": {
+          "mood": -4,
+          "money": 800,
+          "health": 3
+        },
+        "flags": null,
+        "job": null,
+        "result": "你在停车场坐了十分钟，然后开车回家。"
+      }
+    ]
+  },
+  {
+    "id": "e_final_health",
+    "scene": "hospital",
+    "speaker": "医生",
+    "title": "住院",
+    "text": "「需要做个小手术，住两周院。」\n医生说「小」的时候，你注意到他避开了你的眼睛。",
+    "age": [
+      50,
+      60
+    ],
+    "weight": 3,
+    "cond": {
+      "health_max": 44
+    },
+    "options": [
+      {
+        "text": "住院，好好治",
+        "cond": null,
+        "effects": {
+          "money": -80000,
+          "health": 20,
+          "mood": -3
+        },
+        "flags": null,
+        "job": null,
+        "result": "病房里你认识了老张。你们约好出院后一起去钓鱼。"
+      },
+      {
+        "text": "开点药，回家休息",
+        "cond": null,
+        "effects": {
+          "money": -8000,
+          "health": -10,
+          "mood": -6
+        },
+        "flags": null,
+        "job": null,
+        "result": "你回家躺了三天，然后又去上班了。"
+      }
+    ]
+  },
+  {
+    "id": "e_grandchild",
+    "scene": "home",
+    "speaker": "孩子",
+    "title": "一个电话",
+    "text": "「爸，我们要有孩子了。」\n你握着手机，走到阳台，把窗户开到最大。",
+    "age": [
+      52,
+      60
+    ],
+    "weight": 2,
+    "cond": {
+      "flags": [
+        "hasChild"
+      ]
+    },
+    "options": [
+      {
+        "text": "去帮忙带，义不容辞",
+        "cond": null,
+        "effects": {
+          "money": -60000,
+          "mood": 15,
+          "health": -6,
+          "network": 3
+        },
+        "flags": null,
+        "job": null,
+        "result": "你学会了换尿布。你比当年带自己孩子时耐心得多。"
+      },
+      {
+        "text": "给钱，但不去带",
+        "cond": null,
+        "effects": {
+          "money": -40000,
+          "mood": 5,
+          "health": 3,
+          "network": -3
+        },
+        "flags": null,
+        "job": null,
+        "result": "你每个月转五千块。你把剩下的时间留给了自己。"
+      }
+    ]
+  },
+  {
+    "id": "e_ai_era",
+    "scene": "office",
+    "speaker": "公司邮件",
+    "title": "效率工具",
+    "text": "「为提升团队效率，本月起全面引入 AI 辅助工具。」\n你看着自己写了十年的方案模板，被一个新人在三分钟里生成了七个版本。",
+    "age": [
+      36,
+      58
+    ],
+    "weight": 2,
+    "cond": null,
+    "options": [
+      {
+        "text": "学，把它变成我的工具",
+        "cond": null,
+        "effects": {
+          "skill": 14,
+          "mood": 4,
+          "health": -4
+        },
+        "flags": null,
+        "job": null,
+        "result": "你成了部门里最会用新工具的人。年轻人开始管你叫老师。"
+      },
+      {
+        "text": "不学，我靠经验吃饭",
+        "cond": null,
+        "effects": {
+          "skill": -8,
+          "mood": -6,
+          "network": -4
+        },
+        "flags": null,
+        "job": null,
+        "result": "你的经验依然有效，只是不再稀缺。你第一次有了被时代甩下的感觉。"
+      }
+    ]
+  },
+  {
+    "id": "e_mentor",
+    "scene": "office",
+    "speaker": "新来的实习生",
+    "title": "叫你什么",
+    "text": "「老师，这个需求我不太懂，能问一下吗？」\n他今年二十二岁。你突然意识到，你刚来时也是这个样子。",
+    "age": [
+      36,
+      58
+    ],
+    "weight": 2,
+    "cond": null,
+    "options": [
+      {
+        "text": "耐心带，倾囊相授",
+        "cond": null,
+        "effects": {
+          "network": 10,
+          "mood": 8,
+          "skill": 3
+        },
+        "flags": null,
+        "job": null,
+        "result": "你带了十几个人。他们后来散落在这座城市的各个公司，都还叫你老师。"
+      },
+      {
+        "text": "给他文档，让他自己看",
+        "cond": null,
+        "effects": {
+          "skill": 2,
+          "mood": -2
+        },
+        "flags": null,
+        "job": null,
+        "result": "他很礼貌地道谢，转头去问了别人。"
+      }
+    ]
+  },
+  {
+    "id": "e_parent_gone",
+    "scene": "home",
+    "speaker": "弟弟",
+    "title": "凌晨三点",
+    "text": "「哥，爸走了。」\n电话那头很安静。你握着手机，想起上次回家是去年春节，你们没说上十句话。",
+    "age": [
+      42,
+      60
+    ],
+    "weight": 3,
+    "cond": null,
+    "options": [
+      {
+        "text": "连夜赶回去",
+        "cond": null,
+        "effects": {
+          "money": -30000,
+          "mood": -15,
+          "health": -6,
+          "network": 4
+        },
+        "flags": {
+          "parentGone": true
+        },
+        "job": null,
+        "result": "你整理遗物时，在抽屉最底层翻出一叠汇款单的存根，全是你的名字。"
+      },
+      {
+        "text": "处理完后事再回",
+        "cond": null,
+        "effects": {
+          "money": -15000,
+          "mood": -10,
+          "skill": 2
+        },
+        "flags": {
+          "parentGone": true
+        },
+        "job": null,
+        "result": "你请了三天假。回到工位时，一切和离开时一模一样。"
+      }
+    ]
+  },
+  {
+    "id": "e_kid_rebel",
+    "scene": "home",
+    "speaker": "孩子",
+    "title": "摔门",
+    "text": "「你根本不懂！」\n门被摔上。你站在客厅，手里还端着那杯热了三次的牛奶。",
+    "age": [
+      40,
+      54
+    ],
+    "weight": 2,
+    "cond": {
+      "flags": [
+        "hasChild"
+      ]
+    },
+    "options": [
+      {
+        "text": "敲门，进去好好谈",
+        "cond": null,
+        "effects": {
+          "mood": 6,
+          "network": 3,
+          "health": -2
+        },
+        "flags": null,
+        "job": null,
+        "result": "你们聊到凌晨。你第一次听他说了半个多小时的话。"
+      },
+      {
+        "text": "随他去，长大就好了",
+        "cond": null,
+        "effects": {
+          "mood": -5,
+          "skill": 2
+        },
+        "flags": null,
+        "job": null,
+        "result": "你们冷战了两个月。后来和解了，但有些话再也没说过。"
+      }
+    ]
+  },
+  {
+    "id": "e_demolition",
+    "scene": "street",
+    "speaker": "街道办",
+    "title": "一纸通知",
+    "text": "「这一片纳入改造范围，具体补偿方案稍后公布。」\n墙上刷着一个巨大的「拆」字，红漆还在往下流。",
+    "age": [
+      35,
+      60
+    ],
+    "weight": 1,
+    "cond": {
+      "flags": [
+        "localHome",
+        "hasHouse"
+      ]
+    },
+    "options": [
+      {
+        "text": "等补偿，拿钱",
+        "cond": null,
+        "effects": {
+          "money": 600000,
+          "mood": 12
+        },
+        "flags": null,
+        "job": null,
+        "result": "你拿到了一笔意外的钱。你在阳台上站了很久，想起小时候在这里跑来跑去。"
+      },
+      {
+        "text": "选回迁房，留住根",
+        "cond": null,
+        "effects": {
+          "money": 150000,
+          "mood": 8,
+          "network": 5
+        },
+        "flags": {
+          "hasHouse": true
+        },
+        "job": null,
+        "result": "三年后你搬回同一片土地，只是楼更高了，邻居都不认识了。"
+      }
+    ]
+  },
+  {
+    "id": "e_side_media",
+    "scene": "rent",
+    "speaker": "自己",
+    "title": "要不要试试",
+    "text": "同事说现在做账号能赚钱。你打开手机，拍了拍自己的工位，又放下了。\n「说出来会不会很丢人？」",
+    "age": [
+      30,
+      52
+    ],
+    "weight": 2,
+    "cond": null,
+    "options": [
+      {
+        "text": "发，管他呢",
+        "cond": null,
+        "effects": {
+          "money": 40000,
+          "network": 12,
+          "mood": 6,
+          "health": -4
+        },
+        "flags": null,
+        "job": null,
+        "result": "第三条视频火了。你第一次收到陌生人的长留言，说你讲的就是他。"
+      },
+      {
+        "text": "算了，别折腾了",
+        "cond": null,
+        "effects": {
+          "mood": -3
+        },
+        "flags": null,
+        "job": null,
+        "result": "你划走了那个页面。多年后你偶尔还会想，如果当时发了呢。"
+      }
+    ]
+  },
+  {
+    "id": "e_pet",
+    "scene": "home",
+    "speaker": "楼下阿姨",
+    "title": "要不要养",
+    "text": "「我家猫下了一窝，你要不要抱一只？」\n你看着纸箱里那团毛茸茸的东西，想起自己每天十点才到家。",
+    "age": [
+      25,
+      55
+    ],
+    "weight": 1,
+    "cond": null,
+    "options": [
+      {
+        "text": "养，家里该有点活气",
+        "cond": null,
+        "effects": {
+          "money": -20000,
+          "mood": 14,
+          "health": 5
+        },
+        "flags": null,
+        "job": null,
+        "result": "它陪了你十四年。你加班回家的每个深夜，门口都有个东西在等你。"
+      },
+      {
+        "text": "算了，我养不活自己",
+        "cond": null,
+        "effects": {
+          "mood": -4,
+          "money": 5000
+        },
+        "flags": null,
+        "job": null,
+        "result": "你关上了纸箱。那天晚上房间格外安静。"
+      }
+    ]
+  },
+  {
+    "id": "e_oldfriend_ill",
+    "scene": "hospital",
+    "speaker": "老同学群",
+    "title": "水滴筹",
+    "text": "群里弹出一条链接：「帮帮老班长。」\n你点进去，看到他躺在病床上的照片，比你记忆里瘦了三十斤。",
+    "age": [
+      42,
+      60
+    ],
+    "weight": 2,
+    "cond": null,
+    "options": [
+      {
+        "text": "捐五千，去医院看他",
+        "cond": null,
+        "effects": {
+          "money": -6000,
+          "mood": 5,
+          "network": 8
+        },
+        "flags": null,
+        "job": null,
+        "result": "你们聊了一下午，聊的全是二十岁的事。他笑着说自己这辈子值了。"
+      },
+      {
+        "text": "默默捐两百",
+        "cond": null,
+        "effects": {
+          "money": -200,
+          "mood": -5
+        },
+        "flags": null,
+        "job": null,
+        "result": "你关掉链接，继续开会。三个月后，班长走了。"
+      }
+    ]
+  },
+  {
+    "id": "e_downsize",
+    "scene": "home",
+    "speaker": "妻子",
+    "title": "太大了",
+    "text": "「孩子住校了，这房子空得慌。」\n她擦着桌子，「要不……换小一点？」",
+    "age": [
+      48,
+      60
+    ],
+    "weight": 1,
+    "cond": {
+      "flags": [
+        "hasChild"
+      ]
+    },
+    "options": [
+      {
+        "text": "换，断舍离",
+        "cond": null,
+        "effects": {
+          "money": 350000,
+          "mood": 10,
+          "health": 3
+        },
+        "flags": null,
+        "job": null,
+        "result": "你们搬进了小房子。扔掉了半辈子攒下的东西，反而轻松了。"
+      },
+      {
+        "text": "留着，等他回来住",
+        "cond": null,
+        "effects": {
+          "mood": 4,
+          "money": -20000
+        },
+        "flags": null,
+        "job": null,
+        "result": "房间一直留着。他一年回来两次，每次住三天。"
+      }
+    ]
+  },
+  {
+    "id": "e_last_call",
+    "scene": "rooftop",
+    "speaker": "自己",
+    "title": "楼顶",
+    "text": "你走到天台，城市在脚下铺开。\n三十八年前你拖着行李箱站在火车站，觉得这里大得没有边。",
+    "age": [
+      50,
+      60
+    ],
+    "weight": 2,
+    "cond": null,
+    "options": [
+      {
+        "text": "给年轻时的自己打个电话",
+        "cond": null,
+        "effects": {
+          "mood": 16,
+          "health": 6
+        },
+        "flags": null,
+        "job": null,
+        "result": "你想了很久，最后只说了一句：「别怕，都挺好的。」"
+      },
+      {
+        "text": "什么也不想，看看就好",
+        "cond": null,
+        "effects": {
+          "mood": 8,
+          "health": 4,
+          "network": 3
+        },
+        "flags": null,
+        "job": null,
+        "result": "风很大。你站到腿麻了才下楼。"
+      }
+    ]
+  },
+  {
+    "id": "e_interview_fail",
+    "scene": "street",
+    "speaker": "HR",
+    "title": "回去等通知",
+    "text": "「今天先到这里，有消息我们会通知你。」\n这是你本月第七次听到这句话。地铁站口的梧桐叶开始掉了。",
+    "age": [
+      22,
+      30
+    ],
+    "weight": 2,
+    "cond": null,
+    "options": [
+      {
+        "text": "复盘，改简历再投",
+        "cond": null,
+        "effects": {
+          "skill": 6,
+          "mood": -4
+        },
+        "flags": null,
+        "job": null,
+        "result": "你把每个被问住的问题都写下来。第八次面试，你答上来了。"
+      },
+      {
+        "text": "降低预期，先找个活干",
+        "cond": null,
+        "effects": {
+          "money": 25000,
+          "mood": -6,
+          "skill": -3
+        },
+        "flags": null,
+        "job": "operator",
+        "result": "你进了一家三十人的小公司。三年后你才明白，这里学到的东西救了你。"
+      }
+    ]
+  },
+  {
+    "id": "e_roommate",
+    "scene": "rent",
+    "speaker": "合租室友",
+    "title": "公共区域",
+    "text": "厨房水槽里泡着三天的碗。你的外卖被拆开了一半，放在冰箱最上层。\n室友的门关着，里面在打游戏。",
+    "age": [
+      22,
+      32
+    ],
+    "weight": 2,
+    "cond": {
+      "flags_not": [
+        "localHome",
+        "hasHouse"
+      ]
+    },
+    "options": [
+      {
+        "text": "当面说清楚",
+        "cond": null,
+        "effects": {
+          "mood": 4,
+          "network": 3,
+          "skill": 2
+        },
+        "flags": null,
+        "job": null,
+        "result": "吵了一架，然后定了值日表。你们后来成了朋友，虽然只维持到各自搬家。"
+      },
+      {
+        "text": "忍，多一事不如少一事",
+        "cond": null,
+        "effects": {
+          "mood": -7,
+          "health": -3
+        },
+        "flags": null,
+        "job": null,
+        "result": "你买了自己的碗筷，锁在自己的房间里。这城市教你学会的第一件事：划清边界。"
+      },
+      {
+        "text": "加钱换个独居",
+        "cond": null,
+        "effects": {
+          "money": -18000,
+          "mood": 10,
+          "health": 4
+        },
+        "flags": null,
+        "job": null,
+        "result": "你搬进了一间十平米的开间。贵，但门一关，整个世界都是你的。"
+      }
+    ]
+  },
+  {
+    "id": "e_first_salary",
+    "scene": "rent",
+    "speaker": "银行短信",
+    "title": "第一笔工资",
+    "text": "「您尾号 8821 的账户到账 8,420.00 元。」\n你盯着短信看了三遍，然后给妈妈转了两千。",
+    "age": [
+      22,
+      26
+    ],
+    "weight": 3,
+    "cond": null,
+    "options": [
+      {
+        "text": "给自己买点好的",
+        "cond": null,
+        "effects": {
+          "money": -2000,
+          "mood": 12,
+          "health": 3
+        },
+        "flags": null,
+        "job": null,
+        "result": "你买了一件以前只敢在橱窗外面看的衣服。穿了五年。"
+      },
+      {
+        "text": "全部存起来",
+        "cond": null,
+        "effects": {
+          "money": 4000,
+          "mood": -2
+        },
+        "flags": null,
+        "job": null,
+        "result": "你开了个定期账户。那一年你存下了三万八，是你人生中最有安全感的一段日子。"
+      }
+    ]
+  },
+  {
+    "id": "e_office_politics",
+    "scene": "office",
+    "speaker": "老同事",
+    "title": "站队",
+    "text": "「张总和李总最近不太对付，你小心点。」\n他压低声音，「下周的会，你站谁？」",
+    "age": [
+      25,
+      40
+    ],
+    "weight": 2,
+    "cond": null,
+    "options": [
+      {
+        "text": "谁都不得罪，只做事",
+        "cond": null,
+        "effects": {
+          "skill": 5,
+          "network": -4,
+          "mood": -3
+        },
+        "flags": null,
+        "job": null,
+        "result": "两边都不太信任你，但活儿都是你在干。三年后两边都走了，你留下了。"
+      },
+      {
+        "text": "押注张总",
+        "cond": null,
+        "effects": {
+          "network": 12,
+          "mood": 3,
+          "skill": -2
+        },
+        "flags": null,
+        "job": null,
+        "result": "张总赢了。你跟着吃了一年红利，然后在他跳槽那天被边缘化。"
+      }
+    ]
+  },
+  {
+    "id": "e_longdistance",
+    "scene": "subway",
+    "speaker": "恋人",
+    "title": "一千两百公里",
+    "text": "「我这边有个机会，但要去深圳。」\n电话那头停顿了一下，「你要不要一起来？」",
+    "age": [
+      22,
+      32
+    ],
+    "weight": 1,
+    "cond": {
+      "flags": [
+        "dating"
+      ],
+      "flags_not": [
+        "married"
+      ]
+    },
+    "options": [
+      {
+        "text": "一起去",
+        "cond": null,
+        "effects": {
+          "mood": 8,
+          "network": -10,
+          "skill": 3,
+          "money": -20000
+        },
+        "flags": null,
+        "job": null,
+        "result": "你辞了职，去了一座全新的城市。前半年很难，后来说起来都轻描淡写。"
+      },
+      {
+        "text": "留下，先各自拼几年",
+        "cond": null,
+        "effects": {
+          "mood": -10,
+          "skill": 6,
+          "money": 30000
+        },
+        "flags": {
+          "dating": false
+        },
+        "job": null,
+        "result": "你们约好两年后汇合。第一年每周视频，第二个月一次，第三年断了。"
+      }
+    ]
+  },
+  {
+    "id": "e_night_shift",
+    "scene": "office",
+    "speaker": "运维群",
+    "title": "凌晨两点",
+    "text": "「线上故障，P0，所有人上线。」\n你刚睡着四十七分钟。",
+    "age": [
+      23,
+      35
+    ],
+    "weight": 2,
+    "cond": null,
+    "options": [
+      {
+        "text": "立刻处理，扛到早上",
+        "cond": null,
+        "effects": {
+          "skill": 7,
+          "health": -7,
+          "mood": -5,
+          "money": 2000
+        },
+        "flags": null,
+        "job": null,
+        "result": "六点十七分故障恢复。你在工位上睡着了，梦见自己在洗澡。"
+      },
+      {
+        "text": "装作没看见",
+        "cond": null,
+        "effects": {
+          "health": 4,
+          "mood": 2,
+          "network": -8,
+          "skill": -3
+        },
+        "flags": null,
+        "job": null,
+        "result": "第二天早会上没人提，但你知道监控日志里有你的名字。"
+      }
+    ]
+  },
+  {
+    "id": "e_weekend_ot",
+    "scene": "park",
+    "speaker": "部门群",
+    "title": "团建通知",
+    "text": "「本周六组织户外拓展，原则上不得请假。」\n那个括号里的笑脸让你很烦躁。",
+    "age": [
+      23,
+      38
+    ],
+    "weight": 1,
+    "cond": null,
+    "options": [
+      {
+        "text": "去，混个脸熟",
+        "cond": null,
+        "effects": {
+          "network": 8,
+          "mood": -4,
+          "health": -3
+        },
+        "flags": null,
+        "job": null,
+        "result": "你在爬山时跟总监聊了二十分钟。这二十分钟比半年加班都管用。"
+      },
+      {
+        "text": "请假，我有事",
+        "cond": null,
+        "effects": {
+          "mood": 6,
+          "health": 4,
+          "network": -5
+        },
+        "flags": null,
+        "job": null,
+        "result": "你在家躺了一天。周一发现群里多了三张合照，你都不在里面。"
+      }
+    ]
+  },
+  {
+    "id": "e_startup_crisis",
+    "scene": "cafe",
+    "speaker": "合伙人",
+    "title": "账上还剩两个月",
+    "text": "「投资人的钱到账时间又延了。」\n他把烟摁灭，「要不要先裁两个人？」",
+    "age": [
+      29,
+      45
+    ],
+    "weight": 3,
+    "cond": {
+      "job": "founder",
+      "flags": [
+        "startedBusiness"
+      ]
+    },
+    "options": [
+      {
+        "text": "裁，先活下来",
+        "cond": null,
+        "effects": {
+          "money": 120000,
+          "mood": -10,
+          "network": -6,
+          "skill": 4
+        },
+        "flags": null,
+        "job": null,
+        "result": "你亲手送走了两个跟你熬了一年的人。其中一个后来再也没跟你说话。"
+      },
+      {
+        "text": "不裁，大家一起扛",
+        "cond": null,
+        "effects": {
+          "money": -180000,
+          "mood": 4,
+          "network": 12,
+          "health": -6
+        },
+        "flags": null,
+        "job": null,
+        "result": "你们三个月没发工资。但最后留下的人，跟你走了七年。"
+      },
+      {
+        "text": "散伙，及时止损",
+        "cond": null,
+        "effects": {
+          "money": -50000,
+          "mood": -6,
+          "health": 4
+        },
+        "flags": {
+          "startedBusiness": false
+        },
+        "job": "operator",
+        "result": "你关了公司，回去上班。有人说你怂，你知道自己只是算清了账。"
+      }
+    ]
+  },
+  {
+    "id": "e_marry_life",
+    "scene": "home",
+    "speaker": "妻子",
+    "title": "谁洗碗",
+    "text": "「今天是我洗的，昨天也是我洗的。」\n她把抹布放下，声音很平，「我们能不能聊聊？」",
+    "age": [
+      27,
+      45
+    ],
+    "weight": 2,
+    "cond": {
+      "flags": [
+        "married"
+      ]
+    },
+    "options": [
+      {
+        "text": "好好谈，重新分工",
+        "cond": null,
+        "effects": {
+          "mood": 10,
+          "network": 3,
+          "health": 2
+        },
+        "flags": null,
+        "job": null,
+        "result": "你们列了张表贴在冰箱上。这张表救了你们很多次。"
+      },
+      {
+        "text": "「我上班不累吗？」",
+        "cond": null,
+        "effects": {
+          "mood": -10,
+          "network": -6
+        },
+        "flags": null,
+        "job": null,
+        "result": "那天晚上你们背对背睡的。第二天谁也没提，但有些东西裂了。"
+      }
+    ]
+  },
+  {
+    "id": "e_mortgage_pressure",
+    "scene": "home",
+    "speaker": "银行短信",
+    "title": "还款日",
+    "text": "「本月应还 11,860.47 元，请确保账户余额充足。」\n你算了一下，这笔钱够你在老家生活半年。",
+    "age": [
+      28,
+      48
+    ],
+    "weight": 2,
+    "cond": {
+      "flags": [
+        "mortgage"
+      ]
+    },
+    "options": [
+      {
+        "text": "咬牙还，房子不能丢",
+        "cond": null,
+        "effects": {
+          "money": -20000,
+          "mood": -5,
+          "health": -3
+        },
+        "flags": null,
+        "job": null,
+        "result": "你连续三年没买过新衣服。第四年，你提前还了一部分本金。"
+      },
+      {
+        "text": "把房子租出去，自己租小的",
+        "cond": null,
+        "effects": {
+          "money": 60000,
+          "mood": -4,
+          "network": -3
+        },
+        "flags": null,
+        "job": null,
+        "result": "你们搬进了更小的房子，用差价覆盖月供。你自嘲是专业房东。"
+      }
+    ]
+  },
+  {
+    "id": "e_promotion_lose",
+    "scene": "office",
+    "speaker": "主管",
+    "title": "这次不是你",
+    "text": "「这次名额给了小王，你别多想。」\n「你能力强，但……」他没说完。\n你知道后半句：但你不常说话。",
+    "age": [
+      28,
+      45
+    ],
+    "weight": 2,
+    "cond": null,
+    "options": [
+      {
+        "text": "开始学着表达自己",
+        "cond": null,
+        "effects": {
+          "network": 14,
+          "mood": 3,
+          "skill": 3
+        },
+        "flags": null,
+        "job": null,
+        "result": "你第一次在会上主动发言，声音是抖的。一年后，你主持会议。"
+      },
+      {
+        "text": "算了，干活的人不被亏待",
+        "cond": null,
+        "effects": {
+          "mood": -8,
+          "skill": 5
+        },
+        "flags": null,
+        "job": null,
+        "result": "你又干了两年。第三年，小王成了你的上级。"
+      },
+      {
+        "text": "看外面的机会",
+        "cond": null,
+        "effects": {
+          "money": 70000,
+          "network": 5,
+          "skill": 2
+        },
+        "flags": null,
+        "job": null,
+        "result": "你拿到了一份涨薪四成的 offer。走的那天，主管说早知道该留住你。"
+      }
+    ]
+  },
+  {
+    "id": "e_second_child",
+    "scene": "home",
+    "speaker": "妻子",
+    "title": "再生一个？",
+    "text": "「一个孩子太孤单了。」\n你说：「一个我们已经快养不起了。」\n两个人都笑了，然后沉默。",
+    "age": [
+      30,
+      42
+    ],
+    "weight": 1,
+    "cond": {
+      "flags": [
+        "hasChild"
+      ],
+      "flags_not": [
+        "noChild"
+      ]
+    },
+    "options": [
+      {
+        "text": "生，苦几年就过去了",
+        "cond": null,
+        "effects": {
+          "money": -150000,
+          "mood": 12,
+          "health": -8,
+          "network": -4
+        },
+        "flags": null,
+        "job": null,
+        "result": "老二出生后你瘦了十斤。但他们俩一起长大的样子，让你觉得值。"
+      },
+      {
+        "text": "不要了，把一个养好",
+        "cond": null,
+        "effects": {
+          "money": 40000,
+          "mood": 4,
+          "health": 3
+        },
+        "flags": null,
+        "job": null,
+        "result": "你把全部资源给了一个孩子。多年后他说，谢谢你们没让他分摊。"
+      }
+    ]
+  },
+  {
+    "id": "e_skill_course",
+    "scene": "subway",
+    "speaker": "自己",
+    "title": "要不要读个研",
+    "text": "同事晒出了录取通知书。你算了算：学费十二万，周末全没，两年。",
+    "age": [
+      28,
+      42
+    ],
+    "weight": 2,
+    "cond": null,
+    "options": [
+      {
+        "text": "读，投资自己",
+        "cond": null,
+        "effects": {
+          "money": -120000,
+          "skill": 18,
+          "network": 12,
+          "health": -6
+        },
+        "flags": null,
+        "job": null,
+        "result": "你在三十五岁拿到了学位。同学平均二十七岁，你毕业时拿到了三个 offer。"
+      },
+      {
+        "text": "不读，把时间花在做事上",
+        "cond": null,
+        "effects": {
+          "skill": 6,
+          "money": 50000,
+          "mood": -3
+        },
+        "flags": null,
+        "job": null,
+        "result": "你做了两个项目。它们在简历上比学历更有说服力——大部分时候。"
+      }
+    ]
+  },
+  {
+    "id": "e_boss_change",
+    "scene": "office",
+    "speaker": "全员邮件",
+    "title": "新领导",
+    "text": "「即日起，由 Andy 担任本部门负责人。」\nAndy 是空降的，据说从竞品公司来，带着自己的人。",
+    "age": [
+      28,
+      50
+    ],
+    "weight": 2,
+    "cond": null,
+    "options": [
+      {
+        "text": "主动汇报，争取信任",
+        "cond": null,
+        "effects": {
+          "network": 10,
+          "mood": -3,
+          "skill": 2
+        },
+        "flags": null,
+        "job": null,
+        "result": "你成了新领导最早上手的人。代价是那半年你几乎没在零点前回过家。"
+      },
+      {
+        "text": "观望，先不动",
+        "cond": null,
+        "effects": {
+          "mood": 2,
+          "skill": 2,
+          "network": -4
+        },
+        "flags": null,
+        "job": null,
+        "result": "你被划进了「老人」那一类。不冷不热，但也安全。"
+      }
+    ]
+  },
+  {
+    "id": "e_health_alarm",
+    "scene": "hospital",
+    "speaker": "身体",
+    "title": "信号",
+    "text": "你连续三天凌晨心跳很快，胸口发闷。\n搜索框里你打了一行字，又删掉了。",
+    "age": [
+      30,
+      52
+    ],
+    "weight": 3,
+    "cond": {
+      "health_max": 54
+    },
+    "options": [
+      {
+        "text": "去医院，彻底查一次",
+        "cond": null,
+        "effects": {
+          "money": -6000,
+          "health": 15,
+          "mood": 4
+        },
+        "flags": null,
+        "job": null,
+        "result": "结果是心律不齐，医生说：少熬夜、少生气。你苦笑——这两样你都戒不掉。"
+      },
+      {
+        "text": "扛一扛，项目要紧",
+        "cond": null,
+        "effects": {
+          "health": -12,
+          "mood": -6,
+          "money": 15000
+        },
+        "flags": null,
+        "job": null,
+        "result": "项目上线那天你请了半天假。在医院输液室，你还在回消息。"
+      }
+    ]
+  },
+  {
+    "id": "e_empty_nest",
+    "scene": "home",
+    "speaker": "妻子",
+    "title": "安静",
+    "text": "孩子去外地上大学了。\n晚上吃饭，桌上只剩两副碗筷。你夹菜的手停了一下。",
+    "age": [
+      48,
+      60
+    ],
+    "weight": 3,
+    "cond": {
+      "flags": [
+        "hasChild"
+      ]
+    },
+    "options": [
+      {
+        "text": "重新经营两个人的生活",
+        "cond": null,
+        "effects": {
+          "mood": 14,
+          "network": 5,
+          "health": 4
+        },
+        "flags": null,
+        "job": null,
+        "result": "你们开始一起散步、看电影。你发现，你其实挺喜欢跟她说话的。"
+      },
+      {
+        "text": "把精力放回工作",
+        "cond": null,
+        "effects": {
+          "money": 90000,
+          "skill": 4,
+          "mood": -5,
+          "health": -4
+        },
+        "flags": null,
+        "job": null,
+        "result": "你在公司待到越来越晚。不是因为忙，是不想回家面对空房间。"
+      }
+    ]
+  },
+  {
+    "id": "e_old_house",
+    "scene": "home",
+    "speaker": "物业",
+    "title": "水管",
+    "text": "「您家这管道是九几年的，建议全换。」\n师傅敲了敲墙，「连工带料，三万八。」",
+    "age": [
+      44,
+      60
+    ],
+    "weight": 2,
+    "cond": {
+      "flags": [
+        "hasHouse"
+      ]
+    },
+    "options": [
+      {
+        "text": "全换，一步到位",
+        "cond": null,
+        "effects": {
+          "money": -38000,
+          "mood": 6,
+          "health": 3
+        },
+        "flags": null,
+        "job": null,
+        "result": "你砸掉了两面墙。房子焕然一新，你却在工地上站了很久。"
+      },
+      {
+        "text": "哪里漏修哪里",
+        "cond": null,
+        "effects": {
+          "money": -8000,
+          "mood": -4
+        },
+        "flags": null,
+        "job": null,
+        "result": "第二年又漏了。你学会了自己关水阀。"
+      }
+    ]
+  },
+  {
+    "id": "e_chronic",
+    "scene": "hospital",
+    "speaker": "医生",
+    "title": "要长期吃",
+    "text": "「这个药要一直吃，不能停。」\n他开了三个月的量，「另外，酒就别喝了。」",
+    "age": [
+      46,
+      60
+    ],
+    "weight": 3,
+    "cond": {
+      "health_max": 49
+    },
+    "options": [
+      {
+        "text": "听医生的，认真管理",
+        "cond": null,
+        "effects": {
+          "health": 16,
+          "money": -15000,
+          "mood": 2
+        },
+        "flags": null,
+        "job": null,
+        "result": "你戒了酒，买了血压计。每天早晚各测一次，成了新的仪式。"
+      },
+      {
+        "text": "吃吃停停，看情况",
+        "cond": null,
+        "effects": {
+          "health": -8,
+          "money": -5000,
+          "mood": -4
+        },
+        "flags": null,
+        "job": null,
+        "result": "你说服自己是药三分毒。三年后，指标又上去了。"
+      }
+    ]
+  },
+  {
+    "id": "e_pension",
+    "scene": "street",
+    "speaker": "社保局",
+    "title": "年限",
+    "text": "「您累计缴费 17 年，还差 3 年。」\n工作人员抬头，「断缴的那几年，是自由职业？」",
+    "age": [
+      48,
+      60
+    ],
+    "weight": 2,
+    "cond": null,
+    "options": [
+      {
+        "text": "补缴，把年限凑满",
+        "cond": null,
+        "effects": {
+          "money": -80000,
+          "mood": 5,
+          "health": 2
+        },
+        "flags": null,
+        "job": null,
+        "result": "你补齐了。办完那天，你在门口站了一会儿，觉得自己终于跟这座城市结清了。"
+      },
+      {
+        "text": "算了，有多少算多少",
+        "cond": null,
+        "effects": {
+          "money": 20000,
+          "mood": -5
+        },
+        "flags": null,
+        "job": null,
+        "result": "你选择了不补。每个月少几百块，你安慰自己：活到八十才亏。"
+      }
+    ]
+  },
+  {
+    "id": "e_second_spring",
+    "scene": "park",
+    "speaker": "自己",
+    "title": "重新开始",
+    "text": "退休前的这两年，你突然多了很多时间。\n你想起二十多岁时想学却没学成的事，那些念头原来还在。",
+    "age": [
+      45,
+      60
+    ],
+    "weight": 2,
+    "cond": null,
+    "options": [
+      {
+        "text": "报班，认真学",
+        "cond": null,
+        "effects": {
+          "money": -15000,
+          "mood": 18,
+          "skill": 8,
+          "network": 6
+        },
+        "flags": null,
+        "job": null,
+        "result": "你学得很慢，但很快乐。结业展上，你的作品挂在最角落，你拍了很久。"
+      },
+      {
+        "text": "在家看看书就好",
+        "cond": null,
+        "effects": {
+          "mood": 6,
+          "health": 3,
+          "money": -2000
+        },
+        "flags": null,
+        "job": null,
+        "result": "你读完了年轻时买了没读的书。有些书页已经发黄了。"
+      }
+    ]
+  },
+  {
+    "id": "e_old_colleague",
+    "scene": "cafe",
+    "speaker": "前同事",
+    "title": "好久不见",
+    "text": "「你现在在哪儿高就？」\n他胖了一圈，头发少了一半。你们聊起当年的项目，笑得前仰后合。\n临走时他说：那时候真穷啊。",
+    "age": [
+      44,
+      60
+    ],
+    "weight": 2,
+    "cond": null,
+    "options": [
+      {
+        "text": "「真穷，但真开心」",
+        "cond": null,
+        "effects": {
+          "mood": 12,
+          "network": 8
+        },
+        "flags": null,
+        "job": null,
+        "result": "你们加了微信，约好下次带家属一起。走出咖啡馆时，你觉得心里很暖。"
+      },
+      {
+        "text": "匆匆告别",
+        "cond": null,
+        "effects": {
+          "mood": -3,
+          "network": -2
+        },
+        "flags": null,
+        "job": null,
+        "result": "回到车上你才想起，忘了问他现在过得好不好。"
+      }
+    ]
+  },
+  {
+    "id": "e_will",
+    "scene": "home",
+    "speaker": "自己",
+    "title": "一个念头",
+    "text": "你开始整理东西：证件放在哪个抽屉、密码写在哪张纸上、哪些话该提前说。\n不是悲观，只是觉得该安排了。",
+    "age": [
+      52,
+      60
+    ],
+    "weight": 2,
+    "cond": null,
+    "options": [
+      {
+        "text": "写下来，跟家人交代",
+        "cond": null,
+        "effects": {
+          "mood": 10,
+          "health": 4,
+          "network": 6
+        },
+        "flags": null,
+        "job": null,
+        "result": "你把该说的都说了。那天晚上你睡得格外踏实。"
+      },
+      {
+        "text": "先放着，不急",
+        "cond": null,
+        "effects": {
+          "mood": -4
+        },
+        "flags": null,
+        "job": null,
+        "result": "你关上了抽屉。这件事你一直拖着，直到某一天来不及。"
+      }
+    ]
+  },
+  {
+    "id": "e_last_winter",
+    "scene": "rooftop",
+    "speaker": "自己",
+    "title": "又一年",
+    "text": "初雪落下来的时候，你站在阳台上。\n手机里有两个未接来电，一条群发祝福。\n这座城市你已经待了快四十年。",
+    "age": [
+      54,
+      60
+    ],
+    "weight": 2,
+    "cond": null,
+    "options": [
+      {
+        "text": "给想念的人打个电话",
+        "cond": null,
+        "effects": {
+          "mood": 15,
+          "network": 10,
+          "health": 3
+        },
+        "flags": null,
+        "job": null,
+        "result": "你们聊了一个多小时。挂掉电话时，雪已经停了。"
+      },
+      {
+        "text": "一个人安静地待着",
+        "cond": null,
+        "effects": {
+          "mood": 8,
+          "health": 5
+        },
+        "flags": null,
+        "job": null,
+        "result": "你泡了杯茶，看着窗外。这一刻什么都没发生，但你很满足。"
+      }
+    ]
+  },
+  {
+    "id": "e_coffee",
+    "scene": "cafe",
+    "speaker": "咖啡师",
+    "title": "第三杯",
+    "text": "「美式还是拿铁？」\n你今天已经喝了两杯。手有点抖。",
+    "age": [
+      22,
+      55
+    ],
+    "weight": 1,
+    "cond": null,
+    "options": [
+      {
+        "text": "再来一杯美式",
+        "cond": null,
+        "effects": {
+          "health": -4,
+          "skill": 3,
+          "money": -25
+        },
+        "flags": null,
+        "job": null,
+        "result": "你的手抖得更厉害了，但方案写完了。"
+      },
+      {
+        "text": "换成温水",
+        "cond": null,
+        "effects": {
+          "health": 4,
+          "mood": -2
+        },
+        "flags": null,
+        "job": null,
+        "result": "你喝了一天热水。同事问你是不是不舒服。"
+      }
+    ]
+  },
+  {
+    "id": "e_gym",
+    "scene": "gym",
+    "speaker": "教练",
+    "title": "私教课",
+    "text": "「一节课三百，买三十节送五节。」\n你摸了摸肚子，想了想自己的体检报告。",
+    "age": [
+      24,
+      55
+    ],
+    "weight": 1,
+    "cond": null,
+    "options": [
+      {
+        "text": "买单，练起来",
+        "cond": null,
+        "effects": {
+          "money": -9000,
+          "health": 14,
+          "mood": 5
+        },
+        "flags": null,
+        "job": null,
+        "result": "你练了半年，腹肌没出来，但不再失眠了。"
+      },
+      {
+        "text": "算了，自己跑跑步",
+        "cond": null,
+        "effects": {
+          "health": 5,
+          "money": -500
+        },
+        "flags": null,
+        "job": null,
+        "result": "你在小区跑了两年。这大概是性价比最高的一笔投资。"
+      }
+    ]
+  },
+  {
+    "id": "e_friend_borrow",
+    "scene": "street",
+    "speaker": "发小",
+    "title": "借点钱",
+    "text": "「就周转两个月，我给你写欠条。」\n你们认识二十年了。你记得他上一次说这话是八年前。",
+    "age": [
+      26,
+      50
+    ],
+    "weight": 1,
+    "cond": {
+      "money_min": 50001
+    },
+    "options": [
+      {
+        "text": "借，兄弟一场",
+        "cond": null,
+        "effects": {
+          "money": -30000,
+          "mood": 5,
+          "network": 3
+        },
+        "flags": null,
+        "job": null,
+        "result": "钱没回来。你们也没再联系。这笔账你记成了人情。"
+      },
+      {
+        "text": "最近手头也紧",
+        "cond": null,
+        "effects": {
+          "money": 0,
+          "mood": -6,
+          "network": -5
+        },
+        "flags": null,
+        "job": null,
+        "result": "你撒了谎。他在朋友圈发了条动态，你没敢点赞。"
+      }
+    ]
+  },
+  {
+    "id": "e_weekend",
+    "scene": "park",
+    "speaker": "周末",
+    "title": "难得的一天",
+    "text": "周六早上十点，你醒了，没有消息，没有会议。\n阳光从窗帘缝里挤进来。",
+    "age": [
+      23,
+      58
+    ],
+    "weight": 1,
+    "cond": null,
+    "options": [
+      {
+        "text": "约朋友出去走走",
+        "cond": null,
+        "effects": {
+          "network": 8,
+          "mood": 8,
+          "money": -300
+        },
+        "flags": null,
+        "job": null,
+        "result": "你们走了三小时，聊的全是废话。这是你今年最好的一天。"
+      },
+      {
+        "text": "在家躺一整天",
+        "cond": null,
+        "effects": {
+          "health": 8,
+          "mood": 5
+        },
+        "flags": null,
+        "job": null,
+        "result": "你什么都没做。周日晚上的焦虑因此轻了一点。"
+      },
+      {
+        "text": "处理一下工作",
+        "cond": null,
+        "effects": {
+          "skill": 4,
+          "money": 2000,
+          "health": -3,
+          "mood": -4
+        },
+        "flags": null,
+        "job": null,
+        "result": "你回复了十七封邮件。其中三封其实可以周一回。"
+      }
+    ]
+  },
+  {
+    "id": "e_town_kaoyan",
+    "scene": "rent",
+    "speaker": "你自己",
+    "title": "考研还是工作",
+    "text": "你又梦见那面没撕掉的考研倒计时。家里人希望你再考一次：“本科学历现在不够用。”可你看着银行卡余额，知道再读三年家里扛不住。",
+    "age": [
+      22,
+      25
+    ],
+    "weight": 3,
+    "cond": {
+      "origins": [
+        "origin_town"
+      ]
+    },
+    "options": [
+      {
+        "text": "再考一次，拼个学历",
+        "cond": null,
+        "effects": {
+          "money": -3000,
+          "skill": 12,
+          "mood": -5
+        },
+        "flags": {
+          "took_kaoyan": true
+        },
+        "job": null,
+        "result": "你把工牌收进抽屉，重新翻开书。前两年几乎没有收入，但底气在长。"
+      },
+      {
+        "text": "直接工作，先活下来",
+        "cond": null,
+        "effects": {
+          "money": 1000,
+          "mood": 6,
+          "network": 4
+        },
+        "flags": {
+          "work_direct": true
+        },
+        "job": null,
+        "result": "你撕了倒计时，投出第一份简历。现实很骨感，但你第一次为自己做主。"
+      }
+    ]
+  },
+  {
+    "id": "e_local_family",
+    "scene": "rent",
+    "speaker": "爸妈",
+    "title": "家里的安排",
+    "text": "爸妈把你叫回家吃饭，席间递来两套方案：要么接手舅舅的铺子安稳过日子，要么他们托关系给你安排个清闲岗位。“别太累着自己。”",
+    "age": [
+      22,
+      27
+    ],
+    "weight": 3,
+    "cond": {
+      "origins": [
+        "origin_local"
+      ]
+    },
+    "options": [
+      {
+        "text": "接家里的铺子，安稳",
+        "cond": null,
+        "effects": {
+          "money": 5000,
+          "mood": 8,
+          "skill": -3,
+          "network": 6
+        },
+        "flags": {
+          "family_shop": true
+        },
+        "job": "shop",
+        "result": "你接下了铺子。生意不温不火，但不用看人脸色，日子是稳的。"
+      },
+      {
+        "text": "自己去闯，不接受安排",
+        "cond": null,
+        "effects": {
+          "mood": 10,
+          "network": -5
+        },
+        "flags": {
+          "refused_family": true
+        },
+        "job": null,
+        "result": "你婉拒了。爸妈叹气，但你想要自己的人生。关系有点僵，但你轻了。"
+      }
+    ]
+  },
+  {
+    "id": "e_returnee_gap",
+    "scene": "office",
+    "speaker": "面试官",
+    "title": "落差",
+    "text": "面试官的语气让你想起 offer 上的数字——比你在伦敦实习时少了一半。他说：“你的背景很好，但在国内得从头证明自己。”你攥紧了简历。",
+    "age": [
+      23,
+      28
+    ],
+    "weight": 3,
+    "cond": {
+      "origins": [
+        "origin_returnee"
+      ]
+    },
+    "options": [
+      {
+        "text": "降薪入职，先扎根",
+        "cond": null,
+        "effects": {
+          "money": -2000,
+          "skill": 6,
+          "network": 10,
+          "mood": -4
+        },
+        "flags": {
+          "took_cut": true
+        },
+        "job": "office",
+        "result": "你接受了。头衔不高，但你在攒国内的门道和人脉。"
+      },
+      {
+        "text": "不将就，继续等更好的",
+        "cond": null,
+        "effects": {
+          "money": -1500,
+          "mood": -6
+        },
+        "flags": {
+          "holding_out": true
+        },
+        "job": null,
+        "result": "你拒绝了。存款在烧，但你不甘心。"
+      }
+    ]
+  },
+  {
+    "id": "e_switcher_gig",
+    "scene": "cafe",
+    "speaker": "老同事",
+    "title": "老关系",
+    "text": "上一份工作的老领导发来消息：“新赛道我这儿缺人，你懂行，要不要来搭把手？工资不一定高，但能帮你转过来。”这是你转行以来第一个实实在在的机会。",
+    "age": [
+      22,
+      30
+    ],
+    "weight": 3,
+    "cond": {
+      "origins": [
+        "origin_switcher"
+      ]
+    },
+    "options": [
+      {
+        "text": "接下，靠老底子开局",
+        "cond": null,
+        "effects": {
+          "money": 2500,
+          "skill": 5,
+          "network": 12,
+          "mood": 5
+        },
+        "flags": {
+          "legacy_gig": true
+        },
+        "job": "office",
+        "result": "你接了。经验没白攒，新行当你上手比谁都快。"
+      },
+      {
+        "text": "推了，想彻底从零开始",
+        "cond": null,
+        "effects": {
+          "money": -1000,
+          "mood": 3,
+          "skill": 3
+        },
+        "flags": {
+          "clean_start": true
+        },
+        "job": null,
+        "result": "你谢绝了。想证明自己不靠老本也能行，过程更苦，但你心里踏实。"
+      }
+    ]
+  }
+]

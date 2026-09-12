@@ -18,92 +18,24 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Prepare Godot source
-        shell: bash
-        run: |
-          set -e
-          rm -rf game-src build/web
-          mkdir -p game-src build/web
-          unzip -q citylife_WEB001_SourceUpload.zip -d game-src
-
-      - name: Apply Web gameplay patches
-        shell: bash
-        run: |
-          set -e
-          python3 - <<'PY'
-          from pathlib import Path
-          loc = Path('game-src/scripts/systems/LocationManager.gd')
-          s = loc.read_text(encoding='utf-8')
-          s = s.replace('\tactive = true\n\t_visit_and_unlock("home")', '\tset_active(true)\n\t_visit_and_unlock("home")')
-          s = s.replace('\tactive = true\n\t_refresh()', '\tset_active(true)\n\t_refresh()')
-          s = s.replace('var minute: int = int(time_source.minute_of_day)', 'var minute: int = int(time_source.get_minute_of_day())')
-          s = s.replace('res://assets/backgrounds/dialogue/home/rental_apartment_rain_night.webp', 'res://assets/backgrounds/dialogue/city/street_corner_rain_night.webp')
-
-          # Browser layout + background visibility.
-          needle = 'func _refresh() -> void:\n\tif not LOCATIONS.has(current_location):'
-          repl = 'func _refresh() -> void:\n\t_sync_web_layout()\n\tif root != null and active:\n\t\troot.visible = true\n\tif not LOCATIONS.has(current_location):'
-          s = s.replace(needle, repl)
-          marker = 'func _make_player_frames() -> SpriteFrames:'
-          helper = '''func _sync_web_layout() -> void:\n\tvar viewport_size: Vector2 = get_viewport().get_visible_rect().size\n\tif viewport_size.x < 2.0 or viewport_size.y < 2.0:\n\t\tviewport_size = Vector2(1280, 720)\n\tif root != null:\n\t\troot.position = Vector2.ZERO\n\t\troot.size = viewport_size\n\tif background != null:\n\t\tbackground.position = Vector2.ZERO\n\t\tbackground.size = viewport_size\n\tif shade != null:\n\t\tshade.position = Vector2.ZERO\n\t\tshade.size = viewport_size\n\tif npc_layer != null:\n\t\tnpc_layer.position = Vector2.ZERO\n\t\tnpc_layer.size = viewport_size\n\n'''
-          if 'func _sync_web_layout() -> void:' not in s:
-              s = s.replace(marker, helper + marker)
-          end_build = '\taction_button.pressed.connect(_on_action_pressed)\n\tfv.add_child(action_button)'
-          s = s.replace(end_build, end_build + '\n\t_sync_web_layout()')
-          proc = 'func _process(delta: float) -> void:\n\tif not active or player_sprite == null:'
-          s = s.replace(proc, 'func _process(delta: float) -> void:\n\t_sync_web_layout()\n\tif not active or player_sprite == null:')
-
-          # Ground the protagonist: smaller scale, contact shadow, scene tint and Y depth.
-          s = s.replace('player_sprite.scale = Vector2(0.72, 0.72)', 'player_sprite.scale = Vector2(0.52, 0.52)')
-          s = s.replace('player_sprite.scale = Vector2(0.7, 0.7)', 'player_sprite.scale = Vector2(0.52, 0.52)')
-          s = s.replace('player_sprite.scale = Vector2(0.75, 0.75)', 'player_sprite.scale = Vector2(0.52, 0.52)')
-          # Insert a soft oval shadow under the animated player without needing a new asset.
-          add_player = 'npc_layer.add_child(player_sprite)'
-          shadow_code = '''var player_shadow := Polygon2D.new()\n\tplayer_shadow.name = "PlayerShadow"\n\tvar shadow_points := PackedVector2Array()\n\tfor i in range(20):\n\t\tvar a: float = TAU * float(i) / 20.0\n\t\tshadow_points.append(Vector2(cos(a) * 25.0, sin(a) * 8.0))\n\tplayer_shadow.polygon = shadow_points\n\tplayer_shadow.color = Color(0.0, 0.0, 0.0, 0.30)\n\tplayer_shadow.position = player_sprite.position + Vector2(0, 31)\n\tplayer_shadow.z_index = 1\n\tnpc_layer.add_child(player_shadow)\n\tplayer_sprite.set_meta("ground_shadow", player_shadow)\n\tplayer_sprite.z_index = 2\n\tplayer_sprite.modulate = Color(0.82, 0.87, 0.94, 1.0)\n\t''' + add_player
-          if 'PlayerShadow' not in s:
-              s = s.replace(add_player, shadow_code, 1)
-          # Keep shadow and depth attached while moving.
-          move_anchor = '\tplayer_sprite.position = player_pos'
-          move_extra = '''\tplayer_sprite.position = player_pos\n\tif player_sprite.has_meta("ground_shadow"):\n\t\tvar ground_shadow: Variant = player_sprite.get_meta("ground_shadow")\n\t\tif ground_shadow is Node2D:\n\t\t\tground_shadow.position = player_pos + Vector2(0, 31)\n\t\t\tground_shadow.z_index = maxi(1, int(player_pos.y) - 1)\n\tplayer_sprite.z_index = maxi(2, int(player_pos.y))'''
-          s = s.replace(move_anchor, move_extra)
-
-          # Less sticker-like NPC labels: compact dark backing and depth by Y.
-          s = s.replace('btn.text = str(npc.get("name", npc_id))', 'btn.text = str(npc.get("name", npc_id))\n\t\tbtn.z_index = maxi(2, int(pos.y))\n\t\tbtn.modulate = Color(0.88, 0.92, 1.0, 0.92)')
-          s = s.replace('点击地面 / WASD / 方向键移动 · 已解锁地点', '点击地面移动 · 电脑可用 WASD / 方向键 · 下方切换已解锁地点')
-          loc.write_text(s, encoding='utf-8')
-
-          game = Path('game-src/scripts/Game.gd')
-          g = game.read_text(encoding='utf-8')
-          g = g.replace('"store": "cafe",', '"store": "street",')
-          old = '\t_show_toast("已到达：%s" % location_id)'
-          new = '\tvar location_name: String = location_id\n\tif location_sys != null and location_sys.LOCATIONS.has(location_id):\n\t\tlocation_name = str(location_sys.LOCATIONS[location_id].get("name", location_id))\n\t_show_toast("已到达：%s" % location_name)'
-          g = g.replace(old, new)
-          game.write_text(g, encoding='utf-8')
-          PY
+      - uses: actions/checkout@v4
 
       - name: Export Godot Web
         shell: bash
         run: |
           set -e
-          mkdir -p game-src/build/web
-          rm -rf game-src/.godot
-          docker run --rm -v "$PWD/game-src:/workspace" -w /workspace barichello/godot-ci:4.7.2 godot --headless --export-release "Web" /workspace/build/web/index.html
-          cp -a game-src/build/web/. build/web/
+          rm -rf build/web .godot
+          mkdir -p build/web
+          docker run --rm -v "$PWD:/workspace" -w /workspace barichello/godot-ci:4.7.2 godot --headless --export-release "Web" /workspace/build/web/index.html
 
       - name: Verify Web build
         run: |
-          set -e
           test -f build/web/index.html
           test -f build/web/index.pck
           test -f build/web/index.wasm
+          touch build/web/.nojekyll
 
-      - name: Disable Jekyll
-        run: touch build/web/.nojekyll
-
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v3
         with:
           path: build/web
 
@@ -114,6 +46,5 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
+      - id: deployment
         uses: actions/deploy-pages@v4
