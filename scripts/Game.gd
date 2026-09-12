@@ -509,6 +509,8 @@ func _on_home_activity(id: String) -> void:
 	activity_running = true
 	location_sys.input_blocked = true
 	home_activities.blocked = true
+	var activity_icons := {"rest": "Zzz", "study": "专注中", "meal": "烹饪中"}
+	location_sys.set_activity_feedback(str(activity_icons.get(id, "进行中")), true)
 	for step in range(10):
 		home_activities.prompt.text = "%s… %d%%" % [home_activities.SPOTS[id].label, (step + 1) * 10]
 		await get_tree().create_timer(0.12).timeout
@@ -530,6 +532,7 @@ func _on_home_activity(id: String) -> void:
 			time_sys.advance_minutes(30)
 			feedback = "做好了一顿饭 · −20元，健康+5（最高100），耗时30分钟"
 	activity_running = false
+	location_sys.set_activity_feedback("", false)
 	var still_busy: bool = dialog_ui.is_busy() or event_ui.is_busy() or game_over
 	location_sys.input_blocked = still_busy
 	home_activities.blocked = still_busy

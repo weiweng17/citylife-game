@@ -205,6 +205,7 @@ var action_button: Button
 var hint_label: Label
 var player_sprite: AnimatedSprite2D
 var player_shadow: Sprite2D
+var player_feedback: Label
 var player_target: Vector2 = Vector2.ZERO
 var npc_layer: Control
 var foreground_layer: Control
@@ -258,6 +259,20 @@ func _build_ui() -> void:
 	player_sprite.modulate = Color(0.82, 0.87, 0.94, 1.0)
 	player_sprite.z_index = 5
 	root.add_child(player_sprite)
+
+	player_feedback = Label.new()
+	player_feedback.name = "PlayerFeedback"
+	player_feedback.visible = false
+	player_feedback.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	player_feedback.position = Vector2(-64.0, -102.0)
+	player_feedback.size = Vector2(128.0, 28.0)
+	player_feedback.add_theme_font_size_override("font_size", 16)
+	player_feedback.add_theme_color_override("font_color", Color(1.0, 0.93, 0.68, 1.0))
+	player_feedback.add_theme_color_override("font_shadow_color", Color(0.03, 0.02, 0.02, 0.95))
+	player_feedback.add_theme_constant_override("shadow_offset_x", 1)
+	player_feedback.add_theme_constant_override("shadow_offset_y", 2)
+	player_feedback.z_index = 7
+	root.add_child(player_feedback)
 
 	npc_layer = Control.new()
 	npc_layer.name = "NpcHotspots"
@@ -524,6 +539,28 @@ func stop_walking() -> void:
 	player_sprite.stop()
 	player_sprite.frame = 0
 
+func _animation_for_direction(direction: Vector2) -> StringName:
+	if absf(direction.x) > absf(direction.y):
+		return &"walk_right" if direction.x > 0.0 else &"walk_left"
+	return &"walk_down" if direction.y > 0.0 else &"walk_up"
+
+func face_direction(direction: Vector2) -> void:
+	if player_sprite == null or direction.length_squared() < 0.01:
+		return
+	player_sprite.stop()
+	player_sprite.animation = _animation_for_direction(direction)
+	player_sprite.frame = 0
+
+func set_activity_feedback(text: String, active_feedback: bool) -> void:
+	if player_feedback == null or player_sprite == null:
+		return
+	player_feedback.text = text
+	player_feedback.visible = active_feedback
+	player_sprite.scale = Vector2(0.33, 0.31) if active_feedback else Vector2(0.32, 0.32)
+	if player_shadow != null:
+		player_shadow.modulate.a = 0.82 if active_feedback else 1.0
+	_update_player_grounding()
+
 func _process(delta: float) -> void:
 	_sync_web_layout()
 	if not active or player_sprite == null:
@@ -571,11 +608,7 @@ func _move_player(direction: Vector2, delta: float) -> void:
 		player_sprite.stop()
 		player_sprite.frame = 0
 		return
-	var anim: String = "walk_down"
-	if abs(direction.x) > abs(direction.y):
-		anim = "walk_right" if direction.x > 0.0 else "walk_left"
-	else:
-		anim = "walk_down" if direction.y > 0.0 else "walk_up"
+	var anim: StringName = _animation_for_direction(direction)
 	if player_sprite.animation != anim:
 		player_sprite.animation = anim
 	if not player_sprite.is_playing():
@@ -588,6 +621,9 @@ func _update_player_grounding() -> void:
 	if player_shadow != null:
 		player_shadow.position = player_sprite.position + Vector2(0.0, 4.0)
 		player_shadow.z_index = maxi(4, player_sprite.z_index - 1)
+	if player_feedback != null:
+		player_feedback.position = player_sprite.position + Vector2(-64.0, -102.0)
+		player_feedback.z_index = player_sprite.z_index + 2
 
 func _clamp_walk_position(pos: Vector2) -> Vector2:
 	_ensure_navigation()

@@ -19,6 +19,7 @@ func run() -> void:
 	await process_frame
 	activities._activate("rest")
 	assert(not main.activity_running, "Remote activation must be rejected")
+	var expected_animations := {"rest": &"walk_left", "study": &"walk_up", "meal": &"walk_right"}
 	for id in ["rest", "study", "meal"]:
 		main.location_sys.player_sprite.position = activities.SPOTS[id].position
 		main.location_sys.player_target = main.location_sys.player_sprite.position
@@ -26,9 +27,12 @@ func run() -> void:
 		var before_minutes: int = main.time_sys.get_minute_of_day()
 		activities._activate(id)
 		assert(main.activity_running)
+		assert(main.location_sys.player_sprite.animation == expected_animations[id], "Activity facing must match furniture: " + id)
+		assert(main.location_sys.player_feedback.visible, "Activity feedback must be visible: " + id)
 		activities._activate(id)
 		await create_timer(1.5).timeout
 		assert(not main.activity_running)
+		assert(not main.location_sys.player_feedback.visible, "Activity feedback must clear: " + id)
 		var elapsed: int = main.time_sys.get_minute_of_day() - before_minutes
 		assert(elapsed == {"rest":120, "study":60, "meal":30}[id], "Activity must settle only once")
 		print("PASS proximity and single settlement: ", id)
@@ -39,5 +43,6 @@ func run() -> void:
 	activities.blocked = false
 	activities._activate("leave")
 	assert(main.location_sys.current_location == "subway")
+	assert(main.location_sys.player_sprite.animation == &"walk_right", "Door facing must point toward exit")
 	print("PASS effects and door travel")
 	quit()

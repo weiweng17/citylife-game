@@ -3,10 +3,10 @@ extends Node
 signal activity_requested(id: String)
 
 const SPOTS := {
-	"rest": {"position": Vector2(430, 330), "label": "床 · 休息", "detail": "2小时 · 健康+12 心情+8"},
-	"study": {"position": Vector2(690, 365), "label": "书桌 · 学习", "detail": "1小时 · 技能+3 心情−3"},
-	"meal": {"position": Vector2(930, 440), "label": "厨房 · 做饭", "detail": "30分钟 · 20元 健康+5"},
-	"leave": {"position": Vector2(920, 550), "label": "房门 · 出门", "detail": "前往城南地铁站"},
+	"rest": {"position": Vector2(430, 330), "facing": Vector2(-1, 0), "label": "床 · 休息", "detail": "2小时 · 健康+12 心情+8"},
+	"study": {"position": Vector2(690, 365), "facing": Vector2(0, -1), "label": "书桌 · 学习", "detail": "1小时 · 技能+3 心情−3"},
+	"meal": {"position": Vector2(930, 440), "facing": Vector2(1, -0.35), "label": "厨房 · 做饭", "detail": "30分钟 · 20元 健康+5"},
+	"leave": {"position": Vector2(920, 550), "facing": Vector2(1, 0), "label": "房门 · 出门", "detail": "前往城南地铁站"},
 }
 var location
 var layer: Control
@@ -82,6 +82,7 @@ func _activate(id: String) -> void:
 		location.hint_label.text = "请走近%s再互动" % SPOTS[id].label
 		return
 	location.stop_walking()
+	location.face_direction(SPOTS[id].facing)
 	activity_requested.emit(id)
 
 func _request(id: String) -> void:
