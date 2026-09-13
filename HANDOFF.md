@@ -262,6 +262,22 @@
 - 验证：`verify_park` 4 组 0 失败；**15 套全员回归全绿**（navigation `6646/0`、home_edges `6252/0`，其余 `exit=0`）。
 - 尚未做：公园 NPC 对话内容还是旧的；咖啡馆/医院/旧巷/天台尚未扩展；公园与任务链没有交叉（任务只找老张和小雨）。
 
+## 2026-09-13 阶段 4 单元 2：咖啡馆互动 + 阿哲的午间日程
+
+第 4 阶段第二块。咖啡馆的副标题写着"适合见人，也适合一个人坐很久"，此前玩家到了却只有一张地图。
+
+- 提交：`5c48872 feat: cafe interactions (window-bar coffee, round-table idle) and azhe's noon schedule`（6 文件）。
+- 新增 `scripts/systems/CafeActivities.gd`（完全沿用 ParkActivities 的结构，两个互动点）：
+  - `coffee` 靠窗吧台 · 点杯咖啡（640, 485）：**15 元**、30 分钟，精力+15 心情+6——咖啡馆的第一个"花钱买精力"出口（便利店买咖啡是物品，这里是坐下来喝）；
+  - `idle` 圆桌 · 发会儿呆（480, 520）：免费、20 分钟，心情+8。
+  - 余额不足时不下单、不扣钱、不推进时间（`Game._on_cafe_activity` 开头检查，与做饭的食材检查同一套做法）。
+- `Game` 接入：`cafe_activities` 初始化 + `_process` 闸门 + `_begin/_end_activity` 锁表 + `_on_cafe_activity(id)`。**新场景接入清单现在是七处**：preload、var、`_ready`、`_process` 闸门、两把活动锁、结算函数。
+- **阿哲的午间日程**：`data/npc_schedules.json` 加 12:00–14:00 的 `cafe` 段（卖唱的下午场前躲雨喝杯咖啡），`LocationManager.NPC_LOCATION_POS` 加 `cafe` 站位 (900, 545)（吧台前，避开阻挡区与两个互动按钮）。**不用加别名**——日程表里 `cafe` 本来就是 LocationManager 的 id，需要别名的只有 `convenience_store`/`old_alley`。
+- 站位标定方法（可复用）：对照美术原图确认物件位置 → 换算 1280×720 → 查 `NAVIGATION.cafe` 的 blocked 矩形确保站位不在里面 → 查 `OCCLUDERS.cafe` 的矩形确保站位**不被前景盖住**（y 要大于遮挡矩形下缘）→ 最后由 `verify_cafe.gd` 从出生点实走断言。
+- 新增 `tools/verify_cafe.gd`（6 组：可达性、咖啡只结算一次且扣 15 元、余额不足不动状态、发呆数值、阿哲 12:30 在/15:00 不在、层随地点开关）、`tools/capture_cafe.gd`（2 张截图，时钟拨到 12:30 让阿哲入画）。
+- 验证：`verify_cafe` **首跑 6 组 0 失败**（此前几个单元都要返工测试侧，这次一步到位——站位标定清单起了作用）；**16 套全员回归全绿**（navigation `6646/0`、home_edges `6252/0`，其余 `exit=0`）；截图确认站位、阿哲站位与文案换行都正常。
+- 尚未做：医院、旧巷、天台；咖啡馆与任务链/事件没有交叉；咖啡的"花钱买精力"与便利店罐装咖啡（8 元买进背包随身喝）的平衡没验证过。
+
 ## 尚未完成
 
 - 全部行走方向的身体比例与动画接地视觉抽查：碰撞与可达已由 `verify_home_edges.gd` 自动覆盖，姿态观感仍需人工看截图与试玩。
@@ -312,10 +328,14 @@ $godotExe = 'F:\Downloads\Godot_v4.7.2-stable_win64.exe\Godot_v4.7.2-stable_win6
 & $godotExe --headless --path . --script res://tools/verify_npc.gd
 & $godotExe --headless --path . --script res://tools/verify_job_growth.gd
 & $godotExe --headless --path . --script res://tools/verify_quests.gd
+& $godotExe --headless --path . --script res://tools/verify_park.gd
+& $godotExe --headless --path . --script res://tools/verify_cafe.gd
 & $godotExe --path . --rendering-method gl_compatibility --script res://tools/capture_store.gd
 & $godotExe --path . --rendering-method gl_compatibility --script res://tools/capture_npc.gd
 & $godotExe --path . --rendering-method gl_compatibility --script res://tools/capture_job.gd
 & $godotExe --path . --rendering-method gl_compatibility --script res://tools/capture_quest.gd
+& $godotExe --path . --rendering-method gl_compatibility --script res://tools/capture_park.gd
+& $godotExe --path . --rendering-method gl_compatibility --script res://tools/capture_cafe.gd
 & $godotExe --path . --rendering-method gl_compatibility --script res://tools/verify_home_input.gd
 # 排查"点了没反应"：打印命中控件与盖在该点上的全部控件（只读，不做断言）
 & $godotExe --path . --rendering-method gl_compatibility --script res://tools/diag_click.gd
