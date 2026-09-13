@@ -8,6 +8,12 @@ signal backpack_requested
 
 ## 《都市浮生》顶部 HUD。
 ## 只负责展示玩家状态，不直接修改游戏数据。
+## HUD 自己拥有固定的顶部保留区；地点标题如何摆放由地点层自己负责。
+
+const HUD_SIDE_MARGIN := 14.0
+const HUD_TOP_MARGIN := 10.0
+const HUD_RESERVED_HEIGHT := 112.0
+const HUD_MIN_WIDTH := 320.0
 
 var age_label: Label
 var money_label: Label
@@ -34,8 +40,8 @@ func _ready() -> void:
 func _build_ui() -> void:
 	name = "HUD"
 	set_anchors_preset(Control.PRESET_TOP_LEFT)
+	clip_contents = true
 	get_viewport().size_changed.connect(_sync_viewport)
-	_sync_viewport()
 
 	var panel_style := StyleBoxFlat.new()
 	panel_style.bg_color = Color(0.05, 0.06, 0.10, 0.86)
@@ -56,16 +62,19 @@ func _build_ui() -> void:
 	age_label = Label.new()
 	age_label.custom_minimum_size = Vector2(180, 0)
 	age_label.add_theme_font_size_override("font_size", 16)
+	_configure_single_line_label(age_label)
 	row1.add_child(age_label)
 
 	time_label = Label.new()
 	time_label.add_theme_font_size_override("font_size", 14)
 	time_label.add_theme_color_override("font_color", Color(0.72, 0.82, 1.0))
+	_configure_single_line_label(time_label)
 	row1.add_child(time_label)
 
 	weather_label = Label.new()
 	weather_label.add_theme_font_size_override("font_size", 14)
 	weather_label.add_theme_color_override("font_color", Color(0.72, 0.84, 0.92))
+	_configure_single_line_label(weather_label)
 	row1.add_child(weather_label)
 
 	var spacer := Control.new()
@@ -75,9 +84,11 @@ func _build_ui() -> void:
 	money_label = Label.new()
 	money_label.add_theme_font_size_override("font_size", 16)
 	money_label.add_theme_color_override("font_color", Color(1.0, 0.84, 0.36))
+	_configure_single_line_label(money_label)
 	row1.add_child(money_label)
 
 	bag_btn = Button.new()
+	bag_btn.name = "BackpackButton"
 	bag_btn.text = "背包"
 	bag_btn.tooltip_text = "看看身上带着什么"
 	bag_btn.custom_minimum_size = Vector2(70, 32)
@@ -85,6 +96,7 @@ func _build_ui() -> void:
 	row1.add_child(bag_btn)
 
 	var save_btn := Button.new()
+	save_btn.name = "SaveButton"
 	save_btn.text = "保存"
 	save_btn.tooltip_text = "保存进度"
 	save_btn.custom_minimum_size = Vector2(70, 32)
@@ -92,6 +104,7 @@ func _build_ui() -> void:
 	row1.add_child(save_btn)
 
 	var load_btn := Button.new()
+	load_btn.name = "LoadButton"
 	load_btn.text = "读取"
 	load_btn.tooltip_text = "读取最近存档"
 	load_btn.custom_minimum_size = Vector2(70, 32)
@@ -99,6 +112,7 @@ func _build_ui() -> void:
 	row1.add_child(load_btn)
 
 	var quit_btn := Button.new()
+	quit_btn.name = "QuitButton"
 	quit_btn.text = "退出"
 	quit_btn.tooltip_text = "退出游戏"
 	quit_btn.custom_minimum_size = Vector2(70, 32)
@@ -138,32 +152,47 @@ func _build_ui() -> void:
 	energy_fill = energy_bar.get_theme_stylebox("fill") as StyleBoxFlat
 	row2.add_child(energy_bar)
 
-	# 技能与岗位档位：状态行末尾的一小段文字，不占新行（HUD 高度被地点标题的
-	# 偏移量盯着，加行会撞上，见 LocationManager 的 header offset）。
+	# 技能与岗位档位只占状态行本身；HUD 的外部高度不由内容行数动态决定。
 	skill_label = Label.new()
 	skill_label.name = "SkillLabel"
 	skill_label.add_theme_font_size_override("font_size", 12)
 	skill_label.add_theme_color_override("font_color", Color(0.96, 0.88, 0.62))
 	skill_label.tooltip_text = "手艺越熟，岗位工资越高。上班会慢慢攒。"
+	_configure_single_line_label(skill_label)
 	row2.add_child(skill_label)
 
 	daily_label = Label.new()
 	daily_label.name = "DailyRow"
 	daily_label.add_theme_font_size_override("font_size", 12)
 	daily_label.add_theme_color_override("font_color", Color(0.98, 0.86, 0.56))
+	_configure_single_line_label(daily_label)
 	root.add_child(daily_label)
 
 	goal_label = Label.new()
+	goal_label.name = "GoalRow"
 	goal_label.add_theme_font_size_override("font_size", 12)
 	goal_label.add_theme_color_override("font_color", Color(0.82, 0.85, 0.92))
-	goal_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_configure_single_line_label(goal_label)
 	root.add_child(goal_label)
+
+	# 子节点全部建立后再同步一次，确保容器最小尺寸不会把对外保留区悄悄撑高。
+	_sync_viewport()
+
+
+func _configure_single_line_label(label: Label) -> void:
+	label.autowrap_mode = TextServer.AUTOWRAP_OFF
+	label.clip_text = true
+	label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 
 
 func _sync_viewport() -> void:
 	var viewport_size: Vector2 = get_viewport().get_visible_rect().size
-	position = Vector2(14.0, 10.0)
-	size = Vector2(maxf(320.0, viewport_size.x - 28.0), 112.0)
+	position = Vector2(HUD_SIDE_MARGIN, HUD_TOP_MARGIN)
+	size = Vector2(maxf(HUD_MIN_WIDTH, viewport_size.x - HUD_SIDE_MARGIN * 2.0), HUD_RESERVED_HEIGHT)
+
+
+func get_reserved_height() -> float:
+	return HUD_RESERVED_HEIGHT
 
 
 func refresh(state, stage_name: String, stage_goal: String, dark_clue_total: int, quest_text: String = "") -> void:
@@ -187,12 +216,16 @@ func refresh(state, stage_name: String, stage_goal: String, dark_clue_total: int
 		dark_txt = " · 已放下"
 
 	age_label.text = "第 %d 岁 · %s" % [state.age, stage_name]
+	age_label.tooltip_text = age_label.text
 	money_label.text = _fmt_money(state.money)
-	# 任务和人生阶段目标共用这一行（HUD 高度被地点标题的偏移量盯死，不能再加行）。
+	money_label.tooltip_text = money_label.text
+
+	# 长任务/目标只在 HUD 自己的单行信息区裁切；全文保留在 tooltip，不再向下扩张 HUD。
 	var quest_part := ""
 	if not quest_text.is_empty():
 		quest_part = " ｜ 任务：%s" % quest_text
 	goal_label.text = "目标：%s%s%s%s" % [stage_goal, clue_txt, dark_txt, quest_part]
+	goal_label.tooltip_text = goal_label.text
 
 	health_bar.value = state.health
 	if health_fill:
@@ -210,10 +243,11 @@ func refresh(state, stage_name: String, stage_goal: String, dark_clue_total: int
 		energy_fill.bg_color = _need_color(state.energy)
 
 
-## 每日循环目标：与上方的人生阶段目标是两套系统，分开显示避免混淆。
+## 每日循环目标：与人生阶段目标仍是两套系统，但两者都受 HUD 固定保留区约束。
 func refresh_daily(text: String) -> void:
 	if daily_label:
 		daily_label.text = "今日：%s" % text
+		daily_label.tooltip_text = daily_label.text
 
 
 ## 技能与岗位档位。数字给玩家看，档位名给玩家"我混成什么样了"的感觉。
@@ -234,17 +268,21 @@ func refresh_bag(total: int) -> void:
 func refresh_time(day: int, clock_text: String, period_name: String) -> void:
 	if time_label:
 		time_label.text = " · 第%d天 %s · %s" % [day, clock_text, period_name]
+		time_label.tooltip_text = time_label.text
 
 
 func refresh_weather(weather_name: String) -> void:
 	if weather_label:
 		weather_label.text = " · %s" % weather_name
+		weather_label.tooltip_text = weather_label.text
+
 
 func _bar_label(text: String) -> Label:
 	var label := Label.new()
 	label.text = text
 	label.add_theme_font_size_override("font_size", 12)
 	return label
+
 
 func _make_bar(bg: Color, fill: Color) -> ProgressBar:
 	var bar := ProgressBar.new()
