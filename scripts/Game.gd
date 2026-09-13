@@ -1312,7 +1312,6 @@ func _enter_place(d: Dictionary) -> void:
 	var e = events_sys.pick(scene, _state())
 	if e == null:
 		_show_toast("这里今天没什么事。")
-		_year_pass()
 		return
 	_show_event(e)
 
@@ -1336,7 +1335,6 @@ func _interior_boss() -> void:
 	var e = events_sys.pick("office", _state())
 	if e == null:
 		_show_toast("今天没什么要汇报的，早点回家吧。")
-		_year_pass()
 		return
 	_show_event(e)
 
@@ -1478,7 +1476,8 @@ func _close_event() -> void:
 			time_sys.advance_minutes(time_cost)
 		_show_toast("这一段插曲过去了，城市时间继续向前。")
 		return
-	_year_pass()
+	# 普通日常事件到这里结束；年度推进只保留给显式调用 `_year_pass()` 的剧情路径。
+	return
 
 
 func _year_pass() -> void:
