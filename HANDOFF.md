@@ -168,7 +168,8 @@
 
 ## 2026-09-13 阶段 2 收尾保存（交接检查点）
 
-- **当前 HEAD：`4389231`**，工作树干净，**只做了本地提交，未推送远程**。
+- **当前 HEAD：以 `git log -1 --oneline` 为准**（本节记录时是阶段 2 收尾的 `4389231`，其后又补了架构文档与推送脚本）。工作树应保持干净。
+- **远程同步**：本地 `main` 需要与 `origin/main` 保持一致，**双击 `tools\push-local.cmd` 即可推送**。自动化环境因 PATH 被替换而推不上去，原因见本文件「推送远程」一节。
 - 阶段 2 的六个代码单元全部完成，提交顺序：
   - `629a64f` 需求系统（饱食/精力）
   - `1f381aa` 便利店购买与背包消耗
@@ -222,20 +223,18 @@ $godotExe = 'F:\Downloads\Godot_v4.7.2-stable_win64.exe\Godot_v4.7.2-stable_win6
 & $godotExe --path . --rendering-method gl_compatibility --script res://tools/diag_click.gd
 ```
 
-### 推送远程（本机有个坑）
+### 推送远程（本机有两个坑，实测过）
 
-本机 Git 是 PortableGit，**`git-remote-https` 助手放在 `mingw64/bin`，而 `git --exec-path` 指向 `mingw64/libexec/git-core`**，所以直接 `git push` 会报
-`git: 'remote-https' is not a git command` / `fatal: remote helper 'https' aborted session`。
-用 `--exec-path` 指到 `bin` 即可；鉴权走 Windows 凭据管理器里已存的 `weiweng17` 令牌，无需输入。
+本机只有 PortableGit，有两个叠加的问题：
 
-```powershell
-$base = 'C:\Users\86139\.workbuddy\binaries\PortableGit\versions\1.2.0'
-$env:GIT_TERMINAL_PROMPT = '0'
-$env:PATH = "$base\mingw64\bin;$env:PATH"
-& "$base\mingw64\bin\git.exe" --exec-path="$base/mingw64/bin" push origin main
-```
+1. **`git-remote-https` 在 `mingw64\bin`，而 git 的 exec-path 指向 `mingw64\libexec\git-core`**，所以 http(s) 传输默认找不到 → 报 `git: 'remote-https' is not a git command`。
+2. **凭据助手（`git-credential-helper-selector` / `git-credential-manager`）本身是 shell 脚本，需要 `git` 自己在 PATH 上**；`git-credential-wincred` 同样。GitHub 的令牌存在 Windows 凭据管理器里（GCM 建的 `GitHub - https://api.github.com/weiweng17`），GCM 取它时也要能定位 `git.exe`。
 
-推送会触发 GitHub Actions 导出 Web 并发布 Pages，所以推之前先确认测试通过、工作树干净。
+**正确做法：在普通 shell 里把 PATH 设对，然后 push。** 直接双击 `tools\push-local.cmd` 即可（脚本自己设 PATH）。
+
+- 只读远程（`ls-remote` / `fetch`）是匿名可用的，仓库是公开的；**推送必须带凭据**。
+- **在自动化/沙箱 shell 里推不了**：这类环境会把子进程的 PATH 整个替换掉（实测 `$env:PATH` 改动不会传给子进程），于是助手找不到 `git`、GCM 找不到 `git.exe`，表现是 `git: 'remote-https' is not a git command` 或者干脆静默 `exit 128`。此时至少要用 `--exec-path` 指向 `mingw64\bin` 才能读远程，但推送仍然失败。
+- 推送会触发 GitHub Actions 导出 Web 并发布 Pages，所以推之前先确认测试通过、工作树干净。
 
 本地试玩可双击 `tools\play-local.cmd`。截图输出到被 Git 忽略的 `build/qa/`。
 

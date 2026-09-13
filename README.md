@@ -29,6 +29,8 @@ Godot 4.7.2 城市人生模拟游戏。
 
 本地 `main` 与远程 `origin/main` 保持同步：推送 `main` 后，GitHub Actions 会自动构建并发布 Web 预览；未推送的本地修改不会更新线上版本。
 
+同步操作：**双击 `tools\push-local.cmd`**（该脚本会自己配好 portable Git 的 PATH 再 push；自动化环境里 PATH 会被替换，推不上去，原因见 `HANDOFF.md`）。
+
 - 引擎：Godot 4.7.2 stable
 - 分辨率：1280×720
 - Web 导出预设：`Web`
