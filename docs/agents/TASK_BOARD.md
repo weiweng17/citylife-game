@@ -70,11 +70,21 @@
 ### GAME-FIX-005 — Integration-ready gameplay contract audit
 - Owner: gameplay
 - Branch: `agent/game-fix-005-integration-contract-audit`
-- Status: READY
+- Status: DONE
 - Priority: MEDIUM
 - Writable: `agent-reports/gameplay.md` only.
 - Objective: inspect GAME-FIX-001 through GAME-FIX-004 together and document the smallest authoritative gameplay contract that an integration candidate must preserve, with exact function-level collision points in `scripts/Game.gd`, dependency order, and any repository-visible semantic gap that would require a new gameplay repair.
 - Acceptance: report-only; no source edits; explicitly distinguish inherited branch history from task deltas; recommend a new GAME-FIX only if a concrete repository-visible gap remains; do not claim runtime evidence.
+- Review result: accepted. Branch is one report-only commit ahead of the coordination baseline, documents compatible contracts A-D and the 001 → 002 → 003 application order, and correctly treats GAME-FIX-004 as regression coverage rather than a second source implementation. No runtime PASS is inferred.
+
+### GAME-FIX-006 — Gameplay integration callsite guard audit
+- Owner: gameplay
+- Branch: `agent/game-fix-006-integration-callsite-guard-audit`
+- Status: READY
+- Priority: MEDIUM
+- Writable: `agent-reports/gameplay.md` only.
+- Objective: audit the current repository and accepted GAME-FIX-001..004 deltas for every callsite that can reach annual progression, need settlement, terminal evaluation, save/load re-entry, or ending presentation. Identify any callsite that could bypass Contracts A-D after integration and define the smallest source repair only if a concrete bypass exists.
+- Acceptance: report-only; enumerate exact functions/callsites and branch/SHA evidence; distinguish coordination-baseline stale behavior from a genuinely uncovered path; do not edit gameplay source or claim runtime evidence.
 
 ### UI-FIX-001 — Active NPC grounding and animation integration
 - Owner: scene-ui
@@ -118,11 +128,21 @@
 ### UI-FIX-004 — Event panel overflow containment
 - Owner: scene-ui
 - Branch: `agent/ui-fix-004-event-panel-overflow`
-- Status: READY
+- Status: NEEDS_REVIEW
 - Priority: MEDIUM
 - Writable: `scripts/ui/EventUI.gd`, one narrow `tools/verify_*.gd` regression if needed, `agent-reports/scene-ui.md`.
 - Objective: make EventUI own vertical overflow so long narrative/result copy and multiple choices cannot be silently clipped out of reach as viewport/content size changes. Preserve signals, public methods, event semantics and settlement behavior.
 - Acceptance: EventUI stays inside the logical viewport at 1280x720 and one smaller declared desktop/Web logical viewport; long body/result content has an explicit bounded overflow/scroll path; all enabled choice and continue controls remain reachable; no `Game.gd`, `LocationManager.gd`, event data or gameplay semantics change; rendered visual PASS still requires actual Godot evidence.
+- Review result: repository scope/ownership is acceptable and the narrow verifier now includes bottom-most choice reachability. Final task acceptance is withheld until real Godot execution and rendered 1280x720 + 960x540 evidence are captured on the exact review/integration SHA.
+
+### UI-AUDIT-005 — Next responsive hotspot after EventUI
+- Owner: scene-ui
+- Branch: `agent/ui-audit-005-next-responsive-hotspot`
+- Status: READY
+- Priority: MEDIUM
+- Writable: `agent-reports/scene-ui.md` only.
+- Objective: while UI-FIX-001..004 await rendered evidence, inspect remaining presentation-owned responsive/layout hotspots excluding EventUI and rank the next smallest safe repair. Prefer `StartUI.gd`, `ShopUI.gd`, `DialogUI.gd`, or `EndingUI.gd` only when the repair can stay isolated from gameplay/navigation/NPC semantics.
+- Acceptance: report-only; at least three remaining hotspots with exact paths/failure modes; choose one smallest follow-up UI-FIX boundary; do not edit source or claim rendered/runtime evidence.
 
 ### NPC-CONTENT-002 — Narrative/mechanic alignment cleanup
 - Owner: npc-content
@@ -157,11 +177,21 @@
 ### NPC-CONTENT-005 — Family-state ambiguity inventory
 - Owner: npc-content
 - Branch: `agent/npc-content-005-family-state-ambiguity-audit`
-- Status: READY
+- Status: DONE
 - Priority: MEDIUM
 - Writable: `agent-reports/npc-content.md` only.
 - Objective: inventory every remaining event whose speaker or relationship wording depends on spouse/child state not guaranteed by current eligibility, starting with `e_kid_school`, `e_second_child`, `e_downsize`, and `e_empty_nest`. For each, identify whether a safe future fix is copy-only or requires condition/speaker mechanics ownership.
 - Acceptance: report-only; exact event IDs, current eligibility and contradiction are recorded; no conditions/speakers/data are changed; propose the smallest follow-up task boundary without inventing family-state rules or claiming runtime evidence.
+- Review result: accepted. Report-only branch identifies four hard policy-dependent spouse/child cases and one low-risk copy-only `e_house` phrase. The four hard cases remain deferred because choosing married-only versus co-parent-inclusive semantics is an explicit product/content policy decision.
+
+### NPC-CONTENT-006 — Neutralize e_house relationship-loaded idiom
+- Owner: npc-content
+- Branch: `agent/npc-content-006-house-copy-neutralization`
+- Status: READY
+- Priority: LOW
+- Writable: `data/events.json`, `agent-reports/npc-content.md` only.
+- Objective: replace only the `e_house` option phrase `掏空六个钱包，买` with relationship-neutral wording that preserves the same purchase choice and all mechanics. Do not touch the four hard family-state events, conditions, speakers, IDs, flags, rewards, effects, or flow.
+- Acceptance: one string-value change only in `e_house` plus report; JSON structure unchanged; no family-state policy invented; no runtime/parser PASS claimed unless actually run.
 
 ### QA-002 — Godot/Web runtime acceptance
 - Owner: qa-build (local/Codex execution)
@@ -212,14 +242,24 @@
 ### QA-007 — Next-wave branch freshness and acceptance delta
 - Owner: qa-build
 - Branch: `agent/qa-007-next-wave-delta`
-- Status: READY
+- Status: DONE
 - Priority: MEDIUM
 - Writable: `agent-reports/qa-build.md` only.
 - Objective: capture exact tips and repository-only acceptance deltas for GAME-FIX-004, UI-AUDIT-004/UI-FIX-004, NPC-CONTENT-004/NPC-CONTENT-005, and the current UI-FIX-001/002/003 hold candidates. Identify stale SHA hazards, required narrow checks, and which items can be repository-reviewed versus which still require Godot/browser evidence.
 - Acceptance: report-only; exact branch tips captured; no merges or worker-code edits; all runtime/rendered claims remain explicitly unexecuted unless real evidence exists.
+- Review result: accepted. Report-only diff respects QA ownership, refreshes current candidate tips and stale-SHA hazards, and keeps all UI/runtime acceptance explicitly unexecuted.
+
+### QA-008 — Exact-SHA runtime handoff refresh
+- Owner: qa-build
+- Branch: `agent/qa-008-runtime-handoff-refresh`
+- Status: READY
+- Priority: MEDIUM
+- Writable: `agent-reports/qa-build.md` only.
+- Objective: refresh the exact-SHA runtime handoff after the latest worker continuations. Capture current tips for UI-FIX-001..004 and accepted gameplay/content candidates, produce one ordered command/evidence matrix for a future single integration candidate, and explicitly identify which prior SHA references are stale.
+- Acceptance: report-only; no merges, workflows, worker-code edits, Godot/Web/browser execution, or inferred PASS; every command is tied to an exact candidate/ref and every visually sensitive item retains rendered-evidence requirements.
 
 ## Deferred next repairs
-1. Family-state event-condition semantics after explicit gameplay/data-condition ownership assignment.
+1. Family-state event-condition semantics after explicit married-household vs co-parent-inclusive product/content policy decision.
 2. Relationship-aware NPC dialogue/trust work after explicit schema ownership assignment.
 
 ## Status values
