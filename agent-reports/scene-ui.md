@@ -37,6 +37,16 @@ Compared with the other remaining candidates, ShopUI has stronger multi-axis pre
 - `data/rules.json` / `scripts/Game.gd`
   - only the three dark-path endings currently have substantial ending descriptions; most other ending descriptions are empty;
   - final EndingUI text also appends reason/lifetime/money/clue summary.
+- `scripts/Game.gd` StartUI callsite
+  - creates `StartUIScript.new()`;
+  - calls `start_ui.setup(Data.ORIGINS, Callable(self, "_fmt_money"))`;
+  - connects `origin_selected` to `_choose_origin`;
+  - connects `load_requested` to `_load_game`;
+  - then adds StartUI to the UI layer.
+  - This means the responsive repair does not require a Game callsite or semantic change as long as StartUI preserves the existing setup/signals contract.
+- `tools/` inventory
+  - no StartUI-specific `verify_start*` regression is currently present on the coordination branch;
+  - a future UI-FIX-005 can therefore add one narrow StartUI verifier without duplicating an existing dedicated regression.
 
 These are repository facts only. No visual fit or overflow result is inferred without Godot.
 
@@ -60,7 +70,7 @@ These are repository facts only. No visual fit or overflow result is inferred wi
   - the fourth card and/or `读取上次存档` may fall below the visible area because root resizing does not create a scroll path;
   - a larger font metric/localization would amplify the same ownership problem.
 - Safe repair boundary:
-  - keep `origin_selected(origin)` and `load_requested` unchanged;
+  - keep `setup(origins, money_formatter)`, `origin_selected(origin)`, `load_requested`, `open()`, `close()`, and `set_load_available(value)` behavior unchanged;
   - keep `Data.ORIGINS` read-only;
   - give the start content a centered, width-bounded, vertically scrollable owner;
   - preserve full-card click targets and load-button reachability.
@@ -138,18 +148,28 @@ These are repository facts only. No visual fit or overflow result is inferred wi
 - Objective:
   - make the start screen own vertical overflow so all four existing origin cards and the optional load action remain reachable as the logical viewport becomes narrower/shorter.
 - Suggested acceptance:
-  1. `origin_selected(origin)` and `load_requested` remain unchanged;
+  1. `setup(origins, money_formatter)`, `origin_selected(origin)`, `load_requested`, `open()`, `close()`, and `set_load_available(value)` remain behaviorally compatible;
   2. StartUI stays inside the logical viewport at 1280×720 and one smaller declared desktop/Web logical viewport (recommend 960×540 for consistency with UI-FIX-004);
   3. all four current origin cards remain fully reachable through an explicit vertical scroll path when content exceeds available height;
   4. the optional load button remains reachable when enabled;
   5. origin descriptions/stat lines wrap without forcing horizontal overflow;
-  6. full-card hit targets still emit the correct origin dictionary;
-  7. no origin data, save behavior, gameplay, navigation, or NPC semantics change;
-  8. rendered PASS waits for actual Godot evidence.
+  6. full-card hit targets still emit the exact origin dictionary supplied to `setup`;
+  7. the load button still emits `load_requested` once per activation;
+  8. no origin data, save behavior, gameplay, navigation, or NPC semantics change;
+  9. rendered PASS waits for actual Godot evidence.
+- Suggested narrow verifier boundary:
+  - instantiate StartUI directly rather than booting `Game.gd`;
+  - call `setup()` with four current-shape origin dictionaries and a deterministic formatter;
+  - set/assert 1280×720 and 960×540 logical viewports explicitly (not just physical window size);
+  - enable the load action through `set_load_available(true)`;
+  - prove the content exposes a vertical scroll range under stress and that the last origin card plus load button can be brought fully into view;
+  - activate one full-card hit target and assert the exact supplied origin dictionary is emitted once;
+  - activate load and assert `load_requested` is emitted once.
 - Why this boundary is smallest:
   - one directly presentation-owned file;
   - current four-card content already exercises the risky structure;
-  - no external system needs semantic changes;
+  - the current Game callsite needs no change if StartUI preserves its existing API/signals;
+  - no existing StartUI-specific verifier has to be replaced or reconciled;
   - unlike ShopUI, no dual-mode list rows or inventory dependency needs to be reflowed.
 
 ## Files inspected
@@ -163,15 +183,19 @@ These are repository facts only. No visual fit or overflow result is inferred wi
 - `scripts/ui/EndingUI.gd`
 - `scripts/Data.gd` (origin-content pressure, read-only)
 - `scripts/systems/Inventory.gd` (catalog size, read-only)
-- `scripts/Game.gd` (EndingUI composition/callsite, read-only)
+- `scripts/Game.gd` (StartUI/EndingUI callsites, read-only)
 - `scripts/Rules.gd` and `data/rules.json` (ending description pressure, read-only)
+- `tools/` directory inventory (existing regression coverage, read-only)
 
 ## Validation
 ### Repository checks performed
-- Confirmed UI-AUDIT-005 is `READY`, owned by `scene-ui`, and report-only.
-- Confirmed the assigned branch started identical to current orchestrator baseline `4249687c2c20a5680ed5914c01f4f55665d397d9` (ahead 0 / behind 0).
+- Confirmed UI-AUDIT-005 is still `READY`, owned by `scene-ui`, and report-only on the latest coordination branch.
+- Confirmed the assigned branch originally started identical to orchestrator baseline `4249687c2c20a5680ed5914c01f4f55665d397d9` (ahead 0 / behind 0).
+- On continuation, confirmed the audit branch remained ahead 1 / behind 0 before this report refinement; no orchestrator rework finding or scope change was present.
 - Re-read all four preferred remaining UI candidates from the current coordination branch rather than relying on the prior audit.
 - Ranked candidates using current content pressure, repair size, and ownership risk.
+- Re-read the actual StartUI callsite in `Game.gd` and confirmed a StartUI-only presentation repair can preserve the existing setup/signal contract without editing Game.
+- Checked the coordination-branch `tools/` inventory and found no StartUI-specific `verify_start*` regression, so the proposed narrow verifier does not duplicate an existing dedicated check.
 - Excluded EventUI because UI-FIX-004 is already `NEEDS_REVIEW` pending rendered evidence.
 - Excluded HUD/NPC/bed surfaces because their existing UI-FIX tasks remain pending rendered acceptance.
 
@@ -189,4 +213,4 @@ These are repository facts only. No visual fit or overflow result is inferred wi
 - ShopUI remains the strongest follow-up after StartUI because its fixed 660px width and six rows create both horizontal and vertical pressure.
 
 ## Handoff
-UI-AUDIT-005 is complete at repository-audit level and requests orchestrator review. The recommended next isolated Scene/UI repair is **UI-FIX-005 — Start screen vertical overflow containment** in `scripts/ui/StartUI.gd`, with any actual visual acceptance deferred to real Godot execution.
+UI-AUDIT-005 is complete at repository-audit level and requests orchestrator review. The recommended next isolated Scene/UI repair is **UI-FIX-005 — Start screen vertical overflow containment** in `scripts/ui/StartUI.gd`, with a narrow StartUI-only regression and any actual visual acceptance deferred to real Godot execution.
