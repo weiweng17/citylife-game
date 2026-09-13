@@ -1,26 +1,19 @@
 extends "res://scripts/systems/SpotActivities.gd"
-## 公司工作互动。骨架在基类 SpotActivities；本层的定制是**展示**：
-##  - `work`：工位上班。时薪随技能档位走，标签上的数字由 Game 每帧喂进来。
-##  - `negotiate`：大堂找主管谈薪。技能不到「熟练」直接不显示，避免玩家点了个
-##    必然被拒的按钮。门槛的**判定**仍然在 Game（数值结算只在 Game）。
-##
-## 站位按当前公司背景（写字楼入口雨夜）粗略标定，尚未逐帧对照美术校正。
-
-## 由 Game 每帧喂进来的展示上下文：技能、时薪、档位名、能不能谈薪、今天谈过没、有没有人帮腔。
+## 公司工作互动。骨架在基类 SpotActivities；数值结算仍在 Game。
 var context: Dictionary = {}
 
-
-## Game 每个 `_refresh_ui()` 喂一次。缺字段时按"最保守"取值，宁可显示旧数字也不崩。
 func sync_context(info: Dictionary) -> void:
 	context = info
 
-
 func _define_spots() -> Dictionary:
 	return {
-		"work": {"position": Vector2(700, 470), "facing": Vector2(0, -1), "label": "工位 · 上班", "detail": "4小时 · 健康−6 心情−4"},
+		"work": {
+			"position": Vector2(700, 470), "facing": Vector2(0, -1), "pose": "sit", "depth": 470,
+			"interactionType": "work", "label": "工位 · 上班", "detail": "4小时 · 健康−6 心情−4",
+		},
 		"negotiate": {
-			"position": Vector2(920, 500), "facing": Vector2(0, -1),
-			"label": "大堂 · 谈薪", "detail": "30分钟 · 看手艺，也看人",
+			"position": Vector2(920, 500), "facing": Vector2(0, -1), "pose": "interact", "depth": 500,
+			"interactionType": "negotiate", "label": "大堂 · 谈薪", "detail": "30分钟 · 看手艺，也看人",
 			"requires_skill": 55,
 		},
 	}
@@ -34,22 +27,17 @@ func _layer_name() -> String:
 func _idle_prompt() -> String:
 	return "走近工位，按 E 或点击标签开始工作"
 
-
-## 技能不够的互动点直接不显示；显示出来的都点得动。
 func _spot_available(id: String) -> bool:
 	var spot: Dictionary = SPOTS[id]
 	if not spot.has("requires_skill"):
 		return true
 	return int(context.get("skill", 0)) >= int(spot["requires_skill"])
 
-
 func _label_of(id: String) -> String:
 	if id == "negotiate" and bool(context.get("raised_today", false)):
 		return "大堂 · 今天谈过了"
 	return str(SPOTS[id]["label"])
 
-
-## 标签上写清"这一趟能拿多少"，玩家不用去猜自己现在值多少钱。
 func _detail_of(id: String) -> String:
 	match id:
 		"work":
@@ -62,8 +50,6 @@ func _detail_of(id: String) -> String:
 			return "30分钟 · 技能+人脉够了才谈得下来"
 	return str(SPOTS[id]["detail"])
 
-
-## 每帧刷按钮显隐与文案（基类在早退之后调用）。
 func _sync_display() -> void:
 	for id in SPOTS:
 		var button: Button = buttons[id]
