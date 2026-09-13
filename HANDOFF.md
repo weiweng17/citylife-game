@@ -219,6 +219,35 @@
 - 截图脚本也踩了一次：进度动画不能用固定帧数等（开窗帧率不稳，95 帧只到 60%），要**盯着 `activity_running` 落下来**再截（同 `capture_activity_props.gd` 当年的教训）。
 - 尚未做：首批连续任务；谈薪是一次性收益，谈满 3 级就到头，没有"升职/换岗/带团队"；`Rules.gd` 那套年度收入/晋升规则**与本系统尚未打通**（两套经济并存的老问题仍在）。
 
+## 2026-09-13 阶段 3 单元 3：首批连续任务 + 一轮自审
+
+第 3 阶段计划内的最后一项，外加用户要求的"自己审查自己"。
+
+- 提交：`4709122 feat: first quest chain, plus a self-review pass on phase 3`（7 文件）。
+- 新增 `data/quests.json`（3 条串行任务）+ `scripts/systems/QuestSystem.gd`：
+  - **一次只挂一条主线任务**，走完 `next` 自动接上一条；没有限时、没有失败状态。
+  - **不形成死路的三重保证**：①条件只有单调量（计数/技能/钱/好感/天数，不会倒退到够不着）②没有时限 ③没有失败态。另外需要的老张、小雨在日程表里**每天都会出现**。
+  - 步骤类型写错＝**不报错的死路**，所以 `validate()` 在加载时体检（id 重复 / next 指空 / 类型不认识 / 没有文案），测试里也断言。
+  - 进度存 `GameState.quests`（随存档走），"奖励只发一次"靠 `done` 标记 → **读档、重复判定都不会重复结算**。
+  - 计数（上班/做饭/买东西）由 `Game` 在**真实结算点**喂进来；**只对当前激活的任务生效**——q1 期间在便利店买的东西不会替 q3 记账。这是刻意的（不然任务会"还没开始就已完成"），并且不构成死路（再做一次即可）。
+- HUD：任务接在**目标那一行**（`目标：… ｜ 任务：…`），**没有加新行**——HUD 高度被地点标题的偏移量盯死。任务步进不弹提示（HUD 那行一直挂着），开场白和收尾才弹。
+- 新增 `tools/verify_quests.gd`（6 组）、`tools/capture_quest.gd`（2 张截图）。
+- 验证：`verify_quests` 6 组 0 失败；**14 套全员回归全绿**（navigation `6646/0`、home_edges `6252/0`，其余 `exit=0`）。
+
+### 自审（用户要求"有没有你自己能审查"）——修掉的问题
+
+1. **`_show_toast` 连弹会互相顶掉**（真 bug）：前一条的 3.5 秒定时器会把**后一条刚写上去的文字**提前藏掉。改成递增序号、只有最新那条能收尾；任务提示用 `append=true` 接在结算提示下面，而不是把"工资+120"顶掉。顺带把提示框从 320×40 放宽到 560×95——两行文字原来根本装不下。
+2. **`_refresh_ui` 每帧白干两件事**（单元 2 引入）：每帧新建 office 上下文字典、每帧跑一次 `negotiate()` 只为拿 `friend`。改成**只在变化时同步** + 直接阈值比较；`_state()` 一帧只取一次。
+3. **`objective_text(game_state)` 类型错**：接口要字典，我传了 GameState 对象——第一次启动就被抓出来（SCRIPT ERROR），修掉并在调用点留了注释。
+4. **我自己测试里的三处错**（`verify_quests` 首跑 11 条 FAIL，全是测试侧）：冻结 `Game._process` 后忘了手动 `_evaluate_quests()`；计数喂给了错误的任务（计数只对当前激活任务生效）；以及**切图后只等一帧就激活交互层**——这正是文档里写的"layer 还没亮就 `_activate` 会静默返回"，改成轮询 `_wait_for_layer()`（同 `verify_day_flow` 的做法）。
+5. **截图又踩一次时序**：任务提示是下一帧才追加的（截图脚本的 `_process` 跑在 `Game._process` 之前），落下的那一帧截会缺字。改成结算后**再等 4 帧**。
+
+### 已知未处理（如实记下）
+
+- `_on_home_activity` / `_do_work_shift` / `_do_negotiate` 三处的"锁输入 → 进度 → 结算 → 解锁"样板代码重复，值得抽一个 `_run_activity()`；本轮没动（行为已被测试锁住，但重构放到下一轮单独做，避免混在功能提交里）。
+- 阶段 3 的**人工验收**没做：三条任务在真实试玩里是否顺、文案是否突兀、HUD 那行会不会太长，自动测试替代不了。
+- `Rules.gd` 那套年度经济与本系统仍未打通（两套经济并存，阶段 2 遗留）。
+
 ## 尚未完成
 
 - 全部行走方向的身体比例与动画接地视觉抽查：碰撞与可达已由 `verify_home_edges.gd` 自动覆盖，姿态观感仍需人工看截图与试玩。
@@ -228,7 +257,9 @@
 - NPC 尺寸、脚点、方向动画尚未全面统一。
 - NPC 关系（阶段 3 单元 1）目前只由"每天聊一次"推动，**没有对话选项、没有事件加成、没有关系门槛解锁的内容**；`朋友` 档位暂时只是显示与一次心情回补。
 - 工作技能成长（阶段 3 单元 2）的谈薪是**一次性收益**：谈满 3 级后这条路就到头，还没有"升职/换岗/带团队"。时薪只影响上班收入，`Rules.gd` 里那套年度收入/晋升/上市规则**与分钟循环里的这套经济尚未打通**——两套经济并存的问题依旧存在。
-- "上班攒手艺"比"回家读书"慢得多（4 班 1 点 vs 读书 1 小时 +3）是刻意的，但**哪个更划算没做过平衡验证**；谈薪门槛 95、老张降 10 也只在自动测试里验证过。首批连续任务尚未开始。
+- "上班攒手艺"比"回家读书"慢得多（4 班 1 点 vs 读书 1 小时 +3）是刻意的，但**哪个更划算没做过平衡验证**；谈薪门槛 95、老张降 10 也只在自动测试里验证过。
+- 首批连续任务（阶段 3 单元 3）只有 3 条，且是**串行单线**——没有支线、没有可选任务；计数只对当前激活任务生效（刻意，测试已锁），以后加"多任务并行"时要重新审视这条。
+- 第 3 阶段的人工试玩验收没做：任务文案、节奏、HUD 那行的长度都只能靠人眼。
 - 出租屋以外的碰撞及遮挡多数仍为矩形近似，不能宣称全地图无视觉穿模。
 - 阶段 2 的完整一天闭环已实现：家→地铁→公司工作→便利店购买→回家睡觉跨到次日。**只剩"无调试跳转走完 20–30 分钟完整流程"的人工试玩验收没做**——这一项自动测试替代不了：游戏内 1 秒＝2 分钟，现实里走完一天要 6 分钟，无头脚本只能覆盖切图与结算。
 - 过夜目前只有"睡到明早 7:30"一种；还没有"被闹钟叫醒/熬夜加班/失眠"这类分支。
@@ -251,7 +282,8 @@
 7. [完成] NPC 实体化与交谈：日程热点、点击开聊、带档位的对话标题。
 8. [完成] 关系反馈：好感/档位/每日一次/升档叙述/存档往返。
 9. [完成] 工作技能成长：手艺分档→时薪、上班攒熟练度、熟练后解锁「谈薪」（老张熟络降门槛）。
-10. [待做] 首批连续任务：不重复结算、不形成死路。
+10. [完成] 首批连续任务：3 条串行主线（先站住脚 → 老张的提醒 → 有人等你回家），无限时无失败态，不重复结算、不形成死路。
+11. [待人工] 第 3 阶段试玩验收：三条任务在真实流程里是否顺、文案是否突兀。之后进入第 4 阶段（扩展地图与内容）。
 
 ## 常用命令
 
@@ -265,9 +297,11 @@ $godotExe = 'F:\Downloads\Godot_v4.7.2-stable_win64.exe\Godot_v4.7.2-stable_win6
 & $godotExe --headless --path . --script res://tools/verify_locations.gd
 & $godotExe --headless --path . --script res://tools/verify_npc.gd
 & $godotExe --headless --path . --script res://tools/verify_job_growth.gd
+& $godotExe --headless --path . --script res://tools/verify_quests.gd
 & $godotExe --path . --rendering-method gl_compatibility --script res://tools/capture_store.gd
 & $godotExe --path . --rendering-method gl_compatibility --script res://tools/capture_npc.gd
 & $godotExe --path . --rendering-method gl_compatibility --script res://tools/capture_job.gd
+& $godotExe --path . --rendering-method gl_compatibility --script res://tools/capture_quest.gd
 & $godotExe --path . --rendering-method gl_compatibility --script res://tools/verify_home_input.gd
 # 排查"点了没反应"：打印命中控件与盖在该点上的全部控件（只读，不做断言）
 & $godotExe --path . --rendering-method gl_compatibility --script res://tools/diag_click.gd

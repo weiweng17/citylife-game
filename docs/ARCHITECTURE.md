@@ -81,6 +81,7 @@ data/*.json  ──►  scripts/systems/*   ──►  Game.gd（唯一结算中
 | `NPCScheduleSystem.gd` | NPC 日程推进（对应 `data/npc_schedules.json`）——决定某时某地有谁在 |
 | `NpcRelations.gd` | **NPC 关系**：每人一条好感值（0–100），**每天只有第一次交谈**加 4 分；档位 陌生人/认识/熟络/朋友，升档给一次心情回补与一句叙述。纯逻辑，不碰 UI，不落盘（状态存在 `GameState.relations` / `talk_day`，随存档走） |
 | `JobGrowth.gd` | **工作技能成长**：五个手艺档（学徒/上手/熟练/骨干/独当一面）决定时薪；上班攒熟练度，攒够涨一点技能；「谈薪」要熟练档，成败看技能+人脉，老张熟络会降门槛。**全静态、无状态**，数字都从调用方传进来，不碰 UI、不落盘（状态存在 `GameState.work_exp` / `raise_steps` / `raise_day`） |
+| `QuestSystem.gd` | **主线任务**（内容在 `data/quests.json`）：一次一条、串行推进，`next` 接链。**无限时、无失败态、条件全是单调量**，所以不会形成死路。`validate()` 在加载时体检内容（步骤类型写错＝不报错的死路）。进度存 `GameState.quests`，`done` 标记保证奖励只发一次。计数由 `Game` 在结算点喂（只对当前激活任务生效） |
 | `EventSystem.gd` | 事件池与触发（`data/events.json`，运行时加载 69 个事件） |
 | `EncounterSystem.gd` | 随机遭遇（`data/encounters.json`，8 个） |
 | `StorySystem.gd` | 主线剧情推进 |
@@ -118,6 +119,8 @@ data/*.json  ──►  scripts/systems/*   ──►  Game.gd（唯一结算中
 8. **NPC 关系只在 `Game._on_dialog_finished` 结算。** 关系系统（`NpcRelations.gd`）是纯函数式的 `RefCounted`，不挂树、不落盘；谁加好感、加多少、什么时候算"新的一天"都由 `Game` 决定，避免对话中途退出也照加。
 9. **"够不够格"的判定在 `Game`，交互层只管显不显示。** 谈薪要熟练档，`OfficeActivities` 只把不够格的那个按钮藏起来——判定与结算都在 `Game._do_negotiate()`。`Game` 把展示需要的数字（时薪、档位名、能不能谈、今天谈过没）通过 `sync_context()` 每帧喂给交互层，交互层**不自己去读 `GameState`**。
 10. **交互层的展示值由 `Game._refresh_ui()` 推，所以测试冻结 `Game._process` 之后必须手动推一次**（`main._refresh_ui()`），且按钮的显隐是在交互层自己的 `_process` 里刷的——`process_frame` 信号在节点处理**之前**发出，只 `await process_frame` 一帧会断言在"刚改完、还没刷"的空档上，要等两帧。
+11. **任务进度只读不改，奖励只在 `Game` 发。** `QuestSystem.evaluate()` 会自己推进进度并返回事件列表，但钱/心情的发放归 `Game._apply_quest_reward()`。计数走 `notify()`，**只对当前激活的任务生效**（q1 期间买的东西不替 q3 记账，是刻意的）——以后若要做多任务并行，这条必须重审。
+12. **HUD 不加行。** 高度被地点标题的偏移量盯死；任务接在目标那一行后面（`目标：… ｜ 任务：…`）。提示（toast）也一样：任务提示用 `append=true` 接在结算提示下面，别顶掉玩家刚看到的数字。
 
 ---
 
@@ -154,11 +157,11 @@ data/*.json  ──►  scripts/systems/*   ──►  Game.gd（唯一结算中
 | --- | --- |
 | 1. 出租屋可玩样板 | 碰撞/可达/活动/道具已完成并有自动测试；**四向身体比例与动画接地、专属活动姿态与音效仍缺**（项目内无音频资源） |
 | 2. 完整的一天 | **代码已闭环**（家→地铁→公司→便利店→回家→睡到次日），自动测试全绿；**只剩 20–30 分钟完整流程的人工试玩验收** |
-| 3. NPC 与成长 | **进行中**（2026-09-13 起）。已完成：NPC 实体化与交谈、日程热点、关系反馈（好感/档位/每日一次/存档）、工作技能成长（手艺分档→时薪、上班攒熟练度、熟练后谈薪）。待做：首批连续任务 |
+| 3. NPC 与成长 | **代码完成，待人工验收**。已完成：NPC 实体化与交谈、日程热点、关系反馈、工作技能成长（分档时薪/攒熟练度/谈薪）、首批连续任务（3 条串行主线）。 |
 | 4. 扩展地图与内容 | 未开始。每张新图须先过出生点/出入口/热点连通与遮挡检查再开放 |
 | 5. 完整首版打磨 | 未开始 |
 
-**当前正在第 3 阶段**，建议顺序：~~NPC 实体化与交谈~~ → ~~日程与关系反馈~~ → ~~工作技能成长~~ → 首批连续任务。
+**第 3 阶段代码已全部落地**，剩人工试玩验收；之后进第 4 阶段（扩展地图与内容）。
 
 ---
 
@@ -176,6 +179,7 @@ data/*.json  ──►  scripts/systems/*   ──►  Game.gd（唯一结算中
 | 改时薪/手艺档位/上班涨技能的快慢 | `scripts/systems/JobGrowth.gd`（`TIERS` / `WORK_EXP_PER_SHIFT` / `exp_needed()`） |
 | 改谈薪的门槛或条件 | `scripts/systems/JobGrowth.gd`（`NEGOTIATE_SKILL` / `NEGOTIATE_SCORE` / `FRIEND_RELATION`）；文案与结算在 `Game.gd` 的 `_do_negotiate` |
 | 加工位上的新互动点 | `scripts/systems/OfficeActivities.gd` 的 `SPOTS`（`requires_skill` 可做成技能门槛，按钮会自己藏起来） |
+| 加/改主线任务 | `data/quests.json`（`QuestSystem.STEP_TYPES` 之外的类型会被 `validate()` 拦下）；计数型步骤记得在 `Game.gd` 的结算点补 `quest_sys.notify()` |
 | 加一条自动测试 | 在 `tools/` 新建 `extends SceneTree` 的 `verify_*.gd`（**`extends Node` 的脚本不能用 `--script` 跑**） |
 | 出截图 | `tools/capture_*.gd`，输出到 `build/qa/` |
 
