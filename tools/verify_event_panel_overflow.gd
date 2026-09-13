@@ -39,11 +39,17 @@ func _process(_delta: float) -> bool:
 			return false
 		2:
 			_check_event_layout("960x540", NARROW_VIEWPORT)
-			ui.show_result(_long_result())
+			_scroll_choices_to_bottom()
 			phase = 3
 			frames = 0
 			return false
 		3:
+			_check_last_option_reachable("960x540 bottom-scroll")
+			ui.show_result(_long_result())
+			phase = 4
+			frames = 0
+			return false
+		4:
 			_check_result_layout("960x540 result", NARROW_VIEWPORT)
 			_finish()
 			return true
@@ -133,6 +139,42 @@ func _check_event_layout(label: String, expected_viewport: Vector2i) -> void:
 		scroll_content.get_combined_minimum_size(),
 		vbar.max_value,
 		vbar.page,
+	])
+
+
+func _scroll_choices_to_bottom() -> void:
+	var scroll: ScrollContainer = ui.get_node("EventPanel/EventContent/EventScroll") as ScrollContainer
+	var vbar := scroll.get_v_scroll_bar()
+	# Setting beyond the legal end is intentionally clamped by ScrollContainer to the
+	# maximum usable scroll offset. The next phase waits for layout before inspecting it.
+	scroll.scroll_vertical = int(ceil(vbar.max_value))
+
+
+func _check_last_option_reachable(label: String) -> void:
+	var scroll: ScrollContainer = ui.get_node("EventPanel/EventContent/EventScroll") as ScrollContainer
+	var options: VBoxContainer = scroll.get_node("EventScrollContent/EventOptions") as VBoxContainer
+	_expect(options.get_child_count() == EXPECTED_OPTIONS, "%s: stress choices must still exist after scrolling" % label)
+	if options.get_child_count() != EXPECTED_OPTIONS:
+		return
+
+	var last_button: Button = options.get_child(EXPECTED_OPTIONS - 1) as Button
+	_expect(last_button != null, "%s: final stress choice must remain a Button" % label)
+	if last_button == null:
+		return
+
+	var scroll_rect := scroll.get_global_rect()
+	var button_rect := last_button.get_global_rect()
+	_expect(scroll.scroll_vertical > 0, "%s: stress content must support a non-zero scroll offset" % label)
+	_expect(
+		button_rect.position.y >= scroll_rect.position.y - 0.5
+		and button_rect.end.y <= scroll_rect.end.y + 0.5,
+		"%s: final enabled choice must become fully visible at the bottom of the scroll range" % label
+	)
+	print("[%s] scroll_vertical=%s scroll=%s last_option=%s" % [
+		label,
+		scroll.scroll_vertical,
+		scroll_rect,
+		button_rect,
 	])
 
 
