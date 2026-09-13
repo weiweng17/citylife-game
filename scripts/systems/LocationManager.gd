@@ -11,6 +11,7 @@ const PLAYER_SHEET := "res://assets/characters/sprites/gameplay/protagonist_walk
 const ActivityPropScript := preload("res://scripts/world/ActivityProp.gd")
 const MoveMarkerScript := preload("res://scripts/world/MoveMarker.gd")
 const HomeInteractionVisualScript := preload("res://scripts/world/HomeInteractionVisual.gd")
+const ActiveNpcVisualScript := preload("res://scripts/world/ActiveNpcVisual.gd")
 const PLAYER_FRAME := 256
 const PLAYER_SPEED := 260.0
 const NPC_HIRES_SHEETS := {
@@ -610,7 +611,7 @@ func set_activity_feedback(text: String, active_feedback: bool, activity_id: Str
 		player_shadow.modulate.a = 0.70 if active_feedback and player_pose != "sleep" else (0.0 if player_pose == "sleep" else 1.0)
 	if activity_prop != null:
 		activity_prop.setup(activity_id)
-		# 床上姿态已有被子和露出的头部；把"手持枕头"留着反而像漂浮道具。
+		# 床上姿态已有被子和露出的头部；把“手持枕头”留着反而像漂浮道具。
 		if player_pose == "sleep":
 			activity_prop.visible = false
 	_update_player_grounding()
@@ -785,11 +786,20 @@ func set_visible_npcs(items: Array) -> void:
 
 
 func _add_npc_entity(npc_id: String, display_name: String, pos: Vector2, note: String = "") -> void:
-	# 阴影、角色、标签拆开，避免 NPC 像悬在背景上的文字按钮。
-	var shadow := _make_ground_shadow(24.0, 7.0, Color(0.0, 0.0, 0.0, 0.30))
-	shadow.position = pos + Vector2(0.0, 32.0)
-	shadow.z_index = maxi(1, int(pos.y) - 1)
-	npc_layer.add_child(shadow)
+	# 视觉与点击层拆开：视觉节点以 pos 作为脚底原点，阴影/缩放/深度由统一 helper 管；
+	# 透明 Button 仍保留原节点名、tooltip、pressed 与悬停标签契约，避免改动对话路由。
+	var visual = ActiveNpcVisualScript.new()
+	visual.name = "NpcVisual_%s" % npc_id
+	visual.position = pos
+	visual.z_index = maxi(2, int(pos.y))
+	npc_layer.add_child(visual)
+	visual.configure(
+		str(NPC_HIRES_SHEETS.get(npc_id, "")),
+		str(NPC_FALLBACK_SPRITES.get(npc_id, "")),
+		pos.y,
+		current_lighting
+	)
+	visual.play_idle_facing_down()
 
 	var button := Button.new()
 	button.name = "Npc_%s" % npc_id
@@ -801,16 +811,6 @@ func _add_npc_entity(npc_id: String, display_name: String, pos: Vector2, note: S
 	button.z_index = maxi(2, int(pos.y))
 	button.pressed.connect(_on_npc_pressed.bind(npc_id))
 	npc_layer.add_child(button)
-
-	var avatar := TextureRect.new()
-	avatar.texture = _npc_texture(npc_id)
-	avatar.set_anchors_preset(Control.PRESET_FULL_RECT)
-	avatar.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	avatar.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	avatar.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
-	avatar.modulate = current_lighting
-	avatar.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	button.add_child(avatar)
 
 	var label := Label.new()
 	label.text = display_name if note.is_empty() else "%s（%s）" % [display_name, note]
@@ -847,7 +847,7 @@ func _clear_npcs() -> void:
 	for child in npc_layer.get_children():
 		# 先摘下来再 queue_free：queue_free 要等到帧末才生效，只调它的话同一帧里
 		# 新旧 NPC 节点会同名并存，get_node 可能拿到那个正要释放的旧节点
-		# （悬停标签看起来"没更新"就是这么来的），中间还会多绘制一帧。
+		# （悬停标签看起来“没更新”就是这么来的），中间还会多绘制一帧。
 		npc_layer.remove_child(child)
 		child.queue_free()
 
