@@ -1,59 +1,62 @@
 extends SceneTree
-
-const GAME_PATH := "res://scripts/Game.gd"
+## GAME-FIX-002：归零后的健康/心情惩罚必须跟随完整游戏小时，而不是任意分钟刷新。
 
 func _init() -> void:
-	var file := FileAccess.open(GAME_PATH, FileAccess.READ)
-	if file == null:
-		push_error("GAME-FIX-002: cannot open %s" % GAME_PATH)
-		quit(1)
-		return
-	var source := file.get_as_text()
-	file.close()
+	call_deferred("run")
 
-	var failures: Array[String] = []
-	var sync_needs := _function_block(source, "func _sync_needs_to_time() -> void:")
-	if sync_needs.is_empty():
-		failures.append("missing _sync_needs_to_time")
-	else:
-		var hourly_anchor := "\twhile need_fraction >= 1.0:"
-		var warning_anchor := "\t_warn_if_need_low()"
-		var loop_start := sync_needs.find(hourly_anchor)
-		var warning_start := sync_needs.find(warning_anchor)
-		if loop_start < 0:
-			failures.append("missing hourly need-drain loop")
-		elif warning_start < 0:
-			failures.append("missing low-need warning call")
-		else:
-			var hourly_block := sync_needs.substr(loop_start, warning_start - loop_start)
-			if "\t\tif fullness <= 0:\n\t\t\thealth = maxi(0, health - 2)" not in hourly_block:
-				failures.append("zero-fullness health penalty is not inside the hourly cadence")
-			if "\t\tif energy <= 0:\n\t\t\tmood = maxi(0, mood - 2)" not in hourly_block:
-				failures.append("zero-energy mood penalty is not inside the hourly cadence")
-		if "\n\tif fullness <= 0:\n\t\thealth = maxi(0, health - 2)" in sync_needs:
-			failures.append("zero-fullness penalty still exists outside the hourly loop")
-		if "\n\tif energy <= 0:\n\t\tmood = maxi(0, mood - 2)" in sync_needs:
-			failures.append("zero-energy penalty still exists outside the hourly loop")
-		if "fullness = maxi(0, fullness - FULLNESS_PER_HOUR)" not in sync_needs:
-			failures.append("existing hourly fullness drain changed or disappeared")
-		if "energy = maxi(0, energy - ENERGY_PER_HOUR)" not in sync_needs:
-			failures.append("existing hourly energy drain changed or disappeared")
 
-	if not failures.is_empty():
-		for failure in failures:
-			push_error("GAME-FIX-002 regression: %s" % failure)
-		quit(1)
-		return
+func run() -> void:
+	var main = load("res://scenes/Main.tscn").instantiate()
+	root.add_child(main)
+	await process_frame
+	main._choose_origin(main.Data.ORIGINS[0])
+	main.dialog_queue.clear()
+	main.dialog_ui.close_dialog()
+	main.set_process(false)
 
-	print("GAME-FIX-002 PASS: zero-need penalties run only on the hourly need-drain cadence")
+	var time_sys = main.time_sys
+	main.fullness = 0
+	main.energy = 0
+	main.health = 100
+	main.mood = 100
+	main.need_fraction = 0.0
+	main.murmur_shown = {
+		"fullness": time_sys.day,
+		"energy": time_sys.day,
+	}
+	main._last_total_minutes = time_sys.day * 1440 + time_sys.get_minute_of_day()
+
+	# 只有半小时：尚未形成一次需求消耗小时，不应因为“需求已经为 0”提前扣罚。
+	time_sys.advance_minutes(30)
+	main._sync_needs_to_time()
+	assert(main.health == 100, "30 minutes at zero fullness must not damage health, got %d" % main.health)
+	assert(main.mood == 100, "30 minutes at zero energy must not damage mood, got %d" % main.mood)
+	assert(is_equal_approx(main.need_fraction, 0.5), "30 minutes must retain 0.5 need hour, got %s" % main.need_fraction)
+	print("PASS zero needs do not penalize before a full hour")
+
+	# 再过半小时：累计满一小时，只应结算一次 -2/-2。
+	time_sys.advance_minutes(30)
+	main._sync_needs_to_time()
+	assert(main.health == 98, "one full zero-fullness hour must damage health once, got %d" % main.health)
+	assert(main.mood == 98, "one full zero-energy hour must damage mood once, got %d" % main.mood)
+	assert(is_equal_approx(main.need_fraction, 0.0), "one full hour must consume the accumulated fraction")
+	print("PASS zero-need penalty fires once on the hourly cadence")
+
+	# 没有新的时间推进：重复同步/刷新不能重复扣罚。
+	main._sync_needs_to_time()
+	main._sync_needs_to_time()
+	assert(main.health == 98, "re-entry without elapsed time must not damage health again")
+	assert(main.mood == 98, "re-entry without elapsed time must not damage mood again")
+	print("PASS repeated sync without time advance is penalty-free")
+
+	# 一次跨两小时应按两个完整小时结算，保持原有 -2/-2 数值，不丢时长也不按调用次数算。
+	time_sys.advance_minutes(120)
+	main._sync_needs_to_time()
+	assert(main.health == 94, "two additional zero-fullness hours must apply two health penalties, got %d" % main.health)
+	assert(main.mood == 94, "two additional zero-energy hours must apply two mood penalties, got %d" % main.mood)
+	assert(main.fullness == 0, "fullness must remain clamped at zero")
+	assert(main.energy == 0, "energy must remain clamped at zero")
+	print("PASS multi-hour advance applies exactly one zero-need penalty per full hour")
+
+	print("GAME-FIX-002 PASS: zero-need penalties are tied to the hourly need-drain cadence")
 	quit(0)
-
-
-func _function_block(source: String, signature: String) -> String:
-	var start := source.find(signature)
-	if start < 0:
-		return ""
-	var next_func := source.find("\nfunc ", start + signature.length())
-	if next_func < 0:
-		return source.substr(start)
-	return source.substr(start, next_func - start)
