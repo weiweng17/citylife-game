@@ -46,7 +46,8 @@ func _check_sleep_pose() -> void:
 	_expect(location.home_interaction_visual.visible, "duvet visible during sleep")
 	_expect(is_zero_approx(location.player_shadow.modulate.a), "sleep hides ground shadow")
 	location.set_activity_feedback("", false)
-	_expect(location.player_pose == "idle" and not location.home_interaction_visual.visible, "bed restores free pose")
+	# 被子会淡出约 0.2 秒以实现 WakeUp；逻辑恢复不能错误要求它瞬间消失。
+	_expect(location.player_pose == "idle" and not location.home_interaction_visual.sleeping, "bed restores free pose")
 
 func _check_work_poses() -> void:
 	var location = main.location_sys

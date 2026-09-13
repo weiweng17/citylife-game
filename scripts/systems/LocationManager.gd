@@ -297,11 +297,10 @@ func _build_ui() -> void:
 	activity_prop.z_index = 8
 	root.add_child(activity_prop)
 
-	# 睡眠时盖住躯干的被子前景。它只在床上姿态时出现。
+	# 睡眠时使用独立睡姿和真正的被子前景纹理，不使用程序几何遮挡。
 	home_interaction_visual = HomeInteractionVisualScript.new()
-	home_interaction_visual.name = "HomeSleepDuvet"
-	home_interaction_visual.position = Vector2(282, 442)
-	home_interaction_visual.z_index = 518
+	home_interaction_visual.name = "HomeSleepVisual"
+	home_interaction_visual.z_index = 515
 	home_interaction_visual.visible = false
 	root.add_child(home_interaction_visual)
 
@@ -476,7 +475,7 @@ func _refresh() -> void:
 	player_pose = "idle"
 	interaction_anchor = {}
 	if home_interaction_visual:
-		home_interaction_visual.set_sleeping(false)
+		home_interaction_visual.force_hidden()
 	_update_player_grounding()
 	player_target = spawn
 	walk_path.clear()
@@ -625,15 +624,16 @@ func _apply_interaction_pose(anchor: Dictionary) -> void:
 	face_direction(anchor.get("facing", Vector2.DOWN))
 	player_sprite.rotation = 0.0
 	if player_pose == "sleep":
-		# 睡眠阶段改用床面锚点，保留头部并交给被子前景遮住躯干。
-		player_sprite.position = anchor.get("display_position", player_sprite.position)
-		player_sprite.rotation = PI * 0.5
-		player_sprite.scale = Vector2(0.46, 0.39)
+		# position 是脚底中心；sleep_position 是同一 LocationView 下的睡姿中心。
+		# 不混用 local/global，也不将普通站立帧旋转 90 度冒充睡姿。
+		var approach_global := player_sprite.global_position
 		player_sprite.z_index = int(anchor.get("depth", 518)) - 1
 		if home_interaction_visual:
-			home_interaction_visual.position = player_sprite.position + Vector2(0.0, 8.0)
 			home_interaction_visual.z_index = int(anchor.get("depth", 518))
-			home_interaction_visual.set_sleeping(true)
+			home_interaction_visual.begin_sleep(anchor, approach_global, _player_light_color())
+		var fade_out := create_tween().set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
+		fade_out.tween_property(player_sprite, "modulate:a", 0.0, 0.16)
+		fade_out.tween_callback(func(): player_sprite.visible = false)
 	elif player_pose == "sit":
 		player_sprite.scale = _depth_scale(player_sprite.position.y) * 0.91
 		player_sprite.position += Vector2(0.0, 5.0)
@@ -648,13 +648,18 @@ func _restore_free_pose() -> void:
 		# 起床回到床边，而不是在床中央直接站起。
 		player_sprite.position = interaction_anchor["position"]
 		player_target = player_sprite.position
+		player_sprite.visible = true
+		var lit_color := _player_light_color()
+		player_sprite.modulate = Color(lit_color.r, lit_color.g, lit_color.b, 0.0)
+		var fade_in := create_tween().set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+		fade_in.tween_property(player_sprite, "modulate:a", 1.0, 0.20)
 	player_pose = "idle"
 	interaction_anchor = {}
 	_pose_time = 0.0
 	player_sprite.rotation = 0.0
 	player_sprite.scale = _depth_scale(player_sprite.position.y)
 	if home_interaction_visual:
-		home_interaction_visual.set_sleeping(false)
+		home_interaction_visual.end_sleep()
 
 
 func _depth_scale(y: float) -> Vector2:
@@ -731,11 +736,7 @@ func _animate_pose(delta: float) -> void:
 	if player_sprite == null or player_pose == "walk":
 		return
 	_pose_time += delta
-	if player_pose == "sleep":
-		# 呼吸只改变极小比例，角色保持躺卧而不是播放站立 idle。
-		var pulse := sin(_pose_time * 1.6) * 0.012
-		player_sprite.scale = Vector2(0.46 + pulse, 0.39 - pulse * 0.4)
-	elif player_pose == "interact":
+	if player_pose == "interact":
 		player_sprite.scale = _depth_scale(player_sprite.position.y) * Vector2(1.0, 0.96 + sin(_pose_time * 3.0) * 0.012)
 
 func _update_player_grounding() -> void:
@@ -748,6 +749,7 @@ func _update_player_grounding() -> void:
 	if player_shadow != null:
 		player_shadow.position = player_sprite.position + Vector2(0.0, 4.0)
 		player_shadow.z_index = maxi(4, player_sprite.z_index - 1)
+		player_shadow.visible = player_pose != "sleep"
 	if player_feedback != null:
 		player_feedback.position = player_sprite.position + Vector2(-64.0, -102.0)
 		player_feedback.z_index = player_sprite.z_index + 2

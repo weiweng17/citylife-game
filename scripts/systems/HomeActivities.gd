@@ -11,10 +11,11 @@ var rest_detail: String = ""
 
 func _define_spots() -> Dictionary:
 	return {
-		# position 是角色实际走到的脚底锚点；display_position 是进入姿态后可选的
-		# 表现位置。其余字段让 LocationManager 不必知道"床/书桌"这些业务名。
+		# position / approach_position 都是角色脚底中心的全局可行走坐标。
+		# sleep_position 则是同一 LocationView 坐标空间中的睡姿美术中心，不能与脚底坐标混用。
 		"rest": {
-			"position": Vector2(430, 330), "display_position": Vector2(282, 434),
+			"position": Vector2(430, 330), "approach_position": Vector2(430, 330),
+			"sleep_position": Vector2(255, 412), "sleep_head_position": Vector2(156, 369),
 			"facing": Vector2(-1, 0), "pose": "sleep", "depth": 518,
 			"interactionType": "bed", "label": "床 · 休息", "detail": "2小时 · 健康+12 心情+8",
 		},
