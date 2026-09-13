@@ -1,34 +1,21 @@
 # NPC/Content Agent Report
 
 ## Task
-- ID: NPC-001
+- ID: NPC-CONTENT-003
 - Agent: npc-content
-- Branch/worktree: `agent/npc-001-content-audit`
-- Status: READY
+- Branch/worktree: `agent/npc-content-003-naming-consistency`
+- Status: IN_PROGRESS
 
 ## Scope
-Repository audit only. NPC scripts/scenes/data/assets are read-only for this task. The only writable file is this report.
+Audit `data/quests.json` and `data/events.json` for core-NPC naming collisions, unsupported relationship claims, and contradictory identity wording. Only `data/quests.json`, `data/events.json`, and this report are writable.
 
-## Summary
-Not started.
+## Current progress
+- Re-read latest coordination contract and ownership rules from `orchestrator/multi-agent-bootstrap`.
+- Branch started identical to coordination commit `6215005b34e860a5d346fa38ee339537a819cd66`.
+- Corrected q3 purchase wording so the `store_buy` counter no longer claims a completed handoff to 小雨.
+- Prepared hospital-event correction so the new hospital acquaintance no longer reuses core NPC `老张`; final wording is `隔壁床的病友`.
+- Continuing audit of relationship-copy cases before requesting review.
 
-## Findings
-- Pending.
-
-## Files inspected
-- Pending.
-
-## Validation
-- Commands/tests run: none; web audit must not claim a new Godot/runtime test run.
-- Result: pending repository inspection.
-- Manual checks: list runtime/content presentation checks for escalation.
-
-## Evidence
-- Repository evidence: pending.
-- Runtime/build evidence: none yet.
-
-## Known issues / risks
-- Pending.
-
-## Handoff
-Begin NPC-001 from the assigned branch. When complete, set this report to `NEEDS_REVIEW`; do not edit `docs/agents/TASK_BOARD.md`.
+## Runtime / validation
+- Godot/Web/browser/runtime: NOT RUN.
+- No runtime result is claimed.
