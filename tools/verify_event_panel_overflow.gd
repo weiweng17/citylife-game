@@ -6,16 +6,21 @@ const EventUIScript = preload("res://scripts/ui/EventUI.gd")
 const DEFAULT_VIEWPORT := Vector2i(1280, 720)
 const NARROW_VIEWPORT := Vector2i(960, 540)
 const EXPECTED_OPTIONS := 8
+const LAST_OPTION_INDEX := EXPECTED_OPTIONS - 1
 
 var ui
 var phase := 0
 var frames := 0
 var failures: Array[String] = []
+var selected_indices: Array[int] = []
+var continue_signal_count := 0
 
 
 func _init() -> void:
 	_set_logical_viewport(DEFAULT_VIEWPORT)
 	ui = EventUIScript.new()
+	ui.option_selected.connect(_on_option_selected)
+	ui.continue_requested.connect(_on_continue_requested)
 	get_root().add_child(ui)
 
 
@@ -45,12 +50,24 @@ func _process(_delta: float) -> bool:
 			return false
 		3:
 			_check_last_option_reachable("960x540 bottom-scroll")
-			ui.show_result(_long_result())
+			_press_last_option()
 			phase = 4
 			frames = 0
 			return false
 		4:
+			_check_option_signal_forwarding("choice signal")
+			ui.show_result(_long_result())
+			phase = 5
+			frames = 0
+			return false
+		5:
 			_check_result_layout("960x540 result", NARROW_VIEWPORT)
+			_press_continue()
+			phase = 6
+			frames = 0
+			return false
+		6:
+			_check_continue_signal_forwarding("continue signal")
 			_finish()
 			return true
 
@@ -157,7 +174,7 @@ func _check_last_option_reachable(label: String) -> void:
 	if options.get_child_count() != EXPECTED_OPTIONS:
 		return
 
-	var last_button: Button = options.get_child(EXPECTED_OPTIONS - 1) as Button
+	var last_button: Button = options.get_child(LAST_OPTION_INDEX) as Button
 	_expect(last_button != null, "%s: final stress choice must remain a Button" % label)
 	if last_button == null:
 		return
@@ -176,6 +193,21 @@ func _check_last_option_reachable(label: String) -> void:
 		scroll_rect,
 		button_rect,
 	])
+
+
+func _press_last_option() -> void:
+	var options: VBoxContainer = ui.get_node("EventPanel/EventContent/EventScroll/EventScrollContent/EventOptions") as VBoxContainer
+	if options.get_child_count() != EXPECTED_OPTIONS:
+		return
+	var last_button: Button = options.get_child(LAST_OPTION_INDEX) as Button
+	if last_button != null:
+		last_button.emit_signal("pressed")
+
+
+func _check_option_signal_forwarding(label: String) -> void:
+	_expect(selected_indices.size() == 1, "%s: one pressed choice must emit option_selected exactly once" % label)
+	if selected_indices.size() == 1:
+		_expect(selected_indices[0] == LAST_OPTION_INDEX, "%s: option_selected must preserve the pressed option index" % label)
 
 
 func _check_result_layout(label: String, expected_viewport: Vector2i) -> void:
@@ -201,6 +233,24 @@ func _check_result_layout(label: String, expected_viewport: Vector2i) -> void:
 		scroll.get_global_rect(),
 		continue_button.get_global_rect(),
 	])
+
+
+func _press_continue() -> void:
+	var continue_button: Button = ui.get_node("EventPanel/EventContent/ContinueButton") as Button
+	if continue_button != null and continue_button.visible:
+		continue_button.emit_signal("pressed")
+
+
+func _check_continue_signal_forwarding(label: String) -> void:
+	_expect(continue_signal_count == 1, "%s: pressing ContinueButton must emit continue_requested exactly once" % label)
+
+
+func _on_option_selected(index: int) -> void:
+	selected_indices.append(index)
+
+
+func _on_continue_requested() -> void:
+	continue_signal_count += 1
 
 
 func _check_logical_viewport(label: String, expected: Vector2i) -> void:
