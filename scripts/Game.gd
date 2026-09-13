@@ -669,6 +669,9 @@ func _process(delta: float) -> void:
 		time_sys.set_paused(ui_busy)
 		time_sys.tick(delta)
 	_sync_needs_to_time()
+	# 结局判定只走这一个入口；界面/活动忙时等交互收尾后再评估，避免结局层与事件层同时弹出。
+	if not ui_busy and _evaluate_terminal_state():
+		return
 	if weather_sys:
 		weather_sys.update(time_sys)
 	if npc_schedule_sys:
@@ -1486,9 +1489,7 @@ func _year_pass() -> void:
 	var res: Dictionary = rules_sys.year_tick(st)
 	_sync_from_state(st)
 
-	var reason: String = rules_sys.death_reason(st)
-	if reason != "":
-		_show_ending(reason, st)
+	if _evaluate_terminal_state():
 		return
 
 	var txt := "%d 岁  收入 %s / 支出 %s / 结余 %s" % [
@@ -1499,6 +1500,22 @@ func _year_pass() -> void:
 	if bool(res["ipo"]):
 		txt += "\n公司熬出头了，你成了老板。"
 	_show_toast(txt)
+
+
+## 所有健康/心情/破产/年龄终局统一从这里判定。
+## 调用方只决定“什么时候评估”，阈值与优先级仍完全由 Rules.death_reason() 决定。
+## game_over 是幂等护栏，避免刷新、重入或年度路径重复触发结局 UI。
+func _evaluate_terminal_state() -> bool:
+	if game_over:
+		return true
+	if rules_sys == null:
+		return false
+	var st: Dictionary = _state()
+	var reason: String = rules_sys.death_reason(st)
+	if reason.is_empty():
+		return false
+	_show_ending(reason, st)
+	return true
 
 
 func _fmt_money(v: int) -> String:
