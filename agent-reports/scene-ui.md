@@ -7,84 +7,80 @@
 - Status: NEEDS_REVIEW
 
 ## Scope
-Clean the remaining home sleep/bed foreground seam only. The task contract authorizes home sleep presentation paths under `scenes/**`, existing home/sleep visual references under `assets/**` when required, one narrow helper/regression under `tools/`, and this report. Sleep gameplay, input routing, world navigation, `scripts/**`, shared manager logic, `main`, and `docs/agents/TASK_BOARD.md` were treated as read-only.
+Clean the remaining home sleep/bed foreground seam only. The task contract authorizes home sleep presentation files under `scenes/**`, existing home/sleep visual references under `assets/**` when required, one narrow helper/regression under `tools/`, and this report. Sleep gameplay, input routing, world navigation, `scripts/**`, shared manager logic, `main`, and `docs/agents/TASK_BOARD.md` were treated as read-only.
 
 ## Summary
 UI-FIX-002 is complete at repository/presentation level and ready for coordinator review.
 
-The previous default blanket asset was a large foreground composition. Existing visual QA already established that continuing with a whole-bed overlay was the wrong direction and that the remaining repair should use only a small official-background waist/leg occluder.
+The repair keeps the runtime contract unchanged and replaces the previous large default blanket composition with a localized waist/leg foreground derived from the repository's official-background v3 crop. The crop relationship is baked into the existing legacy default asset canvas, so `HomeInteractionVisual.gd` continues to use the same default path/scale/position contract with no script or gameplay changes. Crop edges were alpha-feathered to reduce hard seam artifacts under linear filtering.
 
-This task therefore keeps the current runtime contract completely unchanged and repairs only the default foreground asset:
-1. Reused the existing `home_bed_blanket_foreground_v3.png` source, which was extracted from the official `rental_apartment_rain_night.webp` background and represents only the waist/leg bed foreground region.
-2. Baked the existing v3 A/B scale/offset relationship into a transparent canvas that still fits the unchanged legacy `LEGACY_BLANKET_TEXTURE` scale/position contract. No sleep script, anchor, gameplay, navigation, or manager coordinate was changed.
-3. Cleaned the crop boundary with a small alpha feather and preserved edge RGB into transparent border pixels to reduce dark/rectangular seam artifacts when linearly filtered.
-4. Replaced only the contents of the existing default path `assets/backgrounds/interactions/home_bed_blanket_foreground_v1.png`, so `HomeInteractionVisual.gd` continues to use its existing default reference without source-code changes.
-5. Added and then hardened `tools/verify_home_bed_seam.gd` so the default foreground must remain a localized transparent waist/leg patch with meaningful feathered alpha, low visible-pixel coverage, and transparent margin around every canvas edge rather than regressing into a whole-bed overlay or clipped patch.
+`tools/verify_home_bed_seam.gd` now guards both halves of the intended composition contract:
+1. Asset contract: localized transparent patch, bounded footprint, low actual visible-pixel density, meaningful feathered-alpha density, and transparent margin on every canvas edge.
+2. Default layering contract: the cleaned legacy-path asset is actually selected by default; candidate/v2/v3 A/B switches remain off; sleep pose renders below duvet foreground; programmatic Z/z renders above it; the presentation remains hidden before `begin_sleep`.
 
 ## Files changed
-- `assets/backgrounds/interactions/home_bed_blanket_foreground_v1.png` — replaced the large default foreground composition with the localized official-background waist/leg patch, baked into the existing default transform contract.
-- `tools/verify_home_bed_seam.gd` — narrow asset-contract regression; checks canvas dimensions, visible bounding box/footprint, actual visible-pixel coverage, meaningful soft-alpha ratio and edge clearance.
-- `agent-reports/scene-ui.md` — completion report / review request.
+- `assets/backgrounds/interactions/home_bed_blanket_foreground_v1.png` — localized official-background waist/leg foreground baked into the unchanged default transform contract.
+- `tools/verify_home_bed_seam.gd` — narrow asset + default-layering contract regression.
+- `agent-reports/scene-ui.md` — completion/review handoff.
 
 No `scripts/**`, `scenes/**`, gameplay data, navigation data, `main`, task board, or other coordination files were modified.
 
 ## Repository-verified presentation contract
-- The repaired default asset uses the same file path already referenced by `HomeInteractionVisual.gd`; no gameplay/presentation script API changed.
-- The visible foreground is localized to the bed waist/leg region rather than spanning a whole-bed composition.
-- The replacement transparent canvas is `1200x900`; its visible patch is approximately `709x295`, occupying under 20% of the canvas bounding-footprint ratio used by the guard test.
-- The patch is derived from the repository's existing v3 official-background crop rather than the mismatched candidate bed-group artwork.
-- The alpha edge includes partially transparent pixels so the local occluder can blend under linear filtering instead of ending in a hard rectangular crop.
-- The hardened guard additionally rejects assets whose actual visible pixels exceed 16% of the canvas, whose feathered pixels fall below 2% of visible pixels, or whose visible bounds touch an 8 px canvas-edge safety margin.
-- The existing v3/candidate A/B assets were left intact for historical comparison; no candidate whole-bed resource was enabled.
-- The sleep pose asset `protagonist_sleep_side_v6.png` was intentionally not changed in the same repair, following the handoff rule to avoid simultaneously changing both pose and duvet.
+- The repaired default asset remains at `res://assets/backgrounds/interactions/home_bed_blanket_foreground_v1.png`, the existing path used by `HomeInteractionVisual.gd`.
+- The replacement transparent canvas is `1200x900`; the inspected visible patch is approximately `709x295`, localized to the intended waist/leg region rather than a whole-bed composition.
+- The patch derives from the repository's v3 official-background crop, not the mismatched candidate bed-group artwork.
+- The alpha edge contains partially transparent pixels to blend under linear filtering instead of ending at a hard rectangular crop.
+- The regression rejects a visible-pixel ratio above 16%, a feathered-pixel ratio below 2%, or visible bounds within 8 px of a canvas edge.
+- The prepared runtime contract check instantiates the existing `HomeInteractionVisual` read-only and verifies all three A/B switches are false by default, the cleaned legacy-path texture is selected, and z-order remains sleep pose < local duvet foreground < programmatic Z/z.
+- `protagonist_sleep_side_v6.png` was intentionally not changed in this repair, following the bed handoff rule not to change pose and duvet simultaneously without rendered evidence.
 
 ## Validation
 ### Performed in this web worker
-- Re-read the latest `TASK_BOARD`, `FILE_OWNERSHIP`, `WEB_AGENT_LAUNCHPAD` and this report from GitHub before continuing.
-- Confirmed the current task board still lists UI-FIX-002 as `READY` and contains no new review finding or expanded write scope; the worker report remains the review request authority until the orchestrator mirrors status.
-- Confirmed the task branch remains based on the latest orchestrator baseline `125419dac51af9539e0fcd5c1da34bb4824d64c0` used for this repair and is not behind it.
-- Confirmed the branch diff remains limited to the three authorized paths listed above.
-- Inspected the existing v3 PNG structure and alpha extent before reuse.
-- Inspected the generated replacement asset before upload: `1200x900` transparent canvas, visible bounding region approximately `(475,28)-(1184,323)`, visible bounding footprint about `19.37%`, and a non-zero soft-alpha edge population.
-- Strengthened the headless-checkable regression to guard actual visible-pixel density, soft-alpha density and clipping margins in addition to the original bounding-box constraints.
+- Re-read latest `TASK_BOARD`, `FILE_OWNERSHIP`, `WEB_AGENT_LAUNCHPAD`, the branch report, branch diff, and current `HomeInteractionVisual.gd` from GitHub.
+- Confirmed the latest task board still lists UI-FIX-002 as `READY` and provides no new review finding or expanded write scope.
+- Confirmed the task branch is not behind the current orchestrator baseline `125419dac51af9539e0fcd5c1da34bb4824d64c0`.
+- Confirmed branch changes remain limited to the three authorized paths listed above.
+- Repository-inspected the cleaned PNG source identity and dimensions/alpha extent used by the guard.
+- Extended the narrow regression to cover the default runtime layering/selection contract without modifying the read-only presentation script.
 
 ### Not performed
 - Godot was **not** launched.
 - `tools/verify_home_bed_seam.gd` was **not** executed.
-- Existing home presentation/activity regressions were **not** executed.
+- Existing `verify_home_presentation.gd` / `verify_home_activities.gd` regressions were **not** executed.
 - `tools/capture_activity_props.gd` was **not** executed.
 - Browser/Web export/runtime inspection was **not** executed.
 - No rendered visual PASS is claimed.
 
 ### Prepared headless commands
-Run on this exact branch/SHA in a Godot 4.7.2-capable environment:
+Run on this exact review branch/head in a Godot 4.7.2-capable environment:
 
 `godot --headless --path . --script res://tools/verify_home_bed_seam.gd`
-
-Then re-run the existing presentation/gameplay guards to prove the asset-only repair did not disturb the sleep flow:
 
 `godot --headless --path . --script res://tools/verify_home_presentation.gd`
 
 `godot --headless --path . --script res://tools/verify_home_activities.gd`
 
+The first command now checks both PNG seam constraints and the default `HomeInteractionVisual` selection/z-order contract.
+
 ### Required rendered evidence before visual PASS
-Run the existing `tools/capture_activity_props.gd` default/legacy path on this exact task SHA and inspect the real home scene for all of the following:
-1. No duplicated/second bed and no large whole-bed foreground overlay.
-2. Lower body and duvet read as one composition; the local foreground edge does not appear as a hard rectangular/polygon seam.
-3. Sleep pose head still relates correctly to the original pillow/background at the existing anchor.
-4. The local foreground covers only the intended waist/leg region and does not cover the face, pillow, floor, or unrelated furniture.
-5. Only the programmatic Z/z effect is visible; no duplicate sleep symbol appears from artwork.
-6. Enter-sleep fade, breathing pulse and wake/return transition remain visually coherent.
+Run the existing `tools/capture_activity_props.gd` default/legacy path on this exact task head and inspect the real home scene for:
+1. no duplicated/second bed and no large whole-bed foreground overlay;
+2. lower body/duvet reading as one composition without a hard rectangular/polygon seam;
+3. head remaining correctly related to the original pillow/background anchor;
+4. foreground covering only the waist/leg region, not face/pillow/floor/unrelated furniture;
+5. only the programmatic Z/z effect being visible;
+6. enter-sleep fade, breathing pulse and wake/return transition remaining coherent.
 
 ## Known risks / review notes
-- Rendered acceptance remains mandatory. A repository asset-contract check can prevent obvious regressions such as restoring a whole-bed overlay, but it cannot prove the seam is invisible against the final scaled/composited scene.
-- `HomeInteractionVisual.gd`'s historical v3 A/B mode also adjusted the sleep-pose transform. This task intentionally did **not** copy those sleep-pose changes into the default path because scripts are outside the task's writable scope and the bed handoff explicitly advised against changing pose and duvet simultaneously. If the rendered default pose is still a few pixels off after this asset cleanup, that should be handled only after screenshot evidence and a new explicitly authorized presentation task.
-- Godot import regeneration may rewrite the `.import` cache locally when the PNG changes; the committed source `.png.import` remains untouched because its source path/import settings are still valid.
+- Rendered acceptance remains mandatory. The strengthened regression can verify the intended asset and layering contract but cannot prove the seam is visually invisible in the final scaled composition.
+- Historical v3 A/B mode also changes sleep-pose transform. This task deliberately does not copy that transform into the default path because `scripts/**` is outside writable scope and the handoff explicitly advises against changing pose and duvet simultaneously. If rendered evidence still shows pose misalignment, it should become a separately authorized art/presentation follow-up rather than more transform magic numbers.
+- Godot may regenerate local import cache metadata after the PNG source changes; committed `.png.import` settings were left untouched because source path/import configuration did not change.
 
 ## Commits
 - `c93edc090b1eec13af92500ad2e83bcb3f53f697` — `fix: clean home bed foreground seam asset`
 - `4ed70ea5033d47e692a166a8c83971ae03258fed` — `test: guard localized home bed seam asset`
 - `58e62748b9158b17529b29379dc4f16f92157fc6` — `test: harden home bed seam asset guard`
+- `adff4cf087468a451b7815781301505ad6d088ba` — `test: guard default bed layering contract`
 
 ## Handoff
-UI-FIX-002 remains ready for orchestrator review at repository level. This continuation found no new coordinator rework requirement, so the presentation asset was not changed again; only the narrow regression was hardened. Do not mark visual acceptance complete until a Godot 4.7.2 environment executes the three headless checks above and produces a real default-path home sleep capture on the exact review SHA. If the capture is clean, the coordinator can accept the repair; if a visible seam remains, use that rendered evidence to decide whether the sleep-pose lower silhouette needs a separately authorized art-only cleanup rather than introducing more runtime transform magic numbers.
+UI-FIX-002 remains `NEEDS_REVIEW` from the worker side. This continuation found no coordinator rework finding, so the presentation asset was not changed again; the remaining safe repository work was completed by extending the narrow regression to the default layering/selection contract. No further source/presentation edit is justified without actual Godot rendered evidence. The next step is local/QA execution of the three headless commands and a real default-path home sleep capture on the exact review head.
