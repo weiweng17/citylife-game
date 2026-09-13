@@ -1,41 +1,31 @@
-; 都市浮生 · Godot 4.5 项目配置
-; 目标平台：抖音小游戏（官方适配 Godot 4.5）+ Web + 桌面
+; Engine configuration file.
+; It's best edited using the editor UI and not directly,
+; since the parameters that go here are not all obvious.
+;
+; Format:
+;   [section] ; section goes between []
+;   param=value ; assign values to parameters
 
 config_version=5
 
 [application]
 
 config/name="都市浮生"
+config/description="半开放式都市人生模拟 · 都市手绘氛围风"
 run/main_scene="res://scenes/Main.tscn"
 config/features=PackedStringArray("4.7", "GL Compatibility")
-config/description="半开放式都市人生模拟 · 都市手绘氛围风"
 
 [display]
 
 window/size/viewport_width=1280
 window/size/viewport_height=720
 window/stretch/mode="canvas_items"
-window/stretch/aspect="keep"
+
+[gui]
+
+theme/custom_font="res://assets/fonts/GameCN.ttf"
 
 [rendering]
 
 renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"
-; 统一采用线性过滤，匹配当前手绘/漫画风美术。
-textures/canvas_textures/default_texture_filter=1
-textures/canvas_textures/default_texture_repeat=0
-
-[physics]
-
-common/physics_ticks_per_second=60
-
-[debug]
-
-settings/stdout/verbose_stdout=false
-
-[gui]
-
-; 全局默认中文字体（子集化 Noto Sans SC）。
-; 注意：Godot 4 只注册了 gui/theme/custom_font（以及 custom 主题资源）；
-; "gui/theme/default_font" 并非引擎注册项，会被静默忽略——这正是之前中文显示为豆腐块的原因。
-theme/custom_font="res://assets/fonts/GameCN.ttf"

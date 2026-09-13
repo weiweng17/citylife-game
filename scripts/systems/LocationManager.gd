@@ -9,6 +9,7 @@ signal npc_requested(npc_id: String)
 
 const PLAYER_SHEET := "res://assets/characters/sprites/gameplay/protagonist_walk_4x4.png"
 const ActivityPropScript := preload("res://scripts/world/ActivityProp.gd")
+const MoveMarkerScript := preload("res://scripts/world/MoveMarker.gd")
 const PLAYER_FRAME := 256
 const PLAYER_SPEED := 260.0
 const NPC_HIRES_SHEETS := {
@@ -212,6 +213,7 @@ var player_sprite: AnimatedSprite2D
 var player_shadow: Sprite2D
 var player_feedback: Label
 var activity_prop: Node2D
+var move_marker: Node2D
 var player_target: Vector2 = Vector2.ZERO
 var npc_layer: Control
 var foreground_layer: Control
@@ -285,6 +287,13 @@ func _build_ui() -> void:
 	activity_prop.visible = false
 	activity_prop.z_index = 8
 	root.add_child(activity_prop)
+
+	move_marker = MoveMarkerScript.new()
+	move_marker.name = "MoveMarker"
+	move_marker.visible = false
+	# 落点提示是操作反馈不是场景物体，必须浮在前景遮挡层（最深 650）与环境染色之上。
+	move_marker.z_index = 1905
+	root.add_child(move_marker)
 
 	npc_layer = Control.new()
 	npc_layer.name = "NpcHotspots"
@@ -527,7 +536,10 @@ func _on_root_gui_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton:
 		var mouse_event: InputEventMouseButton = event as InputEventMouseButton
 		if mouse_event.button_index == MOUSE_BUTTON_LEFT and mouse_event.pressed:
-			walk_to(mouse_event.position)
+			# 点了哪里必须有回应：走得到是金色涟漪，走不到是红色提示。
+			var reachable: bool = walk_to(mouse_event.position)
+			if move_marker != null:
+				move_marker.ping(mouse_event.position, not reachable)
 
 func _ensure_navigation() -> void:
 	if navigation_location != current_location:

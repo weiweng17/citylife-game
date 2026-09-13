@@ -35,6 +35,7 @@ func configure(manager) -> void:
 		button.tooltip_text = str(spot.detail)
 		button.focus_mode = Control.FOCUS_NONE
 		button.pressed.connect(_request.bind(str(id)))
+		_style_button(button)
 		layer.add_child(button)
 		buttons[id] = button
 	prompt = Label.new()
@@ -74,6 +75,23 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		if layer.visible and not nearest.is_empty() and not blocked:
 			_activate(nearest)
 			get_viewport().set_input_as_handled()
+
+## 压在场景上的暗色胶囊；不要 flat=true，否则 normal 状态的底色不会被绘制。
+static func _style_button(button: Button) -> void:
+	button.add_theme_font_size_override("font_size", 13)
+	button.add_theme_color_override("font_color", Color(0.96, 0.93, 0.84))
+	var normal := StyleBoxFlat.new()
+	normal.bg_color = Color(0.04, 0.05, 0.09, 0.74)
+	normal.set_corner_radius_all(7)
+	normal.set_border_width_all(1)
+	normal.border_color = Color(1.0, 0.93, 0.68, 0.32)
+	normal.set_content_margin_all(5)
+	button.add_theme_stylebox_override("normal", normal)
+	var hover: StyleBoxFlat = normal.duplicate() as StyleBoxFlat
+	hover.bg_color = Color(0.11, 0.13, 0.20, 0.92)
+	hover.border_color = Color(1.0, 0.93, 0.68, 0.95)
+	button.add_theme_stylebox_override("hover", hover)
+
 
 func _activate(id: String) -> void:
 	if blocked or not layer.visible or not SPOTS.has(id):

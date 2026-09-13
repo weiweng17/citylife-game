@@ -534,8 +534,9 @@ func _on_home_activity(id: String) -> void:
 	home_activities.blocked = true
 	var activity_icons := {"rest": "Zzz", "study": "专注中", "meal": "烹饪中"}
 	location_sys.set_activity_feedback(str(activity_icons.get(id, "进行中")), true, id)
+	var progress_words := {"rest": "睡意渐浓", "study": "书页翻动", "meal": "锅里咕嘟作响"}
 	for step in range(10):
-		home_activities.prompt.text = "%s… %d%%" % [home_activities.SPOTS[id].label, (step + 1) * 10]
+		home_activities.prompt.text = "%s… %d%%" % [str(progress_words.get(id, "进行中")), (step + 1) * 10]
 		await get_tree().create_timer(0.12).timeout
 	var feedback: String = ""
 	match id:
@@ -543,17 +544,17 @@ func _on_home_activity(id: String) -> void:
 			health = mini(100, health + 12)
 			mood = mini(100, mood + 8)
 			time_sys.advance_minutes(120)
-			feedback = "休息了2小时 · 健康+12，心情+8（最高100）"
+			feedback = "你躺下睡了两个钟头，梦里什么都没有。醒来时身体松快了些。（健康+12 心情+8）"
 		"study":
 			skill = mini(100, skill + 3)
 			mood = maxi(0, mood - 3)
 			time_sys.advance_minutes(60)
-			feedback = "学习了1小时 · 技能+3（最高100），心情−3"
+			feedback = "台灯下坐了一个小时，书翻过去又翻回来。手艺见长，人有点乏。（技能+3 心情−3）"
 		"meal":
 			money -= 20
 			health = mini(100, health + 5)
 			time_sys.advance_minutes(30)
-			feedback = "做好了一顿饭 · −20元，健康+5（最高100），耗时30分钟"
+			feedback = "一个人也要好好吃饭。热汤下肚，身上暖了起来。（−20元 健康+5）"
 	activity_running = false
 	location_sys.set_activity_feedback("", false)
 	var still_busy: bool = dialog_ui.is_busy() or event_ui.is_busy() or game_over
@@ -573,7 +574,7 @@ func _on_office_activity(id: String) -> void:
 	office_activities.blocked = true
 	location_sys.set_activity_feedback("工作中", true, id)
 	for step in range(10):
-		office_activities.prompt.text = "上班中… %d%%" % ((step + 1) * 10)
+		office_activities.prompt.text = "键盘敲个不停… %d%%" % ((step + 1) * 10)
 		await get_tree().create_timer(0.12).timeout
 	money += 120
 	health = maxi(0, health - 6)
@@ -588,7 +589,7 @@ func _on_office_activity(id: String) -> void:
 	home_activities.blocked = still_busy
 	office_activities.blocked = still_busy
 	_refresh_ui()
-	_show_toast("上了一天班 · 工资+120元，健康−6，心情−4，耗时4小时")
+	_show_toast("你把一整天交给了格子间。下班时雨还在下，手机里多了 120 块。身体发沉，话也不想说。（工资+120 健康−6 心情−4，耗时4小时）")
 
 
 func _on_day_changed(day: int) -> void:
