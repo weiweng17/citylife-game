@@ -60,11 +60,21 @@
 ### GAME-FIX-004 — Save/load terminal-state re-entry hardening
 - Owner: gameplay
 - Branch: `agent/game-fix-004-save-terminal-reentry`
-- Status: READY
+- Status: DONE
 - Priority: HIGH
 - Writable: `scripts/Game.gd`, one narrow `tools/verify_*.gd` regression if needed, `agent-reports/gameplay.md`.
 - Objective: make save/load and post-load refresh behavior respect the centralized terminal-state contract so loading or refreshing a terminal/non-terminal save cannot trigger duplicate ending transitions or silently bypass the authoritative evaluator. Preserve save schema, thresholds, ending text, progression values, and unrelated load behavior.
 - Acceptance: terminal evaluation after load/re-entry uses the existing authoritative path; repeated refresh/load settlement is idempotent; non-terminal saves remain playable; no save-schema change; narrow regression added; no unrun runtime evidence claimed.
+- Review result: accepted at repository level. Against the accepted GAME-FIX-003 dependency, the task adds only `tools/verify_save_terminal_reentry.gd` plus the gameplay report; no new `Game.gd` semantics were introduced and no runtime PASS is inferred.
+
+### GAME-FIX-005 — Integration-ready gameplay contract audit
+- Owner: gameplay
+- Branch: `agent/game-fix-005-integration-contract-audit`
+- Status: READY
+- Priority: MEDIUM
+- Writable: `agent-reports/gameplay.md` only.
+- Objective: inspect GAME-FIX-001 through GAME-FIX-004 together and document the smallest authoritative gameplay contract that an integration candidate must preserve, with exact function-level collision points in `scripts/Game.gd`, dependency order, and any repository-visible semantic gap that would require a new gameplay repair.
+- Acceptance: report-only; no source edits; explicitly distinguish inherited branch history from task deltas; recommend a new GAME-FIX only if a concrete repository-visible gap remains; do not claim runtime evidence.
 
 ### UI-FIX-001 — Active NPC grounding and animation integration
 - Owner: scene-ui
@@ -98,11 +108,21 @@
 ### UI-AUDIT-004 — Responsive presentation hotspot inventory
 - Owner: scene-ui
 - Branch: `agent/ui-audit-004-responsive-hotspots`
-- Status: READY
+- Status: DONE
 - Priority: MEDIUM
 - Writable: `agent-reports/scene-ui.md` only.
 - Objective: while UI-FIX-001/002/003 await real rendered evidence, inspect the current repository for the next smallest presentation-owned responsive/layout hotspot that can be repaired without touching `Game.gd`, `LocationManager.gd`, gameplay settlement, NPC semantics, or navigation. Produce an ordered hotspot inventory with exact candidate files, failure mode, ownership risk, and one recommended next minimal UI-FIX task.
 - Acceptance: report-only; at least three concrete hotspots are tied to current repository paths; no runtime/rendered PASS is claimed; recommendation avoids files currently locked by pending visual tasks where possible.
+- Review result: accepted. Diff is report-only and identifies EventUI fixed-height/clipping as the smallest next presentation-owned hotspot; no rendered result is claimed.
+
+### UI-FIX-004 — Event panel overflow containment
+- Owner: scene-ui
+- Branch: `agent/ui-fix-004-event-panel-overflow`
+- Status: READY
+- Priority: MEDIUM
+- Writable: `scripts/ui/EventUI.gd`, one narrow `tools/verify_*.gd` regression if needed, `agent-reports/scene-ui.md`.
+- Objective: make EventUI own vertical overflow so long narrative/result copy and multiple choices cannot be silently clipped out of reach as viewport/content size changes. Preserve signals, public methods, event semantics and settlement behavior.
+- Acceptance: EventUI stays inside the logical viewport at 1280x720 and one smaller declared desktop/Web logical viewport; long body/result content has an explicit bounded overflow/scroll path; all enabled choice and continue controls remain reachable; no `Game.gd`, `LocationManager.gd`, event data or gameplay semantics change; rendered visual PASS still requires actual Godot evidence.
 
 ### NPC-CONTENT-002 — Narrative/mechanic alignment cleanup
 - Owner: npc-content
@@ -127,11 +147,21 @@
 ### NPC-CONTENT-004 — Relationship-neutral copy cleanup
 - Owner: npc-content
 - Branch: `agent/npc-content-004-relationship-neutral-copy`
-- Status: READY
+- Status: DONE
 - Priority: MEDIUM
 - Writable: `data/events.json`, `agent-reports/npc-content.md` only.
 - Objective: apply only unambiguous string-level neutralizations for event lines that assert a spouse/family relationship even though the event has no corresponding relationship-state condition. Start from the NPC-CONTENT-003 findings; do not change speakers/conditions/flags/schema/IDs/rewards/effects/flow, and do not rewrite cases whose correctness depends on family-state mechanics.
 - Acceptance: every edit is string-only and individually justified against the event's existing eligibility; ambiguous wife/child-state cases remain documented rather than guessed; JSON structure and mechanics remain unchanged; no runtime result claimed unless actually run.
+- Review result: accepted at repository/content level. Diff contains four string-only substitutions in `data/events.json` plus the report; ambiguous speaker/condition cases remain deferred and no parser/runtime PASS is inferred.
+
+### NPC-CONTENT-005 — Family-state ambiguity inventory
+- Owner: npc-content
+- Branch: `agent/npc-content-005-family-state-ambiguity-audit`
+- Status: READY
+- Priority: MEDIUM
+- Writable: `agent-reports/npc-content.md` only.
+- Objective: inventory every remaining event whose speaker or relationship wording depends on spouse/child state not guaranteed by current eligibility, starting with `e_kid_school`, `e_second_child`, `e_downsize`, and `e_empty_nest`. For each, identify whether a safe future fix is copy-only or requires condition/speaker mechanics ownership.
+- Acceptance: report-only; exact event IDs, current eligibility and contradiction are recorded; no conditions/speakers/data are changed; propose the smallest follow-up task boundary without inventing family-state rules or claiming runtime evidence.
 
 ### QA-002 — Godot/Web runtime acceptance
 - Owner: qa-build (local/Codex execution)
@@ -172,11 +202,21 @@
 ### QA-006 — Integration merge/conflict manifest
 - Owner: qa-build
 - Branch: `agent/qa-006-integration-conflict-manifest`
-- Status: READY
+- Status: DONE
 - Priority: MEDIUM
 - Writable: `agent-reports/qa-build.md` only.
 - Objective: prepare an exact repository-only merge/conflict manifest for all orchestrator-accepted gameplay/content work plus UI branches awaiting runtime evidence. Identify overlapping files/commits, recommended integration order, regressions to rerun after each overlap, and which visual/runtime tasks must remain unpromoted. Do not merge, run Godot/Web, edit workflows, or alter worker code.
 - Acceptance: exact branch tips are captured; shared-file overlaps are called out explicitly (especially `scripts/Game.gd`); a deterministic integration order and rerun matrix are provided; no execution is claimed.
+- Review result: accepted. Report-only diff respects ownership and supplies deterministic gameplay/content ordering, overlap stop conditions and exact prepared runtime commands; UI work remains explicitly unpromoted pending real rendered evidence.
+
+### QA-007 — Next-wave branch freshness and acceptance delta
+- Owner: qa-build
+- Branch: `agent/qa-007-next-wave-delta`
+- Status: READY
+- Priority: MEDIUM
+- Writable: `agent-reports/qa-build.md` only.
+- Objective: capture exact tips and repository-only acceptance deltas for GAME-FIX-004, UI-AUDIT-004/UI-FIX-004, NPC-CONTENT-004/NPC-CONTENT-005, and the current UI-FIX-001/002/003 hold candidates. Identify stale SHA hazards, required narrow checks, and which items can be repository-reviewed versus which still require Godot/browser evidence.
+- Acceptance: report-only; exact branch tips captured; no merges or worker-code edits; all runtime/rendered claims remain explicitly unexecuted unless real evidence exists.
 
 ## Deferred next repairs
 1. Family-state event-condition semantics after explicit gameplay/data-condition ownership assignment.
