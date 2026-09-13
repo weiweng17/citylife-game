@@ -18,52 +18,53 @@ Only the orchestrator edits this board. Workers read it and update only their ow
 - Branch: `agent/game-fix-001-daily-event-separation`
 - Status: DONE
 - Priority: CRITICAL
-- Review: accepted at repository level; fresh integrated Godot execution remains QA work.
 
 ### GAME-FIX-002 — Need-zero penalty cadence
 - Owner: gameplay
 - Branch: `agent/game-fix-002-need-zero-cadence`
 - Status: DONE
 - Priority: HIGH
-- Review: accepted at repository level; hourly need settlement contract retained.
 
 ### GAME-FIX-003 — Centralize terminal-state evaluation
 - Owner: gameplay
 - Branch: `agent/game-fix-003-terminal-state-evaluation`
 - Status: DONE
 - Priority: HIGH
-- Review: accepted at repository level; `_evaluate_terminal_state()` remains authoritative.
 
 ### GAME-FIX-004 — Save/load terminal-state re-entry hardening
 - Owner: gameplay
 - Branch: `agent/game-fix-004-save-terminal-reentry`
 - Status: DONE
 - Priority: HIGH
-- Review: accepted as regression coverage; no second save-specific terminal path.
 
 ### GAME-FIX-005 — Integration-ready gameplay contract audit
 - Owner: gameplay
 - Branch: `agent/game-fix-005-integration-contract-audit`
 - Status: DONE
 - Priority: MEDIUM
-- Review: accepted report-only integration contract audit.
 
 ### GAME-FIX-006 — Gameplay integration callsite guard audit
 - Owner: gameplay
 - Branch: `agent/game-fix-006-integration-callsite-guard-audit`
 - Status: DONE
 - Priority: MEDIUM
-- Writable: `agent-reports/gameplay.md` only.
-- Review result: accepted. Diff is report-only and identifies one concrete uncovered bypass: sleep settlement can cross a terminal threshold inside `_sync_needs_to_time()` and then apply sleep recovery before the authoritative evaluator observes that state. No runtime PASS is inferred.
 
 ### GAME-FIX-007 — Sleep settlement terminal guard
 - Owner: gameplay
 - Branch: `agent/game-fix-007-sleep-terminal-guard`
-- Status: READY
+- Status: DONE
 - Priority: HIGH
-- Writable: `scripts/Game.gd`, one narrow `tools/verify_sleep_terminal_guard.gd`, `agent-reports/gameplay.md`.
-- Objective: preserve GAME-FIX-001..004 contracts while ensuring the sleep-specific `_sync_needs_to_time()` path cannot cross a terminal health/mood threshold and then be revived by same-flow sleep recovery before `_evaluate_terminal_state()` runs.
-- Acceptance: use the existing authoritative evaluator; if overnight settlement is terminal, stop sleep recovery and normal completion/toast flow after unlocking/finishing the activity safely; preserve existing sleep duration and non-terminal recovery values; no new thresholds, save fields, ending path, annual behavior, UI semantics, or LocationManager changes; add a narrow regression; do not claim unrun Godot evidence.
+- Review result: repository-level accepted at `ff08ce9dd7d1b3abddf65348b74f3ca5403ab344`. Branch changes only the explicitly authorized `scripts/Game.gd`, `tools/verify_sleep_terminal_guard.gd`, and gameplay report. The implementation routes overnight settlement through the existing authoritative evaluator before recovery and does not add a second death path. Runtime PASS is not inferred; all Gameplay regressions remain part of QA-002 on one frozen integration SHA.
+- Integration note: this branch also reconstructs already accepted GAME-FIX-001..003 source semantics because the coordination branch is metadata-only. Do not blindly merge historical gameplay branches plus the full 007 branch; form one deterministic integrated `Game.gd` candidate.
+
+### GAME-AUDIT-008 — Remaining terminal-sensitive time-settlement callsite audit
+- Owner: gameplay
+- Branch: `agent/game-audit-008-terminal-time-callsite-audit`
+- Status: READY
+- Priority: MEDIUM
+- Writable: `agent-reports/gameplay.md` only.
+- Objective: on top of the accepted GAME-FIX-007 semantic state, inventory every remaining `time_sys` advance / `_sync_needs_to_time()` / `_evaluate_terminal_state()` callsite and identify only concrete paths where need settlement, activity locking, recovery, or state mutation could still hide a terminal threshold before the authoritative evaluator observes it.
+- Acceptance: report-only; exact function/callsite evidence; distinguish true bypasses from already safe process/year/sleep paths; propose at most the smallest follow-up Gameplay task if a concrete uncovered bypass exists; no source edits, no new thresholds or death paths, and no unrun Godot evidence.
 
 ## Scene/UI pipeline
 
@@ -72,52 +73,57 @@ Only the orchestrator edits this board. Workers read it and update only their ow
 - Branch: `agent/ui-fix-001-active-npc-integration`
 - Status: NEEDS_REVIEW
 - Priority: HIGH
-- Review: repository scope accepted; final visual acceptance requires exact-SHA Godot evidence.
+- Hold: final visual acceptance requires exact-SHA Godot evidence.
 
 ### UI-FIX-002 — Home bed seam cleanup
 - Owner: scene-ui
 - Branch: `agent/ui-fix-002-home-bed-seam`
 - Status: NEEDS_REVIEW
 - Priority: MEDIUM
-- Review: repository scope accepted; final visual acceptance requires exact-SHA Godot evidence.
+- Hold: final visual acceptance requires exact-SHA Godot evidence.
 
 ### UI-FIX-003 — HUD/header layout decoupling
 - Owner: scene-ui
 - Branch: `agent/ui-fix-003-hud-header-decoupling`
 - Status: NEEDS_REVIEW
 - Priority: MEDIUM
-- Review: repository scope accepted; final visual acceptance requires exact-SHA Godot evidence.
+- Hold: final visual acceptance requires exact-SHA Godot evidence.
 
 ### UI-AUDIT-004 — Responsive presentation hotspot inventory
 - Owner: scene-ui
 - Branch: `agent/ui-audit-004-responsive-hotspots`
 - Status: DONE
 - Priority: MEDIUM
-- Review: accepted report-only audit; led to UI-FIX-004.
 
 ### UI-FIX-004 — Event panel overflow containment
 - Owner: scene-ui
 - Branch: `agent/ui-fix-004-event-panel-overflow`
 - Status: NEEDS_REVIEW
 - Priority: MEDIUM
-- Review: repository scope/ownership accepted; final task acceptance requires real Godot execution and rendered 1280x720 + 960x540 evidence on the exact review/integration SHA.
+- Hold: exact-SHA verifier plus rendered 1280x720 and 960x540 evidence required.
 
 ### UI-AUDIT-005 — Next responsive hotspot after EventUI
 - Owner: scene-ui
 - Branch: `agent/ui-audit-005-next-responsive-hotspot`
 - Status: DONE
 - Priority: MEDIUM
-- Writable: `agent-reports/scene-ui.md` only.
-- Review result: accepted. Diff is report-only, respects ownership, and identifies StartUI as the next smallest responsive repair while preserving the pre-tree `setup()` and post-ready `set_load_available()` lifecycle contract. No rendered/runtime PASS is inferred.
 
 ### UI-FIX-005 — Start screen vertical overflow containment
 - Owner: scene-ui
 - Branch: `agent/ui-fix-005-start-screen-overflow`
-- Status: READY
+- Status: NEEDS_REVIEW
 - Priority: MEDIUM
-- Writable: `scripts/ui/StartUI.gd`, one narrow `tools/verify_start_screen_overflow.gd`, `agent-reports/scene-ui.md`.
-- Objective: give StartUI an explicit bounded vertical overflow/scroll owner so all four current origin cards and the optional load action remain reachable at 1280x720 and 960x540 without changing start/save/origin semantics.
-- Acceptance: `setup(origins, money_formatter)` remains valid before `add_child`; `origin_selected(origin)`, `load_requested`, `open()`, `close()`, and `set_load_available(value)` remain compatible; post-ready load-button toggling remains safe; all four cards and load button are reachable through a vertical scroll path when needed; full-card hit targets preserve the exact supplied origin dictionary; no `Game.gd`, `Data.gd`, gameplay, navigation, NPC, or save semantics changes; rendered PASS still requires actual Godot evidence.
+- Repository review: scope/ownership accepted. Branch delta is limited to `scripts/ui/StartUI.gd`, `tools/verify_start_screen_overflow.gd`, and scene-ui report; public StartUI lifecycle/signals remain intentionally preserved.
+- Hold: task acceptance explicitly still requires real Godot execution and rendered 1280x720 + 960x540 evidence on the exact review/integration SHA. Source inspection or prepared headless assertions are not a rendered PASS.
+
+### UI-AUDIT-006 — Next responsive hotspot after StartUI
+- Owner: scene-ui
+- Branch: `agent/ui-audit-006-next-responsive-hotspot`
+- Status: READY
+- Priority: LOW
+- Writable: `agent-reports/scene-ui.md` only.
+- Objective: while UI-FIX-001..005 remain in exact-SHA render hold, inspect the remaining presentation surfaces for the smallest independent responsive/reachability defect that can be fixed without touching Gameplay, LocationManager, NPC content, save semantics, or currently held UI files.
+- Acceptance: report-only; identify one smallest candidate with exact file/function/layout evidence and a narrow proposed writable boundary; explicitly avoid files already locked by UI-FIX-001..005; no source edits and no rendered/runtime PASS claims.
 
 ## NPC/Content pipeline
 
@@ -147,16 +153,22 @@ Only the orchestrator edits this board. Workers read it and update only their ow
 - Branch: `agent/npc-content-006-house-copy-neutralization`
 - Status: DONE
 - Priority: LOW
-- Review result: accepted. Branch delta is limited to `data/events.json` plus the NPC report; the source change is exactly one string substitution in `e_house` (`掏空六个钱包，买` → `凑够首付，买`) with mechanics/conditions/IDs/flags/effects unchanged. No parser/runtime PASS is inferred.
 
 ### NPC-CONTENT-007 — Remaining unconditional relationship-copy audit
 - Owner: npc-content
 - Branch: `agent/npc-content-007-remaining-neutral-copy-audit`
+- Status: DONE
+- Priority: LOW
+- Review result: accepted as strict report-only audit. It identifies exactly two new safe copy-only candidates (`e_first_salary`, `e_sidejob`) and correctly leaves speaker/premise-level and family-policy cases untouched. No runtime/parser PASS is inferred.
+
+### NPC-CONTENT-008 — Neutralize remaining incidental mother-specific copy
+- Owner: npc-content
+- Branch: `agent/npc-content-008-neutral-parent-copy`
 - Status: READY
 - Priority: LOW
-- Writable: `agent-reports/npc-content.md` only.
-- Objective: inspect remaining event/quest strings for relationship or household claims that are unconditionally asserted without supporting eligibility, excluding the four explicitly policy-dependent family-state events (`e_kid_school`, `e_second_child`, `e_downsize`, `e_empty_nest`) and excluding already accepted fixes. Identify only additional copy-only candidates that can be neutralized without changing speakers, conditions, IDs, flags, rewards/effects, counters, schema, or flow.
-- Acceptance: report-only; exact IDs/strings and eligibility evidence; clearly separate safe copy-only candidates from mechanic/policy-dependent cases; do not edit data or invent family-state rules; no runtime/parser PASS claimed.
+- Writable: `data/events.json`, `agent-reports/npc-content.md`.
+- Objective: remove only the unsupported mother-specific relationship assumptions identified by NPC-CONTENT-007 in `e_first_salary` and `e_sidejob`, preserving each event's action/tone and all mechanics.
+- Acceptance: exactly two string-value edits only; no speaker, conditions, IDs, flags, rewards/effects, age/origin eligibility, jobs, counters, schema, or flow changes; keep the four family-policy events untouched; report exact old/new strings; do not claim unrun parser/Godot evidence.
 
 ## QA/Build pipeline
 
@@ -196,17 +208,22 @@ Only the orchestrator edits this board. Workers read it and update only their ow
 - Branch: `agent/qa-008-runtime-handoff-refresh`
 - Status: DONE
 - Priority: MEDIUM
-- Writable: `agent-reports/qa-build.md` only.
-- Review result: accepted. Diff is report-only, refreshes exact branch tips/stale-SHA hazards, preserves rendered-evidence requirements, and correctly escalates GAME-FIX-006's sleep-settlement gap without patching gameplay. No runtime/Web/parser PASS is inferred.
 
 ### QA-009 — Acceptance delta for GAME-FIX-007 / UI-FIX-005 / NPC-CONTENT-007
 - Owner: qa-build
 - Branch: `agent/qa-009-next-wave-acceptance-delta`
+- Status: DONE
+- Priority: MEDIUM
+- Review result: accepted as report-only. It correctly captures exact tips, preserves the single-integration-SHA rule, keeps UI-FIX-001..005 rendered holds, and does not infer runtime/parser/Web PASS.
+
+### QA-010 — Post-review integration and freshness delta
+- Owner: qa-build
+- Branch: `agent/qa-010-post-review-integration-delta`
 - Status: READY
 - Priority: MEDIUM
 - Writable: `agent-reports/qa-build.md` only.
-- Objective: prepare the exact repository-only acceptance matrix for GAME-FIX-007, UI-FIX-005, and NPC-CONTENT-007 while refreshing the current UI-FIX-001..004 hold tips. Define narrow verifier commands, rendered requirements, stale-SHA stop conditions, and how the new tasks extend the existing single-integration-SHA runtime handoff.
-- Acceptance: report-only; capture exact branch tips; no merges, workflow edits, worker-code edits, Godot/Web/browser/parser execution, or inferred PASS; UI-FIX-005 must retain rendered 1280x720 + 960x540 evidence requirements; GAME-FIX-007 must be validated through the existing authoritative terminal evaluator contract rather than a new sleep-specific death path.
+- Objective: refresh the integration/acceptance manifest after repository acceptance of GAME-FIX-007, NPC-CONTENT-007, and QA-009 while UI-FIX-005 remains in render hold; include the newly queued GAME-AUDIT-008, UI-AUDIT-006, and NPC-CONTENT-008 boundaries and identify any deterministic integration-order/conflict hazards.
+- Acceptance: report-only; capture exact branch tips and stale-SHA conditions; keep QA-002 blocked only on real Godot/browser context; no merges, worker-code edits, workflow edits, parser/Godot/Web/browser execution, or inferred PASS.
 
 ## Deferred product decisions
 1. Family-state event-condition semantics for `e_kid_school`, `e_second_child`, `e_downsize`, `e_empty_nest`: married-household-only vs co-parent-inclusive behavior requires an explicit product/content decision.
