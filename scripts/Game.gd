@@ -30,6 +30,8 @@ const QuestSystemScript = preload("res://scripts/systems/QuestSystem.gd")
 const ParkActivitiesScript = preload("res://scripts/systems/ParkActivities.gd")
 const CafeActivitiesScript = preload("res://scripts/systems/CafeActivities.gd")
 const HospitalActivitiesScript = preload("res://scripts/systems/HospitalActivities.gd")
+const AlleyActivitiesScript = preload("res://scripts/systems/AlleyActivities.gd")
+const RooftopActivitiesScript = preload("res://scripts/systems/RooftopActivities.gd")
 const ShopUIScript = preload("res://scripts/ui/ShopUI.gd")
 const LocationManagerScript = preload("res://scripts/systems/LocationManager.gd")
 
@@ -150,6 +152,8 @@ var store_activities
 var park_activities
 var cafe_activities
 var hospital_activities
+var alley_activities
+var rooftop_activities
 var daily_routine
 var inventory
 var activity_running: bool = false
@@ -262,6 +266,18 @@ func _ready() -> void:
 	add_child(hospital_activities)
 	hospital_activities.configure(location_sys)
 	hospital_activities.activity_requested.connect(_on_hospital_activity)
+	# 旧巷与天台是第 4 阶段扩展内容的最后两个场景：都是免费的慢节奏去处，
+	# 旧巷多一炷 5 元的香。
+	alley_activities = AlleyActivitiesScript.new()
+	alley_activities.name = "AlleyActivities"
+	add_child(alley_activities)
+	alley_activities.configure(location_sys)
+	alley_activities.activity_requested.connect(_on_alley_activity)
+	rooftop_activities = RooftopActivitiesScript.new()
+	rooftop_activities.name = "RooftopActivities"
+	add_child(rooftop_activities)
+	rooftop_activities.configure(location_sys)
+	rooftop_activities.activity_requested.connect(_on_rooftop_activity)
 	# 背包只存物品数量；买到的东西随时可以取用，具体效果由这里结算。
 	inventory = InventoryScript.new()
 	inventory.name = "Inventory"
@@ -647,6 +663,8 @@ func _process(delta: float) -> void:
 	park_activities.blocked = ui_busy
 	cafe_activities.blocked = ui_busy
 	hospital_activities.blocked = ui_busy
+	alley_activities.blocked = ui_busy
+	rooftop_activities.blocked = ui_busy
 	if time_sys:
 		time_sys.set_paused(ui_busy)
 		time_sys.tick(delta)
@@ -688,6 +706,8 @@ func _begin_activity(prompt_label: Label, progress_text: String, feedback_text: 
 	park_activities.blocked = true
 	cafe_activities.blocked = true
 	hospital_activities.blocked = true
+	alley_activities.blocked = true
+	rooftop_activities.blocked = true
 	location_sys.set_activity_feedback(feedback_text, true, activity_id)
 	for step in range(10):
 		prompt_label.text = "%s… %d%%" % [progress_text, (step + 1) * 10]
@@ -706,6 +726,8 @@ func _end_activity() -> void:
 	park_activities.blocked = still_busy
 	cafe_activities.blocked = still_busy
 	hospital_activities.blocked = still_busy
+	alley_activities.blocked = still_busy
+	rooftop_activities.blocked = still_busy
 	_refresh_ui()
 
 
@@ -983,6 +1005,54 @@ func _on_hospital_activity(id: String) -> void:
 			mood = mini(100, mood + 5)
 			time_sys.advance_minutes(15)
 			feedback = "你在候诊椅上坐了一会儿。护士推着车走过，喊到的名字都不是你的。这样想想，好像也值得高兴。（心情+5，耗时15分钟）"
+	_end_activity()
+	_show_toast(feedback)
+
+
+func _on_alley_activity(id: String) -> void:
+	if activity_running or not game_started or game_over or dialog_ui.is_busy() or event_ui.is_busy():
+		return
+	if location_sys.current_location != "alley" or not alley_activities.SPOTS.has(id):
+		return
+	# 香钱先看余额：与做饭/咖啡/挂号同一套检查。
+	if id == "shrine" and money < 5:
+		_show_toast("一炷香5元，当前余额不足。")
+		return
+	var feedback: String = ""
+	match id:
+		"shrine":
+			await _begin_activity(alley_activities.prompt, "香灰簌簌地落", "上香中", "shrine")
+			money -= 5
+			mood = mini(100, mood + 8)
+			time_sys.advance_minutes(15)
+			feedback = "你点了一炷香插进炉里，没许愿，就是站了一会儿。火光在雨里晃，心里那点堵着的东西好像松了半寸。（−5元 心情+8，耗时15分钟）"
+		"door":
+			await _begin_activity(alley_activities.prompt, "门缝里透出灯光", "歇脚中", "door")
+			mood = mini(100, mood + 6)
+			time_sys.advance_minutes(20)
+			feedback = "这扇门总亮着灯，你从没见谁进出。你在台阶下站了二十分钟，猜里面的日子是什么样的，然后回去继续过自己的。（心情+6，耗时20分钟）"
+	_end_activity()
+	_show_toast(feedback)
+
+
+func _on_rooftop_activity(id: String) -> void:
+	if activity_running or not game_started or game_over or dialog_ui.is_busy() or event_ui.is_busy():
+		return
+	if location_sys.current_location != "rooftop" or not rooftop_activities.SPOTS.has(id):
+		return
+	var feedback: String = ""
+	match id:
+		"ledge":
+			await _begin_activity(rooftop_activities.prompt, "城市在脚下亮着", "看夜景", "ledge")
+			mood = mini(100, mood + 10)
+			time_sys.advance_minutes(25)
+			feedback = "你在栏杆边站了二十五分钟。楼下是别人的人生，一扇一扇亮着；从这里看，连烦恼都显得小了一圈。（心情+10，耗时25分钟）"
+		"bench":
+			await _begin_activity(rooftop_activities.prompt, "风把雨丝吹斜", "吹风中", "bench")
+			mood = mini(100, mood + 8)
+			energy = mini(100, energy + 5)
+			time_sys.advance_minutes(20)
+			feedback = "天台的长椅没人抢。你坐下来吹了吹风，什么也没想，肩膀自己松了下来。（心情+8 精力+5，耗时20分钟）"
 	_end_activity()
 	_show_toast(feedback)
 
