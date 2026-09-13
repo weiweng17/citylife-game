@@ -1,9 +1,9 @@
 extends CanvasLayer
 ## 通用复杂交互演出层。
 ##
-## 设计目标：地图继续负责移动/寻路/锚点；复杂动作不再强行把角色贴进已烘焙背景，
-## 而是在活动期间显示一个独立的动漫式 Cut-in。当前只接“出租屋 -> 床 -> 休息”，
-## 后续 study / cook / work / subway 等只需要补 registry，不改业务结算。
+## 地图仍负责移动、寻路和交互锚点；复杂动作改用独立动漫 Cut-in 表现，
+## 避免继续把角色硬塞进已经烘焙好的背景透视。
+## 当前只接：出租屋 -> 床 -> 休息。业务结算仍完全由 Game.gd 负责。
 
 const MIN_HOLD_MS := 1250
 const FADE_IN_SECONDS := 0.22
@@ -11,11 +11,14 @@ const FADE_OUT_SECONDS := 0.22
 
 const HOME_BG := preload("res://assets/backgrounds/dialogue/home/rental_apartment_rain_night.webp")
 const HOME_SLEEP_SUBJECT := preload("res://assets/characters/sprites/interactions/protagonist_sleep_side_v6.png")
+const HOME_SLEEP_CUTIN_PATH := "res://assets/cutins/home_sleep_v1.webp"
 
 # key = "location_id:interactionType"
-# image 以后可以直接替换为完整 16:9 cut-in；当前先使用“背景 + 独立角色”组合验证系统。
+# `image_path` 是正式完整 16:9 Cut-in；如果本地尚未放入该文件，会自动回退到
+# background + subject 原型，确保代码可以先被拉取和测试，不破坏旧逻辑。
 const PRESENTATIONS := {
 	"home:bed": {
+		"image_path": HOME_SLEEP_CUTIN_PATH,
 		"background": HOME_BG,
 		"subject": HOME_SLEEP_SUBJECT,
 		"title": "雨夜 · 休息",
@@ -64,9 +67,9 @@ func _build_ui() -> void:
 	_dim.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.add_child(_dim)
 
-	# Cut-in 主体故意放大并偏左：这是“演出画面”，不再假装它与地图床铺共享透视。
+	# 只有缺少完整 Cut-in 素材时才显示这个 fallback 主体。
 	_subject = TextureRect.new()
-	_subject.name = "Subject"
+	_subject.name = "FallbackSubject"
 	_subject.anchor_left = 0.02
 	_subject.anchor_top = 0.12
 	_subject.anchor_right = 0.70
@@ -82,7 +85,7 @@ func _build_ui() -> void:
 	caption_back.anchor_top = 0.76
 	caption_back.anchor_right = 1.0
 	caption_back.anchor_bottom = 1.0
-	caption_back.color = Color(0.015, 0.018, 0.028, 0.54)
+	caption_back.color = Color(0.015, 0.018, 0.028, 0.50)
 	caption_back.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.add_child(caption_back)
 
@@ -123,7 +126,6 @@ func _resolve_current_presentation() -> String:
 	var game := get_tree().current_scene
 	if game == null:
 		return ""
-	# 活动本身仍由 Game 结算；Cut-in 只在真实活动期间出现。
 	if game.get("activity_running") != true:
 		return ""
 	var location := game.get_node_or_null("LocationSys")
@@ -144,18 +146,31 @@ func _show_presentation(key: String) -> void:
 	_visible_key = key
 	_hiding = false
 	_hold_until_ms = Time.get_ticks_msec() + MIN_HOLD_MS
-	_background.texture = cfg.get("background")
-	_subject.texture = cfg.get("subject")
+
+	var image_path := str(cfg.get("image_path", ""))
+	var has_full_cutin := not image_path.is_empty() and ResourceLoader.exists(image_path)
+	if has_full_cutin:
+		_background.texture = load(image_path) as Texture2D
+		_subject.visible = false
+		# 完整 Cut-in 自带统一光影，不再盖过重暗幕。
+		_dim.color = Color(0.025, 0.02, 0.035, 0.08)
+	else:
+		_background.texture = cfg.get("background") as Texture2D
+		_subject.texture = cfg.get("subject") as Texture2D
+		_subject.visible = true
+		_dim.color = Color(0.025, 0.02, 0.035, 0.24)
+
 	_title.text = str(cfg.get("title", ""))
 	_subtitle.text = str(cfg.get("subtitle", ""))
 	if _fade != null and _fade.is_valid():
 		_fade.kill()
 	_root.visible = true
 	_root.modulate.a = 0.0
-	_subject.modulate = Color(1.0, 0.90, 0.80, 0.0)
+	_subject.modulate = Color(1.0, 0.90, 0.80, 0.0 if _subject.visible else 1.0)
 	_fade = create_tween().set_parallel(true).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 	_fade.tween_property(_root, "modulate:a", 1.0, FADE_IN_SECONDS)
-	_fade.tween_property(_subject, "modulate:a", 1.0, FADE_IN_SECONDS + 0.08)
+	if _subject.visible:
+		_fade.tween_property(_subject, "modulate:a", 1.0, FADE_IN_SECONDS + 0.08)
 
 
 func _hide_presentation() -> void:
@@ -175,6 +190,6 @@ func _finish_hide() -> void:
 
 
 func _input(_event: InputEvent) -> void:
-	# Cut-in 出现期间吞掉玩家输入，避免活动刚结算时点击穿透到地图。
+	# Cut-in 出现期间吞掉输入，避免活动刚结算时点击穿透到地图。
 	if _root != null and _root.visible:
 		get_viewport().set_input_as_handled()
