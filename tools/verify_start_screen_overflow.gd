@@ -31,7 +31,8 @@ func _init() -> void:
 	)
 	# Mutate after setup so the signal check also catches an implementation that copied
 	# the dictionary instead of forwarding the supplied origin object.
-	origins[EXPECTED_ORIGINS - 1]["post_setup_marker"] = "same supplied origin"
+	var last_origin: Dictionary = origins[EXPECTED_ORIGINS - 1]
+	last_origin["post_setup_marker"] = "same supplied origin"
 	ui.origin_selected.connect(_on_origin_selected)
 	ui.load_requested.connect(_on_load_requested)
 	get_root().add_child(ui)
@@ -76,6 +77,13 @@ func _process(_delta: float) -> bool:
 			return false
 		4:
 			_check_signal_contract()
+			ui.close()
+			ui.open()
+			phase = 5
+			frames = 0
+			return false
+		5:
+			_check_reopen_reset()
 			_finish()
 			return true
 
@@ -192,6 +200,12 @@ func _check_signal_contract() -> void:
 	_expect(emitted_origin == origins[EXPECTED_ORIGINS - 1], "origin_selected must forward the supplied origin dictionary")
 	_expect(str(emitted_origin.get("post_setup_marker", "")) == "same supplied origin", "origin_selected must preserve post-setup mutations on the supplied origin dictionary")
 	_expect(load_signal_count == 1, "load_requested must emit exactly once for one load activation")
+
+
+func _check_reopen_reset() -> void:
+	var scroll: ScrollContainer = ui.get_node("StartScroll") as ScrollContainer
+	_expect(ui.visible, "reopened StartUI must remain visible")
+	_expect(scroll.scroll_vertical == 0, "reopening StartUI must reset the previous run's scroll position to the top")
 
 
 func _check_horizontal_containment(label: String, scroll: ScrollContainer, content: VBoxContainer) -> void:
