@@ -7,49 +7,57 @@
 - Status: DONE / ACTIVE COORDINATION
 
 ## Current review summary
-Reviewed the latest Gameplay, Scene/UI, NPC/Content and QA worker branches against `docs/agents/TASK_BOARD.md` and `docs/agents/FILE_OWNERSHIP.md`.
+Reviewed the latest Gameplay, Scene/UI, NPC/Content and QA worker branches against `docs/agents/TASK_BOARD.md` and `docs/agents/FILE_OWNERSHIP.md`. No worker was found modifying `main`, the task board, or files outside the task-specific ownership declared by the orchestrator.
 
-### GAME-FIX-001
+### GAME-FIX-002
 - Worker report: `NEEDS_REVIEW`.
-- Branch diff against the coordination branch is limited to `scripts/Game.gd`, `tools/verify_event_year_separation.gd`, and `agent-reports/gameplay.md`.
-- The task preserves `_year_pass()` as the explicit annual path while removing ordinary event/no-event fallthrough into annual progression.
-- No fresh Godot runtime evidence was claimed.
-- Orchestrator decision: repository-level acceptance is complete; task advanced to `DONE`. Runtime execution belongs to QA/local acceptance.
-- Next gameplay task queued on isolated branch: `GAME-FIX-002` / `agent/game-fix-002-need-zero-cadence`.
+- Branch comparison against the current coordination baseline is ahead only and limited to `scripts/Game.gd`, `tools/verify_need_zero_cadence.gd`, and `agent-reports/gameplay.md`.
+- Effective gameplay change moves the existing zero-fullness and zero-energy penalties into the already-existing full-hour need loop; balance values, replenishment behavior, warning behavior and save schema are reported unchanged.
+- A narrow regression was added; no Godot runtime PASS is claimed.
+- Orchestrator decision: repository-level acceptance complete; task advanced to `DONE`. Runtime execution remains part of QA/local integration acceptance.
+- Next gameplay task queued: `GAME-FIX-003` / `agent/game-fix-003-terminal-state-evaluation`.
 
-### UI-FIX-001
+### UI-FIX-002
 - Worker report: `NEEDS_REVIEW`.
-- Branch is current with the coordination baseline at review time and changes only the declared task paths: `LocationManager.gd`, `ActiveNpcVisual.gd`, a narrow regression, and the Scene/UI report.
-- Repository structure preserves the click/talk layer and adds a grounded visual helper with walk-capable resources where available.
-- No rendered Godot evidence exists yet, and the task acceptance explicitly requires rendered grounding/scale/depth coherence.
-- Orchestrator decision: keep `UI-FIX-001` at `NEEDS_REVIEW`; do not mark visual acceptance complete without rendered evidence.
-- To keep the lane productive without overlapping the locked files, queued `UI-FIX-002` / `agent/ui-fix-002-home-bed-seam` with presentation-only ownership.
+- Branch diff is limited to the authorized bed foreground asset, one narrow regression, and the Scene/UI report; no `scripts/**`, gameplay, navigation or coordination files were changed.
+- The report explicitly separates repository/presentation checks from rendered acceptance and does not claim Godot execution.
+- Orchestrator decision: repository scope/ownership accepted, but task remains `NEEDS_REVIEW` because the acceptance contract requires real rendered evidence before final visual PASS.
+- To keep the lane active without overlapping the bed task or UI-FIX-001, queued `UI-FIX-003` / `agent/ui-fix-003-hud-header-decoupling` with HUD/header-only presentation scope.
 
 ### NPC-CONTENT-002
-- Worker report: `NEEDS_REVIEW`, but it correctly found a defect in its own prior hospital rename.
-- q3 copy is accepted: it now matches the existing `store_buy` mechanic without claiming a gift handoff.
-- The hospital rename from `老张` to `老周` is not accepted because `老周` is already an established core NPC, recreating the identity ambiguity.
-- Orchestrator decision: task returned to `IN_PROGRESS` on the same isolated branch with one minimal content-only correction: replace only the hospital acquaintance text with a non-core generic identity such as `隔壁床的病友`. No schema/logic change is authorized.
+- Worker report: `NEEDS_REVIEW` after the requested correction.
+- Branch diff remains limited to `data/quests.json`, `data/events.json`, and `agent-reports/npc-content.md`.
+- q3 preserves `type=counter`, `key=store_buy`, `count=1` and no longer claims a completed gift handoff.
+- The hospital result now uses the generic identity `隔壁床的病友`, resolving the prior collision with core NPC names.
+- No schema, IDs, counters, conditions, rewards, effects or flow changes are reported; no runtime result is claimed.
+- Orchestrator decision: repository/content acceptance complete; task advanced to `DONE`. Data-load/runtime checks remain part of integration QA.
+- Next content task queued: `NPC-CONTENT-003` / `agent/npc-content-003-naming-consistency`, constrained to copy-only consistency cleanup in the same two data files.
 
-### QA-003
+### QA-004
 - Worker report: `NEEDS_REVIEW`.
-- Branch diff is report-only, respecting QA-003 ownership.
-- The report classifies all current `verify*.gd` scripts, separates headless/windowed/deprecated cases, proposes a six-script minimum gate, and explicitly avoids claiming fresh execution.
+- Branch is report-only as required.
+- The acceptance matrix records exact candidate SHAs, required task-specific and shared headless checks, rendered requirements for UI work, stop conditions, and explicitly states that no Godot/Web/browser execution occurred.
 - Orchestrator decision: accepted and advanced to `DONE`.
-- Next QA task queued on isolated branch: `QA-004` / `agent/qa-004-repair-wave-acceptance-matrix`, report-only, to prepare an exact branch/SHA-specific acceptance matrix for the current repair wave.
+- Next safe repository-only QA task queued: `QA-005` / `agent/qa-005-next-wave-manifest`.
 
-## Branches created this review
-- `agent/game-fix-002-need-zero-cadence`
-- `agent/ui-fix-002-home-bed-seam`
-- `agent/qa-004-repair-wave-acceptance-matrix`
+### Still pending runtime/rendered evidence
+- `UI-FIX-001` remains `NEEDS_REVIEW`: repository structure is acceptable, but real Godot rendered evidence is still required for grounding/scale/occlusion/click alignment.
+- `UI-FIX-002` remains `NEEDS_REVIEW`: repository/presentation contract is acceptable, but real rendered evidence is still required for the bed/duvet seam.
+- `QA-002` remains `BLOCKED` on an actual Godot 4.7.2 + browser execution context.
 
-All were created from the current `orchestrator/multi-agent-bootstrap` coordination branch. No changes were made to `main`.
+## Branches queued this review
+- `agent/game-fix-003-terminal-state-evaluation`
+- `agent/ui-fix-003-hud-header-decoupling`
+- `agent/npc-content-003-naming-consistency`
+- `agent/qa-005-next-wave-manifest`
+
+These branches are to be created from the updated `orchestrator/multi-agent-bootstrap` coordination branch. No changes are to be made to `main`.
 
 ## Current lane state
-- Gameplay: `GAME-FIX-002` READY.
-- Scene/UI: `UI-FIX-001` NEEDS_REVIEW pending rendered evidence; non-overlapping `UI-FIX-002` READY.
-- NPC/Content: `NPC-CONTENT-002` IN_PROGRESS with one minimal text correction remaining.
-- QA/Build: `QA-002` remains BLOCKED on actual Godot/browser execution; `QA-004` READY provides safe repository-only work meanwhile.
+- Gameplay: `GAME-FIX-003` READY.
+- Scene/UI: `UI-FIX-001` and `UI-FIX-002` await real rendered evidence; non-overlapping `UI-FIX-003` READY.
+- NPC/Content: `NPC-CONTENT-002` DONE; `NPC-CONTENT-003` READY.
+- QA/Build: `QA-002` remains runtime-blocked; `QA-004` DONE; `QA-005` READY.
 
 ## Validation and evidence policy
 - GitHub branch/report/diff inspection only was performed in this orchestration pass.
@@ -58,4 +66,4 @@ All were created from the current `orchestrator/multi-agent-bootstrap` coordinat
 - Worker source files were not edited by the orchestrator.
 
 ## Handoff
-Continue from `docs/agents/TASK_BOARD.md`. Workers should take the highest-priority READY/IN_PROGRESS task assigned to their lane and remain inside the declared writable scope. The orchestrator should next review the NPC correction and any new GAME-FIX-002 / UI-FIX-002 / QA-004 reports, while keeping UI-FIX-001 visual acceptance pending until actual rendered evidence is available.
+Continue from `docs/agents/TASK_BOARD.md`. Workers should take the highest-priority READY/IN_PROGRESS task assigned to their lane and remain inside the declared writable scope. Runtime/rendered tasks stay pending until actual evidence exists; repository-safe work should continue in parallel on the newly queued isolated branches.
