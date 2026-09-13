@@ -74,9 +74,11 @@ data/*.json  ──►  scripts/systems/*   ──►  Game.gd（唯一结算中
 | `WeatherSystem.gd` | 天气与时段 |
 | `SaveManager.gd` | 存档文件读写（`user://savegame.json`） |
 | `DailyRoutine.gd` | **每日目标**（通勤/工作/吃饭/休息），跨天重置。只跟踪一天之内，**不推进年龄** |
-| `HomeActivities.gd` | 出租屋互动点：床/书桌/厨房/房门，距离校验、朝向、活动锁 |
-| `OfficeActivities.gd` | 公司工位活动 |
-| `StoreActivities.gd` | 便利店货架互动点 |
+| `SpotActivities.gd` | **分场景互动点的公共基类**（八个 `*Activities` 都继承它）：距离校验（82px）、点击自动走近、防重复触发、按 E 激活、按钮样式、活动锁。子类只答五个钩子（点位/地点 id/层名/空闲提示/走近措辞）+ 可选展示钩子（动态标签 `_label_of`/`_detail_of`、隐藏条件 `_spot_available`、每帧同步 `_sync_display`）。`SPOTS` 是基类实例变量，Game 与测试工具按 `xxx_activities.SPOTS` 只读。**新场景互动 = 写一个 ~30 行子类 + Game 接线，别再复制模板** |
+| `HomeActivities.gd` | 出租屋互动点：床/书桌/厨房/房门。定制：`rest_detail`（床位提示随时刻变，`_detail_of` 钩子）、"再互动"措辞 |
+| `OfficeActivities.gd` | 公司工位/谈薪。定制：`sync_context()` 收 Game 喂的展示数字，`_spot_available` 技能门槛藏按钮，动态时薪标签 |
+| `StoreActivities.gd` | 便利店货架互动点（纯静态子类） |
+| `ParkActivities.gd` / `CafeActivities.gd` / `HospitalActivities.gd` / `AlleyActivities.gd` / `RooftopActivities.gd` | 第 4 阶段五个场景的纯静态子类（公园/咖啡馆/医院/旧巷/天台） |
 | `Inventory.gd` | **物品目录与持有数量**。名称/价钱/效果/描述**只定义在这一处**，面板与结算都读它 |
 | `NPCScheduleSystem.gd` | NPC 日程推进（对应 `data/npc_schedules.json`）——决定某时某地有谁在 |
 | `NpcRelations.gd` | **NPC 关系**：每人一条好感值（0–100），**每天只有第一次交谈**加 4 分；档位 陌生人/认识/熟络/朋友，升档给一次心情回补与一句叙述。纯逻辑，不碰 UI，不落盘（状态存在 `GameState.relations` / `talk_day`，随存档走） |
@@ -109,7 +111,7 @@ data/*.json  ──►  scripts/systems/*   ──►  Game.gd（唯一结算中
 
 这几条是踩过坑之后定下来的，破坏它们会引入难以定位的问题：
 
-1. **数值结算只在 `Game.gd`。** 活动脚本（`HomeActivities` / `OfficeActivities` / `StoreActivities`）只负责距离校验、朝向、活动锁；UI 只负责显示与转发信号。活动脚本自己不扣钱、不涨属性。
+1. **数值结算只在 `Game.gd`。** 活动脚本（八个 `*Activities`，公共基类 `SpotActivities`）只负责距离校验、朝向、活动锁；UI 只负责显示与转发信号。活动脚本自己不扣钱、不涨属性。
 2. **物品目录只写在 `Inventory.gd` 一处。** 否则货架价、背包价、结算价会对不上。
 3. **`ui_busy` 闸门由 `Game._process()` 统一写。** `location.input_blocked` 与各活动脚本的 `blocked` 都被它赋值。**测试若提前 `set_process(false)`，闸门会停在旧值**（详见 `docs/QA_2026-09-13.md` 的偶发红灯一节）。
 4. **活动层的 `layer.visible` 由各自 `_process` 按当前地点开关。** 切图后必须等它真的可见再 `_activate`，否则会静默返回，表现为"点了没反应"。
@@ -179,6 +181,7 @@ data/*.json  ──►  scripts/systems/*   ──►  Game.gd（唯一结算中
 | 改时薪/手艺档位/上班涨技能的快慢 | `scripts/systems/JobGrowth.gd`（`TIERS` / `WORK_EXP_PER_SHIFT` / `exp_needed()`） |
 | 改谈薪的门槛或条件 | `scripts/systems/JobGrowth.gd`（`NEGOTIATE_SKILL` / `NEGOTIATE_SCORE` / `FRIEND_RELATION`）；文案与结算在 `Game.gd` 的 `_do_negotiate` |
 | 加工位上的新互动点 | `scripts/systems/OfficeActivities.gd` 的 `SPOTS`（`requires_skill` 可做成技能门槛，按钮会自己藏起来） |
+| 加一个新场景的互动 | 新建 `SpotActivities` 子类（~30 行：`_define_spots`/`_location_id`/`_layer_name`/`_idle_prompt`），Game 接三处（preload+var、`_ready`、`_begin/_end_activity` 锁表与结算函数）。**注意用路径式 extends**：`extends "res://scripts/systems/SpotActivities.gd"`——class_name 形式在无头 `--script` 下会因全局类缓存未收录而解析失败 |
 | 加/改主线任务 | `data/quests.json`（`QuestSystem.STEP_TYPES` 之外的类型会被 `validate()` 拦下）；计数型步骤记得在 `Game.gd` 的结算点补 `quest_sys.notify()` |
 | 加一条自动测试 | 在 `tools/` 新建 `extends SceneTree` 的 `verify_*.gd`（**`extends Node` 的脚本不能用 `--script` 跑**） |
 | 出截图 | `tools/capture_*.gd`，输出到 `build/qa/` |

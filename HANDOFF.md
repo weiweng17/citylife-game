@@ -309,6 +309,18 @@
 - 验证：两套均**首跑 0 失败**；**19 套全员回归全绿**（navigation `6646/0`、home_edges `6252/0`，其余 `exit=0`）；四张截图确认站位与文案换行正常。
 - **阶段 4 的逐场景内容扩展到此收官**（公园/咖啡馆/医院/旧巷/天台全部有互动）。遗留债：五个 `*Activities.gd` 是同一份模板抄五遍（configure/_process/_activate/_request/_style_button 完全重复），**值得抽基类**；行为已被 19 套测试锁住，放到独立的重构单元做。
 
+## 2026-09-13 阶段 4 单元 5：交互层抽基类（还清模板复制债）
+
+八个分场景交互层（home/office/store/park/cafe/hospital/alley/rooftop）此前是同一份模板抄八遍——configure/_process/_activate/_request/_style_button 完全重复，连"哪些层要上锁"都曾对不上。本轮抽成基类，**行为零变化**。
+
+- 提交：`af2aa88 refactor: extract SpotActivities base class from eight cloned interaction layers`（9 文件）。
+- 新增 `scripts/systems/SpotActivities.gd`（`class_name SpotActivities extends Node`）：公共骨架（configure/_process/按键/激活/走近/按钮样式）+ 子类五个必答钩子（`_define_spots`/`_location_id`/`_layer_name`/`_idle_prompt`/`_approach_word`）+ 三个可选展示钩子（`_label_of`/`_detail_of`/`_spot_available`/`_sync_display`）。
+- **`SPOTS` 是基类实例变量**（大写，由 `_define_spots()` 在 configure 时填入）——Game 与 15 个测试工具都按 `xxx_activities.SPOTS` 只读访问，这一选择让**所有外部调用点一行不用改**。
+- 八个子类瘦身为薄壳：五个纯克隆各剩 ~30 行（点位+文案）；home 保留 `rest_detail`（`_detail_of` 钩子）与"再互动"措辞（`_approach_word`）；office 保留 `sync_context`/`context`（`_sync_display` 每帧刷按钮显隐，`_label_of`/`_detail_of` 动态标签，`_spot_available` 技能门槛）。
+- **踩坑：子类写 `extends SpotActivities`（class_name 形式）在无头 `--script` 下解析失败**——"Could not resolve script"，因为全局类缓存（`.godot/global_script_class_cache.cfg`）还没收录新类，无头运行不会重建。改用**路径式 `extends "res://scripts/systems/SpotActivities.gd"`** 解决，不依赖缓存。以后新增脚本类继承时优先用路径式。
+- 验证：先跑 park/cafe/home_activities/job_growth/store 五套 → 0 失败；**19 套全员回归全绿**（navigation `6646/0`、home_edges `6252/0`，其余 `exit=0`）；重截公园截图确认渲染无变化。
+- 收益：以后加新场景互动 = 写一个 ~30 行的子类 + Game 三处接线（不再需要复制 150 行模板、也不会漏上锁）。
+
 ## 尚未完成
 
 - 全部行走方向的身体比例与动画接地视觉抽查：碰撞与可达已由 `verify_home_edges.gd` 自动覆盖，姿态观感仍需人工看截图与试玩。
