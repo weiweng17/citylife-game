@@ -1,9 +1,13 @@
 # Gameplay Agent Report
 
-Status: READY
+## Task
+- ID: GAME-001
+- Agent: gameplay
+- Branch/worktree: `agent/game-001-blocker-audit`
+- Status: READY
 
-## Assigned task
-GAME-001
+## Scope
+Repository audit only. Source/data/scene/assets are read-only for this task. The only writable file is this report.
 
 ## Summary
 Not started.
@@ -14,11 +18,17 @@ Not started.
 ## Files inspected
 - Pending.
 
-## Tests / verification
-- No runtime tests performed yet.
+## Validation
+- Commands/tests run: none; web audit must not claim a Godot rerun.
+- Result: pending repository inspection.
+- Manual checks: pending / escalate if required.
 
-## Risks / dependencies
+## Evidence
+- Repository evidence: pending.
+- Runtime/build evidence: none yet.
+
+## Known issues / risks
 - Pending.
 
-## Recommended next action
-- Begin GAME-001 audit from the web agent.
+## Handoff
+Begin GAME-001 from the assigned branch. When complete, set this report to `NEEDS_REVIEW`; do not edit `docs/agents/TASK_BOARD.md`.
