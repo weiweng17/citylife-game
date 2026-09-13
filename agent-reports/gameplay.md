@@ -1,69 +1,61 @@
 # Gameplay Agent Report
 
 ## Task
-- ID: GAME-FIX-003
+- ID: GAME-FIX-004
 - Agent: gameplay
-- Branch/worktree: `agent/game-fix-003-terminal-state-evaluation`
+- Branch/worktree: `agent/game-fix-004-save-terminal-reentry`
 - Status: NEEDS_REVIEW
 
 ## Scope
-Centralize terminal-state evaluation only. Authorized files are `scripts/Game.gd`, one narrow `tools/verify_*.gd` regression, and this report. No `main`, coordination files, `LocationManager.gd`, UI/NPC assets, data/schema, or unrelated gameplay systems were modified.
+Save/load terminal-state re-entry hardening only. Authorized paths are `scripts/Game.gd`, one narrow `tools/verify_*.gd` regression, and this report. No `main`, coordination files, `LocationManager.gd`, UI/NPC assets, data/schema, or unrelated gameplay systems were modified.
 
-## Summary
-`Game.gd` now has one authoritative `_evaluate_terminal_state()` path for consuming `Rules.death_reason()` and triggering the existing ending transition.
+## Dependency alignment
+The assigned GAME-FIX-004 branch was initially created from `orchestrator/multi-agent-bootstrap`, which did not contain the already accepted GAME-FIX-003 source implementation. Because GAME-FIX-004 explicitly depends on the existing authoritative `_evaluate_terminal_state()` contract, this isolated branch was aligned to the accepted GAME-FIX-003 tip `9ae0e807a59cba366a6013f61f22ab8d76000c82` before adding GAME-FIX-004 verification.
 
-The evaluator:
-1. returns immediately when `game_over` is already true, making repeated refresh/re-entry checks idempotent;
-2. delegates all terminal thresholds and priority ordering to the existing `Rules.death_reason()` implementation;
-3. routes the transition through the existing `_show_ending(reason, st)` path;
-4. returns a boolean so callers can stop further frame/year work after a terminal transition.
+No new terminal thresholds, ending semantics, balance values, save fields, or schema changes were introduced.
 
-Normal gameplay evaluates terminal state from `_process()` only when UI/activity interaction has settled (`not ui_busy`), so a terminal result is not opened underneath an active dialog/event/activity layer. Annual progression calls the same evaluator immediately after `Rules.year_tick()` and state synchronization, preserving the prior behavior where an annual terminal result suppresses the annual-summary toast.
+## Repository finding
+The accepted GAME-FIX-003 implementation already establishes the required re-entry behavior:
+- `apply_save_payload()` clears the prior runtime `game_over` latch and restores `game_started = true` after replacing the loaded state.
+- `_load_game()` routes state replacement only through `apply_save_payload()` and does not call `Rules.death_reason()` or `_show_ending()` directly.
+- the next settled `_process()` pass routes terminal evaluation through the authoritative `_evaluate_terminal_state()` path.
+- `_evaluate_terminal_state()` owns the only direct `rules_sys.death_reason(st)` consumption in `Game.gd` and guards `if game_over: return true`, so later refresh/process re-entry cannot trigger a second ending transition after the first terminal settlement.
+- non-terminal loaded states therefore remain playable, while terminal loaded states are evaluated by the same centralized path as ordinary gameplay.
+
+Because the accepted dependency already satisfies the GAME-FIX-004 behavior contract, this task does not add a second save-specific terminal path to `Game.gd`; doing so would duplicate the evaluator and violate GAME-FIX-003's centralization goal.
 
 ## Changes
-### `scripts/Game.gd`
-- Added `_evaluate_terminal_state() -> bool` as the only direct `rules_sys.death_reason(...)` consumer in `Game.gd`.
-- Replaced `_year_pass()`'s private death-reason block with the shared evaluator.
-- Added a settled-frame evaluation after `_sync_needs_to_time()` in `_process()` so health/mood/financial terminal states caused outside annual settlement can reach the existing ending path.
-- Added a `game_over` guard inside the evaluator to prevent duplicate ending transitions from repeated frame/re-entry evaluation.
-- Did not alter `Rules.gd`, thresholds, ending selection, balance values, save schema, or progression data.
+### `tools/verify_save_terminal_reentry.gd`
+Added one narrow repository/headless regression that checks:
+1. `apply_save_payload()` resets the prior runtime terminal latch and restores started state;
+2. `_load_game()` still routes through `apply_save_payload()`;
+3. `_load_game()` does not bypass the authoritative evaluator with direct `_show_ending()` / `death_reason()` calls;
+4. post-load frame settlement still calls `_evaluate_terminal_state()`;
+5. the evaluator retains the `game_over` idempotency guard;
+6. the evaluator remains the owner of `rules_sys.death_reason(st)` and `_show_ending(reason, st)`.
 
-Primary implementation commit: `77fae0f8bf6139e932a7c77908941e4ce4143559` (`fix: centralize terminal-state evaluation`).
+Regression commit: `cda80b471955b5c3b30131c062a02788b41005a2` (`test: guard save/load terminal re-entry contract`).
 
-### `tools/verify_terminal_state_evaluation.gd`
-A narrow regression already present on the assigned branch verifies the GAME-FIX-003 contract:
-- exactly one direct `rules_sys.death_reason(...)` call site in `Game.gd`;
-- `_evaluate_terminal_state()` owns that call and has a `game_over` guard;
-- `_year_pass()` and `_process()` both route through the shared evaluator;
-- a non-terminal state remains playable;
-- zero health and zero mood still reach the existing ending UI;
-- a second evaluation after `game_over` is idempotent and does not replace the ending text.
+## Validation
+No Godot/Web/browser runtime was available in this worker execution. No runtime PASS is claimed.
 
-## Repository verification performed
-Fresh GitHub inspection confirms the implementation commit's `Game.gd` diff is limited to:
-- one settled-frame call to `_evaluate_terminal_state()`;
-- replacement of the annual duplicate `death_reason` block with the shared call;
-- the new evaluator function itself.
+Prepared focused QA/local command:
+`godot --headless --path . --script res://tools/verify_save_terminal_reentry.gd`
 
-Fresh branch comparison against `orchestrator/multi-agent-bootstrap` shows only the task-owned source and regression paths before this report update:
-- `scripts/Game.gd` — modified;
-- `tools/verify_terminal_state_evaluation.gd` — added.
+Expected successful output:
+`GAME-FIX-004 PASS: save/load re-entry preserves centralized terminal evaluation and idempotency`
 
-No unrelated source/data/scene/asset diff was observed.
-
-## Runtime validation not performed
-No Godot/Web/browser runtime was available in this web-agent execution. No runtime PASS is claimed.
-
-Prepared focused command for QA/local execution:
+The pre-existing GAME-FIX-003 focused regression should also be rerun on the exact candidate SHA:
 `godot --headless --path . --script res://tools/verify_terminal_state_evaluation.gd`
 
-Expected successful output ends with:
-`GAME-FIX-003 PASS: terminal-state evaluation is centralized and idempotent`
+## Files changed by this task after dependency alignment
+- `tools/verify_save_terminal_reentry.gd` — added narrow regression.
+- `agent-reports/gameplay.md` — this handoff.
 
-Because GAME-FIX-001 and GAME-FIX-002 live on separate reviewed task branches, integration QA should run their regressions together on the exact integrated SHA rather than infer cross-task compatibility from this isolated branch.
+The inherited `scripts/Game.gd` change is the already accepted GAME-FIX-003 implementation required by this task's stated dependency; GAME-FIX-004 itself adds no unrelated source semantics.
 
-## Integration note
-This task branch is based on the current coordination branch and intentionally does not duplicate source changes from the separate GAME-FIX-001 / GAME-FIX-002 branches. The orchestrator should integrate the reviewed gameplay fixes onto one candidate SHA and run the combined headless gate there.
+## Risk / integration note
+GAME-FIX-001 and GAME-FIX-002 are still separate reviewed gameplay branches touching `scripts/Game.gd`. Integration QA must combine the accepted gameplay work onto one exact candidate SHA and rerun the narrow gameplay regressions there; this worker does not merge into `main` or coordination branches.
 
 ## Handoff
-GAME-FIX-003 repository implementation and narrow regression package are ready for orchestrator review. Requested task status: `NEEDS_REVIEW`. Fresh Godot execution remains pending QA/local acceptance and must not be inferred from repository inspection.
+GAME-FIX-004 is ready for orchestrator review at repository level. Requested task status: `NEEDS_REVIEW`. Fresh Godot execution remains pending QA/local acceptance and must not be inferred from this report.
