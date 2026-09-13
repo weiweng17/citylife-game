@@ -63,19 +63,28 @@ No extra direct `death_reason()` consumer was found in the accepted GAME-FIX-003
 Relevant paths are:
 
 1. HUD setup: `hud.load_requested.connect(_load_game)`.
-2. `_load_game()` reads the save, closes transient shop UI, then calls `apply_save_payload(result.get("payload", {}))`.
-3. `apply_save_payload(payload)` replaces game state/system state and resets runtime latch state including `game_over = false` and `game_started = true`.
-4. `_load_game()` then closes start/ending UI and refreshes UI; it does not directly call `death_reason()` or `_show_ending()` in the accepted contract.
-5. A later settled `_process()` is therefore the normal post-load terminal evaluation route through `_evaluate_terminal_state()`.
+2. Start screen setup: `start_ui.load_requested.connect(_load_game)`.
+3. `_load_game()` reads the save, closes transient shop UI, then calls `apply_save_payload(result.get("payload", {}))`.
+4. `apply_save_payload(payload)` replaces game state/system state and resets runtime latch state including `game_over = false` and `game_started = true`.
+5. `_load_game()` then closes start/ending UI and refreshes UI; it does not directly call `death_reason()` or `_show_ending()` in the accepted contract.
+6. A later settled `_process()` is therefore the normal post-load terminal evaluation route through `_evaluate_terminal_state()`.
 
-This matches GAME-FIX-004's regression contract; no second save-specific ending path was found.
+Both user-facing load triggers converge on the same `_load_game()` implementation; no alternate UI-specific load path was found. This matches GAME-FIX-004's regression contract; no second save-specific ending path was found.
 
-### 5. Ending presentation (`_show_ending`)
+### 5. Ending presentation (`_show_ending`) and terminal-latch reset boundaries
 On accepted GAME-FIX-003, `_show_ending(reason, st)` is called only from `_evaluate_terminal_state()`.
 
 `_show_ending` itself sets `game_over = true` before resolving/presenting the ending, which is consistent with the evaluator's re-entry guard.
 
-No separate direct ending presentation callsite was found in the inspected accepted source.
+Intentional `game_over = false` lifecycle boundaries observed in accepted source are:
+
+1. `_show_start_screen()` — clears the prior run when returning to the start lifecycle.
+2. `_choose_origin()` — starts a new origin/run and clears the terminal latch.
+3. `apply_save_payload()` — replaces the runtime with loaded state and clears the old run's terminal latch before shared re-evaluation.
+
+EndingUI `restart_requested` routes through `_restart()`, which closes the ending and returns through `_show_start_screen()` rather than creating a second ending transition path.
+
+These reset sites are lifecycle replacement paths, not terminal-evaluation bypasses. No separate direct ending presentation callsite was found in the inspected accepted source.
 
 ## Concrete uncovered guard gap
 A repository-visible bypass remains around sleep settlement:
@@ -90,6 +99,8 @@ A repository-visible bypass remains around sleep settlement:
 Under GAME-FIX-002, `_sync_needs_to_time()` can reduce `health` or `mood` to `0` during the completed-hour loop. `Rules.death_reason()` treats `health <= 0` and `mood <= 0` as terminal. Because sleep recovery occurs before the shared evaluator sees that state, a terminal value reached during overnight need settlement can be raised above zero and therefore disappear before Contract C's `_process()` evaluation.
 
 This is not the same stale-baseline problem as GAME-FIX-001/002/003. It survives the accepted contracts because the sleep function is a second direct need-settlement callsite that GAME-FIX-003's settled-frame evaluator does not observe until after recovery.
+
+There is an additional guard reason this cannot be assumed to be caught concurrently by `_process()`: home rest runs under the shared `activity_running` lock, and GAME-FIX-003 defines `ui_busy = ui_busy or activity_running`; its process evaluator runs only when `not ui_busy`. Therefore the activity frame cannot reliably observe the temporary zero between sleep need settlement and sleep recovery.
 
 ### Minimal reproducible state sequence (repository reasoning; not runtime execution)
 A narrow case can be constructed without changing balance values:
@@ -116,14 +127,24 @@ Preserve existing sleep duration/recovery values and all Contracts A-D, but ensu
 
 Smallest likely source shape:
 - immediately after the sleep-specific `_sync_needs_to_time()` call, route through the existing `_evaluate_terminal_state()`;
-- if terminal, stop the sleep recovery path;
+- if terminal, return without applying sleep recovery;
+- in `_on_home_activity()`, if the overnight helper returns with `game_over`, finish/unlock the activity and return without normal post-sleep toast/completion flow;
 - otherwise keep the existing health/mood/energy recovery unchanged.
 
 Do not introduce a sleep-specific `death_reason()` call, duplicate thresholds, new save fields, or a second ending presentation path.
 
-A narrow regression should prove both:
-1. overnight need settlement that reaches a terminal threshold routes once through the shared evaluator before recovery; and
-2. non-terminal overnight sleep still receives the existing recovery values and remains playable.
+A narrow regression should prove:
+1. overnight need settlement that reaches a health terminal threshold routes once through the shared evaluator before recovery;
+2. the same is true for a mood terminal threshold;
+3. non-terminal overnight sleep still receives the existing recovery values and remains playable; and
+4. repeated terminal evaluation remains idempotent.
+
+## Existing regressions and why they do not close the gap
+- `verify_need_zero_cadence.gd` validates hourly penalty cadence and repeated `_sync_needs_to_time()` behavior, but does not execute overnight sleep recovery.
+- `verify_terminal_state_evaluation.gd` validates centralized evaluation/idempotency on explicit terminal states, but does not exercise `_sleep_through_night()` between need settlement and recovery.
+- `verify_save_terminal_reentry.gd` covers loaded terminal/non-terminal state re-entry, not overnight need settlement.
+
+A dedicated overnight regression is therefore warranted rather than stretching the existing task regressions beyond their original contracts.
 
 ## Integration guard summary
 After assembling GAME-FIX-001 -> 002 -> 003 and adding GAME-FIX-004 regression coverage, the combined candidate should satisfy:
@@ -133,8 +154,10 @@ After assembling GAME-FIX-001 -> 002 -> 003 and adding GAME-FIX-004 regression c
 - zero-need penalties remain inside the completed-hour loop;
 - `_process()` preserves `_sync_needs_to_time()` -> `_evaluate_terminal_state()` ordering;
 - `_year_pass()` uses the same evaluator;
+- HUD and StartUI load requests both converge on `_load_game()`;
 - `_load_game()` / `apply_save_payload()` do not create a second ending path;
 - `_show_ending()` is reachable from gameplay terminal logic only through `_evaluate_terminal_state()`;
+- `game_over` resets only at intentional new-run/start/load lifecycle replacement boundaries identified above;
 - additionally, the newly identified sleep-specific need-settlement path must not erase a terminal crossing before shared evaluation.
 
 ## Validation
