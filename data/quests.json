@@ -74,8 +74,8 @@
         "type": "counter",
         "key": "store_buy",
         "count": 1,
-        "text": "路过便利店，给她带一样东西",
-        "done_text": "一样不贵的东西，装在塑料袋里，拎回去的时候有点分量。"
+        "text": "路过便利店，顺手买一样东西",
+        "done_text": "你拎着一个普通的塑料袋走出便利店，忽然觉得今晚回去可以多说两句话。"
       },
       {
         "type": "relation_at_least",
