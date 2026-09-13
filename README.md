@@ -2,13 +2,32 @@
 
 Godot 4.7.2 城市人生模拟游戏。
 
-当前执行顺序、验收条件与粗估工期见 [分阶段开发计划](docs/ITERATION_PLAN.md)。现阶段以本地版本验收为准，暂不推送/发布。
+## 先从这三份文档开始
 
-中断或更换开发者时，首先阅读根目录 [HANDOFF.md](HANDOFF.md)，再看最新的 `docs/TODAY_HANDOFF_<日期>.md`（当日交接索引）与 `docs/QA_<日期>.md`（当日逐套测试实测与限制）。
+| 文档 | 看它能了解什么 |
+| --- | --- |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | **各文件夹与各模块的职责**、模块边界约定、常见改动"改哪里"速查 |
+| [docs/ITERATION_PLAN.md](docs/ITERATION_PLAN.md) | **开发规划的唯一权威**：五阶段范围、每阶段验收标准、当前进度 |
+| [HANDOFF.md](HANDOFF.md) | 长期状态与踩坑总账，接手第一站 |
+
+中断或更换开发者时，先读 `HANDOFF.md`，再看最新的 `docs/TODAY_HANDOFF_<日期>.md`（当日交接索引）与 `docs/QA_<日期>.md`（当日逐套测试实测与限制）。
+
+## 目录速览
+
+| 路径 | 作用 |
+| --- | --- |
+| `scenes/Main.tscn` | 唯一入口场景，其余一切由代码在运行时构建 |
+| `scripts/` | 全部 GDScript，分根层 / `systems/` / `ui/` / `world/` 四层；**`Game.gd` 是唯一数值结算中枢** |
+| `data/` | 事件、职业与结局规则、遭遇、NPC 日程、美术目录等 JSON |
+| `assets/` | 美术与字体 |
+| `tools/` | 开发期测试与截图脚本，不进游戏运行时 |
+| `docs/` | 架构、计划、交接、QA、美术等文档 |
+
+`.godot/`、`build/`、`working-source/` 是被 Git 忽略的本地目录：前者是导入缓存，中者是测试截图输出，后者是**早期脚手架残留副本（改它不生效，可直接忽略或删除）**。完整说明见 `docs/ARCHITECTURE.md`。
 
 ## 在线开发流程
 
-远程 `main` 收到推送后，GitHub Actions 会自动构建并发布 Web 预览；本地修改不会更新线上版本。
+本地 `main` 与远程 `origin/main` 保持同步：推送 `main` 后，GitHub Actions 会自动构建并发布 Web 预览；未推送的本地修改不会更新线上版本。
 
 - 引擎：Godot 4.7.2 stable
 - 分辨率：1280×720

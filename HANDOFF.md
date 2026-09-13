@@ -7,12 +7,13 @@
 - 项目：`D:\打工人模拟器\citylife-game-github`
 - 引擎：`F:\Downloads\Godot_v4.7.2-stable_win64.exe\Godot_v4.7.2-stable_win64_console.exe`
 - Godot：4.7.2 stable，GL Compatibility，1280×720
-- 当前约束：只使用仓库内用户美术；借鉴开源功能代码但不套用外部美术包；所有开发留在 D 盘；未经用户允许不得推送远程。
+- 当前约束：只使用仓库内用户美术；借鉴开源功能代码但不套用外部美术包；所有开发留在 D 盘。
+- 远程同步：**用户已授权把本地 `main` 与 `origin/main` 保持同步**（远程 `https://github.com/weiweng17/citylife-game.git`）。推送 `main` 会触发 GitHub Actions 自动导出 Web 并发布到 Pages，因此推送前必须先确认工作树干净、测试通过。恢复/回退历史仍须先问用户。
 
 ## 接手顺序
 
 1. 阅读本文件。
-2. 阅读 `docs/ITERATION_PLAN.md`、最新的 `docs/TODAY_HANDOFF_<日期>.md` 与最新的 `docs/QA_<日期>.md`。
+2. 阅读 `docs/ARCHITECTURE.md`（目录与模块职责）、`docs/ITERATION_PLAN.md`（开发规划权威）、最新的 `docs/TODAY_HANDOFF_<日期>.md` 与最新的 `docs/QA_<日期>.md`。
 3. 执行 `git status --short` 与 `git log -5 --oneline`，保留所有用户修改。
 4. 先运行与当前任务直接相关的测试，再修改代码。
 5. 每完成一个 15–30 分钟的小单元：测试、更新本文件、做本地提交；不要等整个阶段完成才记录。
@@ -221,10 +222,25 @@ $godotExe = 'F:\Downloads\Godot_v4.7.2-stable_win64.exe\Godot_v4.7.2-stable_win6
 & $godotExe --path . --rendering-method gl_compatibility --script res://tools/diag_click.gd
 ```
 
+### 推送远程（本机有个坑）
+
+本机 Git 是 PortableGit，**`git-remote-https` 助手放在 `mingw64/bin`，而 `git --exec-path` 指向 `mingw64/libexec/git-core`**，所以直接 `git push` 会报
+`git: 'remote-https' is not a git command` / `fatal: remote helper 'https' aborted session`。
+用 `--exec-path` 指到 `bin` 即可；鉴权走 Windows 凭据管理器里已存的 `weiweng17` 令牌，无需输入。
+
+```powershell
+$base = 'C:\Users\86139\.workbuddy\binaries\PortableGit\versions\1.2.0'
+$env:GIT_TERMINAL_PROMPT = '0'
+$env:PATH = "$base\mingw64\bin;$env:PATH"
+& "$base\mingw64\bin\git.exe" --exec-path="$base/mingw64/bin" push origin main
+```
+
+推送会触发 GitHub Actions 导出 Web 并发布 Pages，所以推之前先确认测试通过、工作树干净。
+
 本地试玩可双击 `tools\play-local.cmd`。截图输出到被 Git 忽略的 `build/qa/`。
 
 ## 检查点规则
 
 - `HANDOFF.md` 必须始终反映工作树真实状态。
 - 测试通过只能说明其声明范围通过；视觉抽查不得写成“全地图已完成”。
-- 本地提交后更新本文件中的当前提交号；禁止自动 push、force push、reset 或覆盖用户文件。
+- 本地提交后更新本文件中的当前提交号，并按需 `git push origin main` 保持与远程同步；禁止 force push、reset 或覆盖用户文件。
