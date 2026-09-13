@@ -9,6 +9,7 @@ permissions:
   contents: read
   pages: write
   id-token: write
+  issues: write
 
 concurrency:
   group: pages
@@ -30,9 +31,10 @@ jobs:
 
       - name: Verify Web build
         run: |
-          test -f build/web/index.html
-          test -f build/web/index.pck
-          test -f build/web/index.wasm
+          set -e
+          test -s build/web/index.html
+          test -s build/web/index.pck
+          test -s build/web/index.wasm
           touch build/web/.nojekyll
 
       - uses: actions/upload-pages-artifact@v3
@@ -45,6 +47,91 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     needs: build
+    outputs:
+      page_url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+
+  smoke:
+    runs-on: ubuntu-latest
+    needs: deploy
+    steps:
+      - name: Verify deployed site
+        shell: bash
+        env:
+          PAGE_URL: ${{ needs.deploy.outputs.page_url }}
+        run: |
+          set -e
+          BASE="${PAGE_URL%/}"
+          echo "Checking $BASE"
+          ok=0
+          for i in $(seq 1 18); do
+            if curl -fsSL --max-time 20 "$BASE/" -o /tmp/index.html \
+              && curl -fsSL --max-time 30 "$BASE/index.pck" -o /tmp/index.pck \
+              && curl -fsSL --max-time 30 "$BASE/index.wasm" -o /tmp/index.wasm \
+              && test -s /tmp/index.html \
+              && test -s /tmp/index.pck \
+              && test -s /tmp/index.wasm; then
+              ok=1
+              break
+            fi
+            echo "Pages not ready yet ($i/18); retrying in 10s..."
+            sleep 10
+          done
+          if [ "$ok" != "1" ]; then
+            echo "Live smoke test failed for $BASE"
+            exit 1
+          fi
+          echo "Live smoke test passed: $BASE"
+
+  report_failure:
+    if: ${{ always() && (needs.build.result == 'failure' || needs.deploy.result == 'failure' || needs.smoke.result == 'failure') }}
+    needs: [build, deploy, smoke]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Open or update CI failure issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const title = '[AUTO-CI] CityLife preview deployment failed';
+            const body = [
+              'Automated preview deployment failed.',
+              '',
+              `- Branch: ${context.ref.replace('refs/heads/', '')}`,
+              `- Commit: ${context.sha}`,
+              `- Run: https://github.com/${owner}/${repo}/actions/runs/${context.runId}`,
+              '',
+              'The ChatGPT development watcher should inspect this run and continue fixing the development branch.'
+            ].join('\n');
+            const { data } = await github.rest.issues.listForRepo({ owner, repo, state: 'open', per_page: 100 });
+            const existing = data.find(i => i.title === title && !i.pull_request);
+            if (existing) {
+              await github.rest.issues.createComment({ owner, repo, issue_number: existing.number, body });
+            } else {
+              await github.rest.issues.create({ owner, repo, title, body });
+            }
+
+  report_recovery:
+    if: ${{ always() && needs.build.result == 'success' && needs.deploy.result == 'success' && needs.smoke.result == 'success' }}
+    needs: [build, deploy, smoke]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Close stale CI failure issue after recovery
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const title = '[AUTO-CI] CityLife preview deployment failed';
+            const { data } = await github.rest.issues.listForRepo({ owner, repo, state: 'open', per_page: 100 });
+            const existing = data.find(i => i.title === title && !i.pull_request);
+            if (existing) {
+              await github.rest.issues.createComment({
+                owner, repo, issue_number: existing.number,
+                body: `Recovered on ${context.sha}. Preview deployment and live smoke test passed. Run: https://github.com/${owner}/${repo}/actions/runs/${context.runId}`
+              });
+              await github.rest.issues.update({ owner, repo, issue_number: existing.number, state: 'closed' });
+            }
