@@ -26,6 +26,7 @@ const StoreActivitiesScript = preload("res://scripts/systems/StoreActivities.gd"
 const InventoryScript = preload("res://scripts/systems/Inventory.gd")
 const NpcRelationsScript = preload("res://scripts/systems/NpcRelations.gd")
 const JobGrowthScript = preload("res://scripts/systems/JobGrowth.gd")
+const QuestSystemScript = preload("res://scripts/systems/QuestSystem.gd")
 const ShopUIScript = preload("res://scripts/ui/ShopUI.gd")
 const LocationManagerScript = preload("res://scripts/systems/LocationManager.gd")
 
@@ -133,6 +134,8 @@ var world_manager
 var npc_schedule_sys
 ## NPC 关系（好感度/熟悉度）。纯逻辑，不进场景树。
 var npc_relations_sys
+## 主线任务（一次一条，串行推进）。判定与进度在这里，奖励仍然由 Game 发。
+var quest_sys
 var dark_location_sys
 var encounter_sys
 var save_sys
@@ -162,6 +165,8 @@ var interact_btn: Button
 var dialog_ui
 var shop_ui
 var toast_label: Label
+## 提示的序号：只有最新一条的定时器能把它藏掉（见 _show_toast 的注释）。
+var _toast_seq: int = 0
 
 # 开局 / 出身
 var start_ui
@@ -249,6 +254,9 @@ func _ready() -> void:
 	npc_schedule_sys.reset(time_sys, weather_sys)
 	# 纯逻辑，不需要进场景树（和 GameState 一样是 RefCounted）。
 	npc_relations_sys = NpcRelationsScript.new()
+	quest_sys = QuestSystemScript.new()
+	quest_sys.name = "QuestSys"
+	add_child(quest_sys)
 	dark_location_sys = DarkLocationSystemScript.new()
 	dark_location_sys.name = "DarkLocationSys"
 	add_child(dark_location_sys)
@@ -293,11 +301,15 @@ func _setup_ui() -> void:
 	toast_label.name = "Toast"
 	toast_label.visible = false
 	toast_label.set_anchors_preset(Control.PRESET_CENTER)
-	toast_label.offset_top = -140
-	toast_label.offset_bottom = -100
-	toast_label.offset_left = -160
-	toast_label.offset_right = 160
+	# 自审放宽了这块：追加型提示（任务进度接在结算提示下面）会有两三行，
+	# 原来只留了 40px 高、320px 宽，多行会溢出到场景外面去。
+	toast_label.offset_top = -185
+	toast_label.offset_bottom = -90
+	toast_label.offset_left = -280
+	toast_label.offset_right = 280
 	toast_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	toast_label.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
+	toast_label.add_theme_font_size_override("font_size", 14)
 	toast_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	ui.add_child(toast_label)
 
@@ -334,24 +346,35 @@ func _refresh_ui() -> void:
 	if home_activities:
 		home_activities.rest_detail = _rest_detail_text()
 	# 工位的时薪、谈薪是否够格、今天谈过没，都由 Game 算好喂给交互层（判定不放在那边）。
+	# 这几样只在变化时才重新喂：自审发现旧写法每帧新建字典、还每帧跑一次谈薪判定，
+	# 虽然不贵，但完全没必要。
 	if office_activities:
 		var today: int = time_sys.day if time_sys else 0
 		var laozhang_relation: int = 0
 		if npc_relations_sys != null:
 			laozhang_relation = npc_relations_sys.value_of(game_state.relations, "laozhang")
-		office_activities.sync_context({
+		# 「有没有人帮腔」只是一个阈值比较，不必为了它每帧跑一遍 negotiate() 再丢掉结果。
+		var friend: bool = laozhang_relation >= JobGrowthScript.FRIEND_RELATION
+		var wage: int = JobGrowthScript.wage_of(skill, game_state.raise_steps)
+		var context: Dictionary = {
 			"skill": skill,
-			"wage": JobGrowthScript.wage_of(skill, game_state.raise_steps),
+			"wage": wage,
 			"title": JobGrowthScript.title_of(skill),
 			"can_negotiate": JobGrowthScript.can_negotiate(skill),
 			"raised_today": int(game_state.raise_day) == today,
-			"friend": bool(JobGrowthScript.negotiate(skill, network, laozhang_relation).get("friend", false)),
-		})
+			"friend": friend,
+		}
+		if office_activities.context != context:
+			office_activities.sync_context(context)
 	if hud:
 		hud.refresh_skill(skill, JobGrowthScript.title_of(skill))
-	var stage: Dictionary = story_sys.current_stage(_state()) if story_sys else {}
+	# 人生阶段目标与主线任务共用同一行（HUD 高度被地点标题的偏移量盯死，不能再加行）。
+	# `_state()` 每帧只取一次，别在一帧里反复构造字典。
+	var st: Dictionary = _state()
+	var stage: Dictionary = story_sys.current_stage(st) if story_sys else {}
 	if hud and not stage.is_empty():
-		hud.refresh(game_state, str(stage.get("name", "")), str(stage.get("goal", "")), Data.DARK_CLUE_TOTAL)
+		var quest_text: String = quest_sys.objective_text(st) if quest_sys else ""
+		hud.refresh(game_state, str(stage.get("name", "")), str(stage.get("goal", "")), Data.DARK_CLUE_TOTAL, quest_text)
 		if time_sys:
 			hud.refresh_time(time_sys.day, time_sys.get_clock_text(), time_sys.get_period_name())
 		if weather_sys:
@@ -581,6 +604,7 @@ func _poi_at_click(world_pos: Vector2) -> Dictionary:
 func _process(delta: float) -> void:
 	if not game_started:
 		return
+	_evaluate_quests()
 	if location_sys and location_sys.is_active():
 		near_target = {}
 	else:
@@ -676,6 +700,8 @@ func _on_home_activity(id: String) -> void:
 	if daily_routine and not slept_through:
 		if id == "meal":
 			daily_routine.complete("meal")
+			if quest_sys:
+				quest_sys.notify(_state(), "meal_cooked")
 		elif id == "rest":
 			daily_routine.complete("sleep")
 	activity_running = false
@@ -771,6 +797,8 @@ func _do_work_shift() -> void:
 	game_state.work_exp = int(growth["exp"])
 	if daily_routine:
 		daily_routine.complete("work")
+	if quest_sys:
+		quest_sys.notify(_state(), "work_shift")
 	activity_running = false
 	location_sys.set_activity_feedback("", false)
 	var still_busy: bool = dialog_ui.is_busy() or event_ui.is_busy() or game_over
@@ -890,6 +918,8 @@ func _on_shop_buy(item_id: String) -> void:
 		return
 	money -= price
 	inventory.add(item_id, 1)
+	if quest_sys:
+		quest_sys.notify(_state(), "store_buy")
 	shop_ui.refresh(money, inventory)
 	shop_ui.set_status("你把%s放上收银台。扫码的滴声很轻，塑料袋在手里晃了一下。（−%d元）" % [
 		InventoryScript.item_name(item_id), price,
@@ -1406,11 +1436,67 @@ func _check_stage() -> void:
 		_show_toast(str(result.get("text", "")))
 
 
-func _show_toast(text: String) -> void:
+## 主线任务推进。放在 `_process` 每帧跑一次，判定是幂等的（进度里的标记只写一次），
+## 所以读档、漏掉信号都不会卡住。步进不弹提示（HUD 上那行一直挂着，变化看得见），
+## 开场白和收尾才弹——它们不常发生，弹一次不会被结算提示顶掉。
+func _evaluate_quests() -> void:
+	if quest_sys == null or time_sys == null:
+		return
+	var st := _state()
+	var events: Array = quest_sys.evaluate(st, time_sys.day)
+	if events.is_empty():
+		return
+	_sync_from_state(st)
+	for ev in events:
+		var kind := str(ev.get("kind", ""))
+		var text := str(ev.get("text", ""))
+		if kind == "intro":
+			_show_toast("任务「%s」：%s" % [str(ev.get("title", "")), text], true)
+		elif kind == "step":
+			_show_toast(text, true)
+		elif kind == "quest":
+			_show_toast("任务完成 · %s\n%s" % [str(ev.get("title", "")), text], true)
+			_apply_quest_reward(ev.get("reward", {}))
+	_refresh_ui()
+
+
+func _apply_quest_reward(reward) -> void:
+	if not reward is Dictionary:
+		return
+	for key in reward:
+		var delta: int = int(reward[key])
+		match str(key):
+			"money":
+				money = maxi(0, money + delta)
+			"mood":
+				mood = clampi(mood + delta, 0, 100)
+			"health":
+				health = clampi(health + delta, 0, 100)
+			"skill":
+				skill = clampi(skill + delta, 0, 100)
+			"fullness":
+				fullness = clampi(fullness + delta, 0, 100)
+			"energy":
+				energy = clampi(energy + delta, 0, 100)
+			_:
+				push_warning("[Game] 不认识的任务奖励字段：" + str(key))
+
+
+## 顶部提示。自审修掉的一个真问题：以前连着弹两条时，前一条的定时器会把
+## **后一条刚写上去的文字**提前藏掉（3.5 秒一到就 visible=false，不管文字是谁写的）。
+## 现在用递增序号，只有"最新那条"的定时器能收尾。
+## `append=true` 用于追加型提示（任务进度）：结算提示还在屏上时，任务提示接在下面，
+## 而不是把玩家刚看到的"工资+120"顶掉。
+func _show_toast(text: String, append: bool = false) -> void:
 	if not toast_label:
 		return
-	toast_label.text = text
+	if append and toast_label.visible and not toast_label.text.is_empty():
+		toast_label.text = "%s\n%s" % [toast_label.text, text]
+	else:
+		toast_label.text = text
 	toast_label.visible = true
+	_toast_seq += 1
+	var seq: int = _toast_seq
 	await get_tree().create_timer(3.5).timeout
-	if toast_label:
+	if toast_label and seq == _toast_seq:
 		toast_label.visible = false

@@ -166,7 +166,7 @@ func _sync_viewport() -> void:
 	size = Vector2(maxf(320.0, viewport_size.x - 28.0), 112.0)
 
 
-func refresh(state, stage_name: String, stage_goal: String, dark_clue_total: int) -> void:
+func refresh(state, stage_name: String, stage_goal: String, dark_clue_total: int, quest_text: String = "") -> void:
 	if state == null:
 		return
 
@@ -188,7 +188,11 @@ func refresh(state, stage_name: String, stage_goal: String, dark_clue_total: int
 
 	age_label.text = "第 %d 岁 · %s" % [state.age, stage_name]
 	money_label.text = _fmt_money(state.money)
-	goal_label.text = "目标：%s%s%s" % [stage_goal, clue_txt, dark_txt]
+	# 任务和人生阶段目标共用这一行（HUD 高度被地点标题的偏移量盯死，不能再加行）。
+	var quest_part := ""
+	if not quest_text.is_empty():
+		quest_part = " ｜ 任务：%s" % quest_text
+	goal_label.text = "目标：%s%s%s%s" % [stage_goal, clue_txt, dark_txt, quest_part]
 
 	health_bar.value = state.health
 	if health_fill:

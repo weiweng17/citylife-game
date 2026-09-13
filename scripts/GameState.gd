@@ -25,6 +25,9 @@ var talk_day: Dictionary = {}
 var work_exp: int = 0
 var raise_steps: int = 0
 var raise_day: int = 0
+# 主线任务进度：`{quest_id: {"step": 已完成的步数, "counters": {...}, "intro": 开场白说过没, "done": 收尾过没}}`。
+# "奖励只发一次"就靠 `done` 这个标记，所以读档/重复判定都不会重复结算。
+var quests: Dictionary = {}
 
 
 func reset_default() -> void:
@@ -46,6 +49,7 @@ func reset_default() -> void:
 	work_exp = 0
 	raise_steps = 0
 	raise_day = 0
+	quests = {}
 
 
 func reset_from_origin(origin_data: Dictionary, origin_flag: String = "") -> void:
@@ -69,6 +73,7 @@ func reset_from_origin(origin_data: Dictionary, origin_flag: String = "") -> voi
 	work_exp = 0
 	raise_steps = 0
 	raise_day = 0
+	quests = {}
 
 
 func to_dict() -> Dictionary:
@@ -91,6 +96,7 @@ func to_dict() -> Dictionary:
 		"work_exp": work_exp,
 		"raise_steps": raise_steps,
 		"raise_day": raise_day,
+		"quests": quests,
 	}
 
 
@@ -113,3 +119,4 @@ func apply_dict(data: Dictionary) -> void:
 	work_exp = int(data.get("work_exp", work_exp))
 	raise_steps = int(data.get("raise_steps", raise_steps))
 	raise_day = int(data.get("raise_day", raise_day))
+	quests = data.get("quests", quests)

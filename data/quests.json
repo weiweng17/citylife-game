@@ -1,0 +1,92 @@
+[
+  {
+    "id": "q1_stand_firm",
+    "title": "先站住脚",
+    "intro": "行李箱还摊在地上。这个月没人替你兜底了。",
+    "steps": [
+      {
+        "type": "counter",
+        "key": "work_shift",
+        "count": 1,
+        "text": "上一天班，把这一天先混过去",
+        "done_text": "班上了。工牌挂在脖子上，像那么回事了。"
+      },
+      {
+        "type": "skill_at_least",
+        "value": 55,
+        "text": "把手艺练到「熟练」——光熬时间不算本事",
+        "done_text": "手上的活终于有了章法，你自己也听得出来。"
+      },
+      {
+        "type": "counter",
+        "key": "meal_cooked",
+        "count": 1,
+        "text": "回家给自己做一顿饭",
+        "done_text": "热汤下肚。一个人也要好好吃饭。"
+      },
+      {
+        "type": "money_at_least",
+        "value": 3000,
+        "text": "手头留够 3000 块，心里才不慌",
+        "done_text": "余额第一次让你稍微松了口气。"
+      }
+    ],
+    "reward": { "mood": 8 },
+    "closing": "你把这个月过成了一句勉强能看的话：还行。",
+    "next": "q2_laozhang"
+  },
+  {
+    "id": "q2_laozhang",
+    "title": "老张的提醒",
+    "intro": "老张掐了烟说：会干活的不如会说话的。以前你不信。",
+    "steps": [
+      {
+        "type": "relation_at_least",
+        "npc": "laozhang",
+        "value": 20,
+        "text": "和老张混个脸熟（好感 20）",
+        "done_text": "老张开始把你当自己人，递烟的时候会多递一根。"
+      },
+      {
+        "type": "raise_at_least",
+        "value": 1,
+        "text": "照他说的，去谈一次薪",
+        "done_text": "你终于开了口，而且谈下来了。"
+      }
+    ],
+    "reward": { "money": 150, "mood": 6 },
+    "closing": "老张说得对，也不全对。你只是不想再等别人替你开口。",
+    "next": "q3_someone_waits"
+  },
+  {
+    "id": "q3_someone_waits",
+    "title": "有人等你回家",
+    "intro": "小雨发消息问你今晚回不回来吃饭。你想了想，回了个「回」。",
+    "steps": [
+      {
+        "type": "relation_at_least",
+        "npc": "xiaoyu",
+        "value": 20,
+        "text": "和室友混个脸熟（好感 20）",
+        "done_text": "你们开始会多说两句，不再只是点头。"
+      },
+      {
+        "type": "counter",
+        "key": "store_buy",
+        "count": 1,
+        "text": "路过便利店，给她带一样东西",
+        "done_text": "一样不贵的东西，装在塑料袋里，拎回去的时候有点分量。"
+      },
+      {
+        "type": "relation_at_least",
+        "npc": "xiaoyu",
+        "value": 45,
+        "text": "从室友，变成一个可以说真话的人（好感 45）",
+        "done_text": "你发现自己开始期待回家这件事。"
+      }
+    ],
+    "reward": { "mood": 10, "fullness": 20 },
+    "closing": "有人等你回家，雨就没那么冷了。",
+    "next": ""
+  }
+]
