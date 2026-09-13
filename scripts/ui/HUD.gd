@@ -16,8 +16,12 @@ var goal_label: Label
 var daily_label: Label
 var health_bar: ProgressBar
 var mood_bar: ProgressBar
+var fullness_bar: ProgressBar
+var energy_bar: ProgressBar
 var health_fill: StyleBoxFlat
 var mood_fill: StyleBoxFlat
+var fullness_fill: StyleBoxFlat
+var energy_fill: StyleBoxFlat
 
 
 func _ready() -> void:
@@ -114,6 +118,16 @@ func _build_ui() -> void:
 	mood_fill = mood_bar.get_theme_stylebox("fill") as StyleBoxFlat
 	row2.add_child(mood_bar)
 
+	row2.add_child(_bar_label("饱食"))
+	fullness_bar = _make_bar(Color(0.16, 0.20, 0.30), Color(0.96, 0.72, 0.36))
+	fullness_fill = fullness_bar.get_theme_stylebox("fill") as StyleBoxFlat
+	row2.add_child(fullness_bar)
+
+	row2.add_child(_bar_label("精力"))
+	energy_bar = _make_bar(Color(0.16, 0.20, 0.30), Color(0.62, 0.86, 0.72))
+	energy_fill = energy_bar.get_theme_stylebox("fill") as StyleBoxFlat
+	row2.add_child(energy_bar)
+
 	daily_label = Label.new()
 	daily_label.name = "DailyRow"
 	daily_label.add_theme_font_size_override("font_size", 12)
@@ -165,6 +179,13 @@ func refresh(state, stage_name: String, stage_goal: String, dark_clue_total: int
 	if mood_fill:
 		mood_fill.bg_color = _mood_color(state.mood)
 
+	fullness_bar.value = state.fullness
+	if fullness_fill:
+		fullness_fill.bg_color = _need_color(state.fullness)
+	energy_bar.value = state.energy
+	if energy_fill:
+		energy_fill.bg_color = _need_color(state.energy)
+
 
 ## 每日循环目标：与上方的人生阶段目标是两套系统，分开显示避免混淆。
 func refresh_daily(text: String) -> void:
@@ -181,12 +202,18 @@ func refresh_weather(weather_name: String) -> void:
 	if weather_label:
 		weather_label.text = " · %s" % weather_name
 
+func _bar_label(text: String) -> Label:
+	var label := Label.new()
+	label.text = text
+	label.add_theme_font_size_override("font_size", 12)
+	return label
+
 func _make_bar(bg: Color, fill: Color) -> ProgressBar:
 	var bar := ProgressBar.new()
 	bar.min_value = 0
 	bar.max_value = 100
 	bar.show_percentage = false
-	bar.custom_minimum_size = Vector2(120, 12)
+	bar.custom_minimum_size = Vector2(92, 12)
 	bar.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 
 	var background_style := StyleBoxFlat.new()
@@ -215,6 +242,15 @@ func _mood_color(value: int) -> Color:
 	if value <= 55:
 		return Color(0.62, 0.74, 0.96)
 	return Color(0.44, 0.70, 1.0)
+
+
+## 需求条：低了转橙，告急转红，让玩家一眼看出该吃还是该睡。
+func _need_color(value: int) -> Color:
+	if value <= 15:
+		return Color(0.92, 0.34, 0.32)
+	if value <= 35:
+		return Color(0.96, 0.68, 0.30)
+	return Color(0.62, 0.86, 0.72)
 
 
 func _fmt_money(value: int) -> String:

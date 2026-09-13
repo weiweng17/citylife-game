@@ -29,6 +29,15 @@ const SCHEDULE_LOCATION_ALIASES := {
 	"old_alley": "alley",
 }
 
+# 每日循环需求：每游戏小时的消耗、低值与告急阈值。
+const FULLNESS_PER_HOUR := 4
+const ENERGY_PER_HOUR := 3
+const NEED_LOW := 25
+const MURMURS := {
+	"fullness": "肚子在叫。你想不起来上一顿是什么时候吃的了。",
+	"energy": "眼皮沉得抬不起来。这城市还没睡，你已经撑不住了。",
+}
+
 # 地点（与 tools/gen_scene.py 的 BUILDINGS / POI 坐标一致；都落在建筑脚下的可走地面）
 const POI_DATA := [
 	{"id": "home", "pos": Vector2(310, 392), "name": "回家", "scene": "rent"},
@@ -70,6 +79,16 @@ var skill: int:
 		return game_state.skill
 	set(value):
 		game_state.skill = value
+var fullness: int:
+	get:
+		return game_state.fullness
+	set(value):
+		game_state.fullness = value
+var energy: int:
+	get:
+		return game_state.energy
+	set(value):
+		game_state.energy = value
 var network: int:
 	get:
 		return game_state.network
@@ -146,6 +165,9 @@ var ending_ui
 
 var dialog_pending_clue := ""
 var dialog_queue: Array = []  # 对话队列：当前对话关闭后依次播放
+var murmur_shown: Dictionary = {}  # 需求告急独白每天每种只播一次
+var _last_total_minutes: int = -1
+var need_fraction: float = 0.0  # 不足一小时的消耗先攒着，避免每帧被舍掉
 
 func _ready() -> void:
 	events_sys = EventSystemScript.new()
@@ -332,6 +354,10 @@ func _choose_origin(o: Dictionary) -> void:
 		location_sys.reset_new_game()
 	if daily_routine:
 		daily_routine.reset(1)
+	need_fraction = 0.0
+	murmur_shown = {}
+	# 开局即记录时间基准，否则第一次同步只会初始化、漏掉开局后流逝的时间。
+	_last_total_minutes = time_sys.day * 1440 + time_sys.get_minute_of_day() if time_sys != null else -1
 	origin_open_pending = str(o.get("open", ""))
 	# 对话链：梦 → 出身开场白（旁白）→ 新手引导（操作指引）
 	if str(o.get("open", "")) != "":
@@ -491,6 +517,7 @@ func _process(delta: float) -> void:
 	if time_sys:
 		time_sys.set_paused(ui_busy)
 		time_sys.tick(delta)
+	_sync_needs_to_time()
 	if weather_sys:
 		weather_sys.update(time_sys)
 	if npc_schedule_sys:
@@ -543,8 +570,9 @@ func _on_home_activity(id: String) -> void:
 		"rest":
 			health = mini(100, health + 12)
 			mood = mini(100, mood + 8)
+			energy = mini(100, energy + 50)
 			time_sys.advance_minutes(120)
-			feedback = "你躺下睡了两个钟头，梦里什么都没有。醒来时身体松快了些。（健康+12 心情+8）"
+			feedback = "你躺下睡了两个钟头，梦里什么都没有。醒来时身体松快了些。（健康+12 心情+8 精力+50）"
 		"study":
 			skill = mini(100, skill + 3)
 			mood = maxi(0, mood - 3)
@@ -553,13 +581,20 @@ func _on_home_activity(id: String) -> void:
 		"meal":
 			money -= 20
 			health = mini(100, health + 5)
+			fullness = mini(100, fullness + 45)
 			time_sys.advance_minutes(30)
-			feedback = "一个人也要好好吃饭。热汤下肚，身上暖了起来。（−20元 健康+5）"
+			feedback = "一个人也要好好吃饭。热汤下肚，身上暖了起来。（−20元 健康+5 饱食+45）"
+	if daily_routine:
+		if id == "meal":
+			daily_routine.complete("meal")
+		elif id == "rest":
+			daily_routine.complete("sleep")
 	activity_running = false
 	location_sys.set_activity_feedback("", false)
 	var still_busy: bool = dialog_ui.is_busy() or event_ui.is_busy() or game_over
 	location_sys.input_blocked = still_busy
 	home_activities.blocked = still_busy
+	office_activities.blocked = still_busy
 	_refresh_ui()
 	_show_toast(feedback)
 
@@ -590,6 +625,44 @@ func _on_office_activity(id: String) -> void:
 	office_activities.blocked = still_busy
 	_refresh_ui()
 	_show_toast("你把一整天交给了格子间。下班时雨还在下，手机里多了 120 块。身体发沉，话也不想说。（工资+120 健康−6 心情−4，耗时4小时）")
+
+
+## 需求按真实流经的分钟数消耗，不依赖 hour_changed——
+## advance_minutes 无论推进多少都只 emit 一次 hour_changed，按信号扣会算错比例。
+func _sync_needs_to_time() -> void:
+	if time_sys == null:
+		return
+	var total: int = time_sys.day * 1440 + time_sys.get_minute_of_day()
+	if _last_total_minutes == -1:
+		_last_total_minutes = total
+		return
+	var delta: int = total - _last_total_minutes
+	_last_total_minutes = total
+	if delta <= 0:
+		return
+	if not game_started or game_over:
+		return
+	need_fraction += float(delta) / 60.0
+	while need_fraction >= 1.0:
+		need_fraction -= 1.0
+		fullness = maxi(0, fullness - FULLNESS_PER_HOUR)
+		energy = maxi(0, energy - ENERGY_PER_HOUR)
+	if fullness <= 0:
+		health = maxi(0, health - 2)
+	if energy <= 0:
+		mood = maxi(0, mood - 2)
+	_warn_if_need_low()
+
+## 告急时用角色的口气说一句话，而不是弹出“饱食度过低”这种数值提示。
+func _warn_if_need_low() -> void:
+	for need in ["fullness", "energy"]:
+		var value: int = fullness if need == "fullness" else energy
+		if value > NEED_LOW:
+			continue
+		if int(murmur_shown.get(need, -1)) == time_sys.day:
+			continue
+		murmur_shown[need] = time_sys.day
+		_show_toast(str(MURMURS[need]))
 
 
 func _on_day_changed(day: int) -> void:

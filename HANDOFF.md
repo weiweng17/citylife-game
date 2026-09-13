@@ -95,6 +95,18 @@
 - 新增 `tools/capture_interaction_polish.gd`：截取可走/不可走两种落点标记的对照图。
 - 六套测试全绿：`verify_daily_routine`、`verify_home_activities`、`verify_home_edges`、`verify_navigation`、`verify_locations`，以及真实鼠标键盘的 `verify_home_input`（0 失败）。
 
+## 2026-09-13 再后续：需求系统（饱食 + 精力）
+
+- `GameState` 新增 `fullness`（饱食 70 起）、`energy`（精力 80 起），进 `to_dict/apply_dict`；`Game` 有同名代理属性。
+- 消耗按**真实流经的分钟数**计算：`Game._sync_needs_to_time()` 每帧比对 `day*1440+minute_of_day`，每满一小时扣饱食 4、精力 3（不足一小时先攒在 `need_fraction`，避免被舍掉）。
+  **不要用 `hour_changed` 信号扣**——`advance_minutes` 无论推进多少分钟都只 emit 一次该信号，按信号扣比例必然错。
+- 极端后果：饱食归零每小时掉健康 2，精力归零每小时掉心情 2。
+- 补回：做饭饱食 +45 并标记每日 meal，睡觉（rest）精力 +50 并标记每日 sleep。
+- 告急独白：低于 25 时用角色口气 toast 一次（“肚子在叫。你想不起来上一顿是什么时候吃的了。”），同一天每种只播一次（`murmur_shown`）。
+- HUD 状态行扩成四条：健康/心情/饱食/精力（条宽 120→92），需求条低于 35 转橙、低于 15 转红。
+- 新增 `tools/verify_needs.gd`：按真实分钟消耗、吃饭/睡觉补给与每日标记、告急独白每天一次、存档往返。
+- 七套测试全绿（needs/daily_routine/home_activities/home_edges/navigation/locations + 真实输入 home_input）。
+
 ## 尚未完成
 
 - 全部行走方向的身体比例与动画接地视觉抽查：碰撞与可达已由 `verify_home_edges.gd` 自动覆盖，姿态观感仍需人工看截图与试玩。

@@ -8,6 +8,9 @@ var health: int = 80
 var mood: int = 70
 var skill: int = 35
 var network: int = 20
+# 每日循环需求：饱食与精力。越高越好，随游戏时间自然消耗，靠吃饭和睡觉补回。
+var fullness: int = 70
+var energy: int = 80
 var job: String = "unemployed"
 var flags: Dictionary = {}
 var clues: Array = []
@@ -22,6 +25,8 @@ func reset_default() -> void:
 	mood = 70
 	skill = 35
 	network = 20
+	fullness = 70
+	energy = 80
 	job = "unemployed"
 	flags = {}
 	clues.clear()
@@ -36,6 +41,8 @@ func reset_from_origin(origin_data: Dictionary, origin_flag: String = "") -> voi
 	mood = int(origin_data.get("mood", 70))
 	skill = int(origin_data.get("skill", 35))
 	network = int(origin_data.get("network", 20))
+	fullness = int(origin_data.get("fullness", 70))
+	energy = int(origin_data.get("energy", 80))
 	job = "unemployed"
 	flags = {}
 	if origin_flag != "":
@@ -53,6 +60,8 @@ func to_dict() -> Dictionary:
 		"mood": mood,
 		"skill": skill,
 		"network": network,
+		"fullness": fullness,
+		"energy": energy,
 		"flags": flags,
 		"job": job,
 		"jobless_years": jobless_years,
@@ -68,6 +77,8 @@ func apply_dict(data: Dictionary) -> void:
 	mood = int(data.get("mood", mood))
 	skill = int(data.get("skill", skill))
 	network = int(data.get("network", network))
+	fullness = int(data.get("fullness", fullness))
+	energy = int(data.get("energy", energy))
 	job = str(data.get("job", job))
 	jobless_years = int(data.get("jobless_years", jobless_years))
 	flags = data.get("flags", flags)
