@@ -39,7 +39,7 @@ func _run_checks() -> void:
 	var queue: Array = main.get("dialog_queue")
 	queue.clear()
 
-	var hud: Control = main.get("hud") as Control
+	var hud = main.get("hud")
 	var location = main.get("location_sys")
 	var header: Control = location.root.get_node("LocationHeader") as Control
 	var state = main.get("game_state")
