@@ -29,6 +29,7 @@ const JobGrowthScript = preload("res://scripts/systems/JobGrowth.gd")
 const QuestSystemScript = preload("res://scripts/systems/QuestSystem.gd")
 const ParkActivitiesScript = preload("res://scripts/systems/ParkActivities.gd")
 const CafeActivitiesScript = preload("res://scripts/systems/CafeActivities.gd")
+const HospitalActivitiesScript = preload("res://scripts/systems/HospitalActivities.gd")
 const ShopUIScript = preload("res://scripts/ui/ShopUI.gd")
 const LocationManagerScript = preload("res://scripts/systems/LocationManager.gd")
 
@@ -148,6 +149,7 @@ var office_activities
 var store_activities
 var park_activities
 var cafe_activities
+var hospital_activities
 var daily_routine
 var inventory
 var activity_running: bool = false
@@ -253,6 +255,13 @@ func _ready() -> void:
 	add_child(cafe_activities)
 	cafe_activities.configure(location_sys)
 	cafe_activities.activity_requested.connect(_on_cafe_activity)
+	# 医院是第 4 阶段扩展内容的第三个场景：健康目前只有睡觉和感冒药能补，
+	# 这里是第一个正经的健康恢复出口——挂号费不便宜，但补得多。
+	hospital_activities = HospitalActivitiesScript.new()
+	hospital_activities.name = "HospitalActivities"
+	add_child(hospital_activities)
+	hospital_activities.configure(location_sys)
+	hospital_activities.activity_requested.connect(_on_hospital_activity)
 	# 背包只存物品数量；买到的东西随时可以取用，具体效果由这里结算。
 	inventory = InventoryScript.new()
 	inventory.name = "Inventory"
@@ -637,6 +646,7 @@ func _process(delta: float) -> void:
 	store_activities.blocked = ui_busy
 	park_activities.blocked = ui_busy
 	cafe_activities.blocked = ui_busy
+	hospital_activities.blocked = ui_busy
 	if time_sys:
 		time_sys.set_paused(ui_busy)
 		time_sys.tick(delta)
@@ -677,6 +687,7 @@ func _begin_activity(prompt_label: Label, progress_text: String, feedback_text: 
 	store_activities.blocked = true
 	park_activities.blocked = true
 	cafe_activities.blocked = true
+	hospital_activities.blocked = true
 	location_sys.set_activity_feedback(feedback_text, true, activity_id)
 	for step in range(10):
 		prompt_label.text = "%s… %d%%" % [progress_text, (step + 1) * 10]
@@ -694,6 +705,7 @@ func _end_activity() -> void:
 	store_activities.blocked = still_busy
 	park_activities.blocked = still_busy
 	cafe_activities.blocked = still_busy
+	hospital_activities.blocked = still_busy
 	_refresh_ui()
 
 
@@ -945,6 +957,32 @@ func _on_cafe_activity(id: String) -> void:
 			mood = mini(100, mood + 8)
 			time_sys.advance_minutes(20)
 			feedback = "你对着一桌子的烛光坐了二十分钟，谁的消息也没回。有些累是闲下来的那一刻才追上你的。（心情+8，耗时20分钟）"
+	_end_activity()
+	_show_toast(feedback)
+
+
+func _on_hospital_activity(id: String) -> void:
+	if activity_running or not game_started or game_over or dialog_ui.is_busy() or event_ui.is_busy():
+		return
+	if location_sys.current_location != "hospital" or not hospital_activities.SPOTS.has(id):
+		return
+	# 挂号费先看余额：与做饭的食材、咖啡馆的咖啡同一套做法。
+	if id == "clinic" and money < 50:
+		_show_toast("挂号加拿药要50元，当前余额不足。")
+		return
+	var feedback: String = ""
+	match id:
+		"clinic":
+			await _begin_activity(hospital_activities.prompt, "医生在写病历", "问诊中", "clinic")
+			money -= 50
+			health = mini(100, health + 25)
+			time_sys.advance_minutes(60)
+			feedback = "验了血，听了肺，医生说没大毛病，开了一周的药。走出诊室时你忽然觉得，能嫌医院冷的人其实是有福的。（−50元 健康+25，耗时60分钟）"
+		"bench":
+			await _begin_activity(hospital_activities.prompt, "走廊的灯白得发凉", "候诊中", "bench")
+			mood = mini(100, mood + 5)
+			time_sys.advance_minutes(15)
+			feedback = "你在候诊椅上坐了一会儿。护士推着车走过，喊到的名字都不是你的。这样想想，好像也值得高兴。（心情+5，耗时15分钟）"
 	_end_activity()
 	_show_toast(feedback)
 
