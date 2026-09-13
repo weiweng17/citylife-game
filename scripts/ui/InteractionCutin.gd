@@ -13,6 +13,8 @@ const STORE_BG := preload("res://assets/backgrounds/dialogue/life/convenience_st
 const CAFE_BG := preload("res://assets/backgrounds/dialogue/life/cafe_rain_night.webp")
 const PARK_BG := preload("res://assets/backgrounds/dialogue/life/park_pavilion_rain_night.webp")
 const HOSPITAL_BG := preload("res://assets/backgrounds/dialogue/hospital/clinic_room_rain_night.webp")
+const ALLEY_BG := preload("res://assets/backgrounds/dialogue/city/old_alley_rain_night.webp")
+const ROOFTOP_BG := preload("res://assets/backgrounds/dialogue/city/rooftop_rain_night.webp")
 const HOME_SLEEP_SUBJECT := preload("res://assets/characters/sprites/interactions/protagonist_sleep_side_v6.png")
 
 # key = "location_id:interactionType"。
@@ -70,6 +72,22 @@ const PRESENTATIONS := {
 	"hospital:bench": {
 		"background": HOSPITAL_BG,
 		"title": "候诊椅 · 缓一缓", "subtitle": "坐一会儿，让呼吸慢下来。",
+	},
+	"alley:shrine": {
+		"background": ALLEY_BG,
+		"title": "旧巷神龛 · 上香", "subtitle": "有些愿望，说出口之后会轻一点。",
+	},
+	"alley:door": {
+		"background": ALLEY_BG,
+		"title": "旧巷木门 · 歇脚", "subtitle": "雨落在瓦檐上，时间像是慢了一拍。",
+	},
+	"rooftop:ledge": {
+		"background": ROOFTOP_BG,
+		"title": "老楼天台 · 看夜景", "subtitle": "站得高一点，城市真的会显得很远。",
+	},
+	"rooftop:bench": {
+		"background": ROOFTOP_BG,
+		"title": "天台长椅 · 吹风", "subtitle": "风从楼宇之间穿过去，也带走一点疲惫。",
 	},
 }
 
