@@ -27,6 +27,7 @@ const InventoryScript = preload("res://scripts/systems/Inventory.gd")
 const NpcRelationsScript = preload("res://scripts/systems/NpcRelations.gd")
 const JobGrowthScript = preload("res://scripts/systems/JobGrowth.gd")
 const QuestSystemScript = preload("res://scripts/systems/QuestSystem.gd")
+const ParkActivitiesScript = preload("res://scripts/systems/ParkActivities.gd")
 const ShopUIScript = preload("res://scripts/ui/ShopUI.gd")
 const LocationManagerScript = preload("res://scripts/systems/LocationManager.gd")
 
@@ -144,6 +145,7 @@ var location_sys
 var home_activities
 var office_activities
 var store_activities
+var park_activities
 var daily_routine
 var inventory
 var activity_running: bool = false
@@ -237,6 +239,12 @@ func _ready() -> void:
 	add_child(store_activities)
 	store_activities.configure(location_sys)
 	store_activities.activity_requested.connect(_on_store_activity)
+	# 公园是第 4 阶段扩展内容的第一个场景：此前只有地图与 NPC，玩家到了没事可做。
+	park_activities = ParkActivitiesScript.new()
+	park_activities.name = "ParkActivities"
+	add_child(park_activities)
+	park_activities.configure(location_sys)
+	park_activities.activity_requested.connect(_on_park_activity)
 	# 背包只存物品数量；买到的东西随时可以取用，具体效果由这里结算。
 	inventory = InventoryScript.new()
 	inventory.name = "Inventory"
@@ -619,6 +627,7 @@ func _process(delta: float) -> void:
 	home_activities.blocked = ui_busy
 	office_activities.blocked = ui_busy
 	store_activities.blocked = ui_busy
+	park_activities.blocked = ui_busy
 	if time_sys:
 		time_sys.set_paused(ui_busy)
 		time_sys.tick(delta)
@@ -649,6 +658,34 @@ func _update_near_target() -> void:
 
 # ---------------------------------------------------------------- 分场景地图
 
+## 活动公用的开头：上锁 + 头顶反馈 + 进度条。所有场景活动都从这里走，
+## 别再各自抄一份（此前三处各抄一份，连"哪些活动脚本要上锁"都对不上）。
+func _begin_activity(prompt_label: Label, progress_text: String, feedback_text: String, activity_id: String) -> void:
+	activity_running = true
+	location_sys.input_blocked = true
+	home_activities.blocked = true
+	office_activities.blocked = true
+	store_activities.blocked = true
+	park_activities.blocked = true
+	location_sys.set_activity_feedback(feedback_text, true, activity_id)
+	for step in range(10):
+		prompt_label.text = "%s… %d%%" % [progress_text, (step + 1) * 10]
+		await get_tree().create_timer(0.12).timeout
+
+
+## 活动公用的结尾：解锁 + 刷新。数值结算发生在调用方，这里只管收尾。
+func _end_activity() -> void:
+	activity_running = false
+	location_sys.set_activity_feedback("", false)
+	var still_busy: bool = dialog_ui.is_busy() or event_ui.is_busy() or game_over
+	location_sys.input_blocked = still_busy
+	home_activities.blocked = still_busy
+	office_activities.blocked = still_busy
+	store_activities.blocked = still_busy
+	park_activities.blocked = still_busy
+	_refresh_ui()
+
+
 func _on_home_activity(id: String) -> void:
 	if activity_running or not game_started or game_over or dialog_ui.is_busy() or event_ui.is_busy():
 		return
@@ -661,15 +698,9 @@ func _on_home_activity(id: String) -> void:
 	if id == "meal" and money < 20:
 		_show_toast("食材需要20元，当前余额不足。")
 		return
-	activity_running = true
-	location_sys.input_blocked = true
-	home_activities.blocked = true
-	var activity_icons := {"rest": "Zzz", "study": "专注中", "meal": "烹饪中"}
-	location_sys.set_activity_feedback(str(activity_icons.get(id, "进行中")), true, id)
 	var progress_words := {"rest": "睡意渐浓", "study": "书页翻动", "meal": "锅里咕嘟作响"}
-	for step in range(10):
-		home_activities.prompt.text = "%s… %d%%" % [str(progress_words.get(id, "进行中")), (step + 1) * 10]
-		await get_tree().create_timer(0.12).timeout
+	var activity_icons := {"rest": "Zzz", "study": "专注中", "meal": "烹饪中"}
+	await _begin_activity(home_activities.prompt, str(progress_words.get(id, "进行中")), str(activity_icons.get(id, "进行中")), id)
 	var feedback: String = ""
 	var slept_through := false
 	match id:
@@ -704,13 +735,7 @@ func _on_home_activity(id: String) -> void:
 				quest_sys.notify(_state(), "meal_cooked")
 		elif id == "rest":
 			daily_routine.complete("sleep")
-	activity_running = false
-	location_sys.set_activity_feedback("", false)
-	var still_busy: bool = dialog_ui.is_busy() or event_ui.is_busy() or game_over
-	location_sys.input_blocked = still_busy
-	home_activities.blocked = still_busy
-	office_activities.blocked = still_busy
-	_refresh_ui()
+	_end_activity()
 	_show_toast(feedback)
 
 
@@ -779,14 +804,7 @@ func _on_office_activity(id: String) -> void:
 ## 上班：拿钱、掉状态、攒熟练度。时薪按技能档位走，所以"多上班"本身会涨价。
 func _do_work_shift() -> void:
 	var wage: int = JobGrowthScript.wage_of(skill, game_state.raise_steps)
-	activity_running = true
-	location_sys.input_blocked = true
-	home_activities.blocked = true
-	office_activities.blocked = true
-	location_sys.set_activity_feedback("工作中", true, "work")
-	for step in range(10):
-		office_activities.prompt.text = "键盘敲个不停… %d%%" % ((step + 1) * 10)
-		await get_tree().create_timer(0.12).timeout
+	await _begin_activity(office_activities.prompt, "键盘敲个不停", "工作中", "work")
 	money += wage
 	health = maxi(0, health - 6)
 	mood = maxi(0, mood - 4)
@@ -799,13 +817,7 @@ func _do_work_shift() -> void:
 		daily_routine.complete("work")
 	if quest_sys:
 		quest_sys.notify(_state(), "work_shift")
-	activity_running = false
-	location_sys.set_activity_feedback("", false)
-	var still_busy: bool = dialog_ui.is_busy() or event_ui.is_busy() or game_over
-	location_sys.input_blocked = still_busy
-	home_activities.blocked = still_busy
-	office_activities.blocked = still_busy
-	_refresh_ui()
+	_end_activity()
 	_show_toast("你把一整天交给了格子间。下班时雨还在下，手机里多了 %d 块。身体发沉，话也不想说。（工资+%d 健康−6 心情−4，耗时4小时）%s" % [wage, wage, _work_growth_line(growth)])
 
 
@@ -836,14 +848,7 @@ func _do_negotiate() -> void:
 		_show_toast("你的岗位工资已经到顶了。剩下的路，不在这一间办公室里。")
 		return
 	game_state.raise_day = today
-	activity_running = true
-	location_sys.input_blocked = true
-	home_activities.blocked = true
-	office_activities.blocked = true
-	location_sys.set_activity_feedback("在门口", true, "negotiate")
-	for step in range(10):
-		office_activities.prompt.text = "你在主管门口站了一会儿… %d%%" % ((step + 1) * 10)
-		await get_tree().create_timer(0.12).timeout
+	await _begin_activity(office_activities.prompt, "你在主管门口站了一会儿", "在门口", "negotiate")
 	var relation: int = 0
 	if npc_relations_sys != null:
 		relation = npc_relations_sys.value_of(game_state.relations, "laozhang")
@@ -865,13 +870,7 @@ func _do_negotiate() -> void:
 		else:
 			feedback += "你想起老张说过，会干活的不如会说话的。"
 	time_sys.advance_minutes(JobGrowthScript.NEGOTIATE_MINUTES)
-	activity_running = false
-	location_sys.set_activity_feedback("", false)
-	var still_busy: bool = dialog_ui.is_busy() or event_ui.is_busy() or game_over
-	location_sys.input_blocked = still_busy
-	home_activities.blocked = still_busy
-	office_activities.blocked = still_busy
-	_refresh_ui()
+	_end_activity()
 	_show_toast(feedback)
 
 
@@ -884,6 +883,32 @@ func _on_store_activity(id: String) -> void:
 		return
 	if id == "shop":
 		_open_shop()
+
+
+# ---------------------------------------------------------------- 公园
+
+## 公园的两个歇脚点。刻意**不算**每日目标里的"休息"——那仍然只属于回家睡觉，
+## 公园是顺路喘口气的地方，不该变成另一种打卡。
+func _on_park_activity(id: String) -> void:
+	if activity_running or not game_started or game_over or dialog_ui.is_busy() or event_ui.is_busy():
+		return
+	if location_sys.current_location != "park" or not park_activities.SPOTS.has(id):
+		return
+	var feedback: String = ""
+	match id:
+		"bench":
+			await _begin_activity(park_activities.prompt, "你在长椅上坐了下来", "发呆中", "bench")
+			energy = mini(100, energy + 20)
+			mood = mini(100, mood + 5)
+			time_sys.advance_minutes(30)
+			feedback = "长椅是湿的，你垫了下手还是坐了。雨声把脑子里的杂音盖掉了一半。（精力+20 心情+5，耗时30分钟）"
+		"pond":
+			await _begin_activity(park_activities.prompt, "你看着水面上的圈", "看雨中", "pond")
+			mood = mini(100, mood + 8)
+			time_sys.advance_minutes(20)
+			feedback = "池塘边的石栏被雨洗得发亮。你看了会儿水面的圈。（心情+8，耗时20分钟）"
+	_end_activity()
+	_show_toast(feedback)
 
 
 func _open_shop() -> void:
