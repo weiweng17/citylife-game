@@ -30,7 +30,8 @@ The repair keeps the public EventUI API and event semantics unchanged while maki
 6. The result `ContinueButton` stays outside the scroll region, so long result prose cannot push the primary continuation action below the panel.
 7. Option removal detaches children from `EventOptions` immediately before queue-freeing them, avoiding stale temporary layout height when switching to result view.
 8. Event/result transitions reset vertical scroll position to the top without changing signals or settlement behavior.
-9. Continuation hardening extends the narrow regression beyond proving a scroll range exists: at 960×540 it now drives the scroll owner to its bottom limit and verifies that the final enabled stress option becomes fully visible inside `EventScroll`.
+9. The narrow regression drives the 960×540 stress case to the bottom of `EventScroll` and verifies the final enabled option becomes fully visible.
+10. Continuation hardening now also exercises the actual button signal wiring: the final option must emit `option_selected` exactly once with its original index, and the result `ContinueButton` must emit `continue_requested` exactly once.
 
 ## Files changed
 - `scripts/ui/EventUI.gd`
@@ -44,7 +45,8 @@ The repair keeps the public EventUI API and event semantics unchanged while maki
   - injects long narrative copy plus eight long enabled options;
   - checks default 1280×720 and smaller 960×540 logical viewports;
   - verifies panel containment, explicit vertical scroll range, horizontal containment, option preservation/wrapping, and result continue-button reachability;
-  - explicitly scrolls the 960×540 stress case to the bottom and verifies the final enabled choice becomes fully visible.
+  - explicitly scrolls the 960×540 stress case to the bottom and verifies the final enabled choice becomes fully visible;
+  - triggers the final choice and result continue buttons and checks their existing public signals are forwarded exactly once with the expected option index.
 - `agent-reports/scene-ui.md`
   - this review request.
 
@@ -64,7 +66,8 @@ No gameplay/data/shared-manager file was modified.
 - At the normal 720px logical height the bounded formula preserves the previous ~340px panel height.
 - At a shorter logical viewport the panel shrinks within top/bottom safe margins instead of preserving a fixed 340px vertical band.
 - Dynamic body/options content has one vertical scroll owner; result continuation remains structurally outside that scroll owner.
-- The prepared regression now tests actual bottom-of-list reachability instead of treating scrollbar existence alone as proof that all enabled choices can be reached.
+- The prepared regression tests actual bottom-of-list reachability instead of treating scrollbar existence alone as proof that all enabled choices can be reached.
+- The prepared regression also verifies the UI refactor keeps the existing signal forwarding contract at the button boundary rather than checking only node presence.
 
 ## Validation
 ### Performed in this web worker
@@ -72,8 +75,8 @@ No gameplay/data/shared-manager file was modified.
 - Confirmed UI-FIX-004 remains `READY` on the orchestrator board while this worker report is already `NEEDS_REVIEW`; no new orchestrator rework finding or scope expansion was present.
 - Confirmed branch remained ahead of and not behind `orchestrator/multi-agent-bootstrap` before continuation.
 - Re-read the current EventUI and narrow verifier for repository-visible layout/API consistency.
-- Identified one remaining acceptance-evidence gap: previous verifier proved all choices existed and a vertical scroll range existed, but did not actually prove the last enabled choice could be brought into the visible scroll area.
-- Extended only the existing authorized verifier to set the narrow EventScroll to its bottom range, wait for layout settlement, and verify the final stress option is fully visible.
+- Identified one remaining acceptance-evidence gap after the previous reachability hardening: the verifier did not exercise the preserved `option_selected` / `continue_requested` signal wiring after the node hierarchy changed.
+- Extended only the existing authorized verifier to press the last stress option, verify one `option_selected(7)` emission, switch to result view, press `ContinueButton`, and verify one `continue_requested` emission.
 - Production `EventUI.gd` was not changed during this continuation.
 
 ### Not performed
@@ -87,7 +90,7 @@ Run on the exact review SHA in a Godot 4.7.2-capable environment:
 
 `godot --headless --path . --script res://tools/verify_event_panel_overflow.gd`
 
-The regression explicitly sets/asserts the logical viewport rather than assuming physical window size equals logical layout size. It now also proves the bottom-most enabled choice can be made visible by the scroll owner before transitioning to the result-view checks.
+The regression explicitly sets/asserts the logical viewport rather than assuming physical window size equals logical layout size. It proves the bottom-most enabled choice can be made visible and now also verifies choice/continue signal forwarding before completion.
 
 ### Required rendered evidence before visual PASS
 On the exact review SHA, inspect EventUI at 1280×720 and 960×540 logical viewports with intentionally long content. Confirm:
@@ -101,17 +104,18 @@ On the exact review SHA, inspect EventUI at 1280×720 and 960×540 logical viewp
 8. Selecting an option and continuing still emit the same signals and preserve normal event flow.
 
 ## Known risks / review notes
-- This web worker did not execute Godot, so actual Control minimum-size negotiation, scrollbar metrics, focus-driven scrolling and font wrapping remain runtime acceptance items.
+- This web worker did not execute Godot, so actual Control minimum-size negotiation, scrollbar metrics, focus-driven scrolling, font wrapping and signal regression results remain runtime acceptance items.
 - The chosen smaller contract is 960×540 desktop/Web. Mobile layouts are not claimed by this task.
 - The outer panel still uses clipping defensively, but normal dynamic overflow should be owned by `EventScroll`; rendered evidence should confirm no unexpected child escapes the scroll contract.
 - Option text wrapping can increase individual button height by design. The vertical scroll region is intended to absorb that growth rather than truncating choices or increasing panel height.
-- The new bottom-scroll reachability assertion is prepared repository evidence only; it is not a claimed runtime result until Godot executes the script.
+- The bottom-scroll and signal assertions are prepared repository evidence only; neither is a claimed runtime result until Godot executes the script.
 
 ## Commits
 - `989764669c047344a6da1fbf6fc4a7fa9829b7b7` — `fix: contain event panel overflow`
 - `10c2d26471a08ba58ff615c04d28db695f4f2d4d` — `test: guard event panel overflow contract`
 - `ba7b5f2c61407b017695de628c23839525c21937` — `test: keep EventUI verifier dynamically typed`
 - `a372d3684a690dc7ee21f6d76ade5a8cc13b00e1` — `test: prove final event choice remains reachable`
+- `d4f07e2a46dbc69d59b6bfe0a069ef9592621582` — `test: preserve EventUI signal forwarding`
 
 ## Handoff
-UI-FIX-004 remains ready for orchestrator review at repository level. The implementation is isolated to EventUI presentation plus one task-specific regression, and the prepared verifier now covers concrete final-choice reachability in addition to overflow existence. Do not mark rendered visual acceptance complete until the prepared Godot regression and real 1280×720 / 960×540 EventUI captures pass on the exact review SHA.
+UI-FIX-004 remains ready for orchestrator review at repository level. The implementation is isolated to EventUI presentation plus one task-specific regression. The prepared verifier now covers viewport containment, real bottom-of-list reachability, result-button reachability and preserved public signal forwarding. Do not mark rendered visual acceptance complete until the prepared Godot regression and real 1280×720 / 960×540 EventUI captures pass on the exact review SHA.
