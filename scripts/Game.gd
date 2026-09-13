@@ -24,6 +24,7 @@ const DailyRoutineScript = preload("res://scripts/systems/DailyRoutine.gd")
 const OfficeActivitiesScript = preload("res://scripts/systems/OfficeActivities.gd")
 const StoreActivitiesScript = preload("res://scripts/systems/StoreActivities.gd")
 const InventoryScript = preload("res://scripts/systems/Inventory.gd")
+const NpcRelationsScript = preload("res://scripts/systems/NpcRelations.gd")
 const ShopUIScript = preload("res://scripts/ui/ShopUI.gd")
 const LocationManagerScript = preload("res://scripts/systems/LocationManager.gd")
 
@@ -129,6 +130,8 @@ var jobless_years: int:
 var near_target := {}
 var world_manager
 var npc_schedule_sys
+## NPC 关系（好感度/熟悉度）。纯逻辑，不进场景树。
+var npc_relations_sys
 var dark_location_sys
 var encounter_sys
 var save_sys
@@ -172,6 +175,8 @@ var event_ui
 var ending_ui
 
 var dialog_pending_clue := ""
+## 本次对话结束后要结算关系的 NPC。与线索一样，读完了才算数。
+var dialog_pending_npc := ""
 var dialog_queue: Array = []  # 对话队列：当前对话关闭后依次播放
 var murmur_shown: Dictionary = {}  # 需求告急独白每天每种只播一次
 var _last_total_minutes: int = -1
@@ -241,6 +246,8 @@ func _ready() -> void:
 	add_child(npc_schedule_sys)
 	npc_schedule_sys.configure(world_manager)
 	npc_schedule_sys.reset(time_sys, weather_sys)
+	# 纯逻辑，不需要进场景树（和 GameState 一样是 RefCounted）。
+	npc_relations_sys = NpcRelationsScript.new()
 	dark_location_sys = DarkLocationSystemScript.new()
 	dark_location_sys.name = "DarkLocationSys"
 	add_child(dark_location_sys)
@@ -362,6 +369,7 @@ func _choose_origin(o: Dictionary) -> void:
 	origin = o
 	var ini: Dictionary = o.get("init", {})
 	game_state.reset_from_origin(ini, str(o.get("flag", "")))
+	dialog_pending_npc = ""
 	game_over = false
 	game_started = true
 	start_ui.close()
@@ -474,6 +482,7 @@ func apply_save_payload(payload: Dictionary) -> void:
 	_last_total_minutes = time_sys.day * 1440 + time_sys.get_minute_of_day() if time_sys != null else -1
 	dialog_queue.clear()
 	dialog_pending_clue = ""
+	dialog_pending_npc = ""
 	cur_event = null
 	cur_event_kind = "event"
 	cur_event_time_cost = 0
@@ -955,7 +964,12 @@ func _sync_location_npcs() -> void:
 		scheduled_location = str(SCHEDULE_LOCATION_ALIASES.get(scheduled_location, scheduled_location))
 		if scheduled_location != location_sys.current_location:
 			continue
-		visible_items.append({"id": npc_id, "name": str(npc.get("name", npc_id))})
+		visible_items.append({
+			"id": npc_id,
+			"name": str(npc.get("name", npc_id)),
+			# 悬停标签带上熟悉度，关系变化在场景里就能看见。
+			"note": npc_relations_sys.label_for(game_state.relations, npc_id) if npc_relations_sys != null else "",
+		})
 	location_sys.set_visible_npcs(visible_items)
 
 # ---------------------------------------------------------------- 交互
@@ -1030,9 +1044,63 @@ func _interior_boss() -> void:
 
 
 func _talk_to(npc: Dictionary) -> void:
+	var npc_id := str(npc.get("id", ""))
 	var dialog_data: Dictionary = story_sys.build_npc_dialog(npc, _state()) if story_sys else {"lines": Data.npc_lines(npc, age), "pending_clue": ""}
 	dialog_pending_clue = str(dialog_data.get("pending_clue", ""))
-	_show_dialog("%s · %s" % [npc["name"], npc["title"]], dialog_data.get("lines", []))
+	# 关系也在对话读完后再结算（见 _on_dialog_finished），这里只记下是谁。
+	dialog_pending_npc = npc_id
+	var lines: Array = (dialog_data.get("lines", []) as Array).duplicate()
+	# 同一天再聊不涨好感。与其让玩家自己猜，不如在对话里说清楚。
+	if _talked_today(npc_id):
+		lines.append("（今天已经聊过了。话是说不完的，但意思到了。）")
+	var title := "%s · %s" % [npc["name"], npc["title"]]
+	if npc_relations_sys != null:
+		title += " · %s" % npc_relations_sys.label_for(game_state.relations, npc_id)
+	_show_dialog(title, lines)
+
+
+func _talked_today(npc_id: String) -> bool:
+	if npc_relations_sys == null or time_sys == null:
+		return false
+	return npc_relations_sys.talked_today(game_state.talk_day, npc_id, time_sys.day)
+
+
+func _npc_name(npc_id: String) -> String:
+	for npc in Data.NPCS:
+		if str(npc.get("id", "")) == npc_id:
+			return str(npc.get("name", npc_id))
+	return npc_id
+
+
+## 把一次交谈的结果落到玩家身上，并用一句生活化的话说出来（数值放括号里）。
+func _apply_talk_result(npc_id: String, result: Dictionary) -> void:
+	if result.is_empty():
+		return
+	var gain := int(result.get("gain", 0))
+	var mood_gain := int(result.get("mood_gain", 0))
+	if mood_gain > 0:
+		mood = clampi(mood + mood_gain, 0, 100)
+
+	var parts := PackedStringArray()
+	if gain > 0:
+		parts.append("好感+%d(%d)" % [gain, int(result.get("after", 0))])
+	if mood_gain > 0:
+		parts.append("心情+%d" % mood_gain)
+
+	var npc_name := _npc_name(npc_id)
+	var text := ""
+	if bool(result.get("tier_up", false)):
+		text = "你和%s的交情到了「%s」。" % [npc_name, str(result.get("tier_label", ""))]
+		if not parts.is_empty():
+			text += "（%s）" % ", ".join(parts)
+	elif not parts.is_empty():
+		text = "你和%s聊了几句。（%s）" % [npc_name, ", ".join(parts)]
+	if text.is_empty():
+		return
+	var milestone := str(result.get("milestone", ""))
+	if not milestone.is_empty():
+		text += " " + milestone
+	_show_toast(text)
 
 # ---------------------------------------------------------------- 事件
 
@@ -1206,6 +1274,17 @@ func _enqueue_dialog(speaker: String, lines: Array) -> void:
 
 
 func _on_dialog_finished() -> void:
+	if dialog_pending_npc != "":
+		var talked_id := dialog_pending_npc
+		dialog_pending_npc = ""
+		if npc_relations_sys != null:
+			var result: Dictionary = npc_relations_sys.talk(
+				game_state.relations,
+				game_state.talk_day,
+				talked_id,
+				time_sys.day if time_sys != null else 0
+			)
+			_apply_talk_result(talked_id, result)
 	if dialog_pending_clue != "":
 		var npc_id := dialog_pending_clue
 		dialog_pending_clue = ""

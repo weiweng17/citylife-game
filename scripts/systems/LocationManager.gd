@@ -661,10 +661,11 @@ func _clamp_walk_position(pos: Vector2) -> Vector2:
 	return navigation.nearest_valid(pos)
 
 func set_visible_npcs(items: Array) -> void:
+	# signature 必须带上 note（关系档位）：档位变了也得重建，否则悬停标签会一直显示旧档位。
 	var parts: Array[String] = []
 	for item in items:
 		if typeof(item) == TYPE_DICTIONARY:
-			parts.append("%s:%s" % [str(item.get("id", "")), str(item.get("name", ""))])
+			parts.append("%s:%s:%s" % [str(item.get("id", "")), str(item.get("name", "")), str(item.get("note", ""))])
 	parts.sort()
 	var signature: String = "|".join(parts)
 	if signature == npc_signature:
@@ -678,10 +679,10 @@ func set_visible_npcs(items: Array) -> void:
 		var npc_id: String = str(item.get("id", ""))
 		var location_positions: Dictionary = NPC_LOCATION_POS.get(current_location, {})
 		var pos: Vector2 = location_positions.get(npc_id, Vector2(900, 420))
-		_add_npc_entity(npc_id, str(item.get("name", npc_id)), pos)
+		_add_npc_entity(npc_id, str(item.get("name", npc_id)), pos, str(item.get("note", "")))
 
 
-func _add_npc_entity(npc_id: String, display_name: String, pos: Vector2) -> void:
+func _add_npc_entity(npc_id: String, display_name: String, pos: Vector2, note: String = "") -> void:
 	# 阴影、角色、标签拆开，避免 NPC 像悬在背景上的文字按钮。
 	var shadow := _make_ground_shadow(24.0, 7.0, Color(0.0, 0.0, 0.0, 0.30))
 	shadow.position = pos + Vector2(0.0, 32.0)
@@ -692,7 +693,7 @@ func _add_npc_entity(npc_id: String, display_name: String, pos: Vector2) -> void
 	button.name = "Npc_%s" % npc_id
 	button.flat = true
 	button.focus_mode = Control.FOCUS_NONE
-	button.tooltip_text = "与%s交谈" % display_name
+	button.tooltip_text = "与%s交谈" % display_name if note.is_empty() else "与%s交谈（%s）" % [display_name, note]
 	button.position = pos - Vector2(42.0, 76.0)
 	button.size = Vector2(84.0, 110.0)
 	button.z_index = maxi(2, int(pos.y))
@@ -710,7 +711,7 @@ func _add_npc_entity(npc_id: String, display_name: String, pos: Vector2) -> void
 	button.add_child(avatar)
 
 	var label := Label.new()
-	label.text = display_name
+	label.text = display_name if note.is_empty() else "%s（%s）" % [display_name, note]
 	label.visible = false
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.position = Vector2(-6.0, -19.0)
@@ -742,6 +743,10 @@ func _clear_npcs() -> void:
 	if npc_layer == null:
 		return
 	for child in npc_layer.get_children():
+		# 先摘下来再 queue_free：queue_free 要等到帧末才生效，只调它的话同一帧里
+		# 新旧 NPC 节点会同名并存，get_node 可能拿到那个正要释放的旧节点
+		# （悬停标签看起来"没更新"就是这么来的），中间还会多绘制一帧。
+		npc_layer.remove_child(child)
 		child.queue_free()
 
 func _on_npc_pressed(npc_id: String) -> void:

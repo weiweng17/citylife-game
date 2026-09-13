@@ -16,6 +16,10 @@ var flags: Dictionary = {}
 var clues: Array = []
 var stage_idx: int = 0
 var jobless_years: int = 0
+# NPC 关系：`relations` 是 {npc_id: 好感度}，`talk_day` 记录"最后一次有效交谈发生在第几天"。
+# 用"记下是哪一天"而不是"每天重置标记"，跨天就不需要额外清理，也不怕漏重置。
+var relations: Dictionary = {}
+var talk_day: Dictionary = {}
 
 
 func reset_default() -> void:
@@ -32,6 +36,8 @@ func reset_default() -> void:
 	clues.clear()
 	stage_idx = 0
 	jobless_years = 0
+	relations = {}
+	talk_day = {}
 
 
 func reset_from_origin(origin_data: Dictionary, origin_flag: String = "") -> void:
@@ -50,6 +56,8 @@ func reset_from_origin(origin_data: Dictionary, origin_flag: String = "") -> voi
 	clues.clear()
 	stage_idx = 0
 	jobless_years = 0
+	relations = {}
+	talk_day = {}
 
 
 func to_dict() -> Dictionary:
@@ -67,6 +75,8 @@ func to_dict() -> Dictionary:
 		"jobless_years": jobless_years,
 		"clues": clues,
 		"stage_idx": stage_idx,
+		"relations": relations,
+		"talk_day": talk_day,
 	}
 
 
@@ -84,3 +94,5 @@ func apply_dict(data: Dictionary) -> void:
 	flags = data.get("flags", flags)
 	clues = data.get("clues", clues)
 	stage_idx = int(data.get("stage_idx", stage_idx))
+	relations = data.get("relations", relations)
+	talk_day = data.get("talk_day", talk_day)
