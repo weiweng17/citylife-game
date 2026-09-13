@@ -1,8 +1,9 @@
 extends SceneTree
-## UI-FIX-002 narrow repository/runtime asset contract check.
-## This verifies that the default bed foreground stays a localized feathered waist/leg patch.
+## UI-FIX-002 narrow repository/runtime presentation contract check.
+## This verifies both the localized feathered foreground asset and the default sleep layering contract.
 ## It does NOT prove rendered visual acceptance in the real home scene.
 
+const HomeInteractionVisualScript := preload("res://scripts/world/HomeInteractionVisual.gd")
 const BLANKET_PATH := "res://assets/backgrounds/interactions/home_bed_blanket_foreground_v1.png"
 const EXPECTED_CANVAS := Vector2i(1200, 900)
 const MAX_USED_WIDTH := 750
@@ -21,14 +22,39 @@ func _init() -> void:
 	_expect(load_error == OK, "default home bed foreground must load")
 	if load_error == OK:
 		_verify_local_patch(image)
+	_verify_default_layering_contract()
 
 	if failures.is_empty():
-		print("[PASS] home bed seam asset contract")
+		print("[PASS] home bed seam presentation contract")
 		quit(0)
 	else:
 		for failure in failures:
 			printerr("[FAIL] %s" % failure)
 		quit(1)
+
+
+func _verify_default_layering_contract() -> void:
+	var visual = HomeInteractionVisualScript.new()
+	root.add_child(visual)
+
+	_expect(not visual.use_candidate_bed_group, "candidate bed group must stay disabled by default")
+	_expect(not visual.use_background_blanket_v2, "background blanket v2 must stay disabled by default")
+	_expect(not visual.use_background_blanket_v3, "background blanket v3 A/B mode must stay disabled by default")
+	_expect(visual.sleep_sprite != null, "default home sleep pose must exist")
+	_expect(visual.blanket_sprite != null, "default home bed foreground must exist")
+	_expect(visual.z_label != null, "programmatic sleep Z effect must exist")
+
+	if visual.sleep_sprite != null and visual.blanket_sprite != null:
+		_expect(visual.blanket_sprite.texture != null, "default foreground sprite must have a texture")
+		if visual.blanket_sprite.texture != null:
+			_expect(visual.blanket_sprite.texture.resource_path == BLANKET_PATH, "default foreground must use the cleaned legacy-path asset")
+		_expect(visual.sleep_sprite.z_index < visual.blanket_sprite.z_index, "sleep pose must render below the local duvet foreground")
+	if visual.blanket_sprite != null and visual.z_label != null:
+		_expect(visual.blanket_sprite.z_index < visual.z_label.z_index, "programmatic Z effect must render above the duvet foreground")
+	_expect(not visual.visible, "home sleep presentation must remain hidden until begin_sleep")
+
+	root.remove_child(visual)
+	visual.free()
 
 
 func _verify_local_patch(image: Image) -> void:
