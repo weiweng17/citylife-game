@@ -8,6 +8,9 @@ const EXPECTED_CANVAS := Vector2i(1200, 900)
 const MAX_USED_WIDTH := 750
 const MAX_USED_HEIGHT := 330
 const MAX_FOOTPRINT_RATIO := 0.25
+const MAX_VISIBLE_PIXEL_RATIO := 0.16
+const MIN_SOFT_ALPHA_RATIO := 0.02
+const MIN_EDGE_MARGIN := 8
 
 var failures: Array[String] = []
 
@@ -36,6 +39,7 @@ func _verify_local_patch(image: Image) -> void:
 	var min_y := image.get_height()
 	var max_x := -1
 	var max_y := -1
+	var visible_pixel_count := 0
 	var soft_alpha_count := 0
 
 	for y in range(image.get_height()):
@@ -43,6 +47,7 @@ func _verify_local_patch(image: Image) -> void:
 			var alpha := image.get_pixel(x, y).a
 			if alpha <= 0.001:
 				continue
+			visible_pixel_count += 1
 			min_x = mini(min_x, x)
 			min_y = mini(min_y, y)
 			max_x = maxi(max_x, x)
@@ -59,11 +64,28 @@ func _verify_local_patch(image: Image) -> void:
 	_expect(used.position.y <= 40, "foreground patch shifted too far down from baked v3 alignment")
 	_expect(used.size.x <= MAX_USED_WIDTH, "foreground width is too large for a local waist/leg occluder")
 	_expect(used.size.y <= MAX_USED_HEIGHT, "foreground height is too large for a local waist/leg occluder")
-	var footprint_ratio := float(used.size.x * used.size.y) / float(image.get_width() * image.get_height())
-	_expect(footprint_ratio < MAX_FOOTPRINT_RATIO, "foreground footprint is too large; do not restore a whole-bed overlay")
-	_expect(soft_alpha_count > 0, "foreground seam should keep a feathered alpha edge")
 
-	print("Bed seam used rect: %s; footprint: %.4f; soft-alpha pixels: %d" % [used, footprint_ratio, soft_alpha_count])
+	var canvas_pixels := image.get_width() * image.get_height()
+	var footprint_ratio := float(used.size.x * used.size.y) / float(canvas_pixels)
+	var visible_ratio := float(visible_pixel_count) / float(canvas_pixels)
+	var soft_alpha_ratio := float(soft_alpha_count) / float(maxi(visible_pixel_count, 1))
+	_expect(footprint_ratio < MAX_FOOTPRINT_RATIO, "foreground footprint is too large; do not restore a whole-bed overlay")
+	_expect(visible_ratio < MAX_VISIBLE_PIXEL_RATIO, "foreground contains too many visible pixels for a localized waist/leg patch")
+	_expect(soft_alpha_ratio >= MIN_SOFT_ALPHA_RATIO, "foreground seam needs a meaningful feathered-alpha edge, not only isolated soft pixels")
+
+	# A localized foreground should have transparent breathing room on all canvas edges.
+	# Touching an edge usually means the baked patch was clipped or enlarged accidentally.
+	_expect(used.position.x >= MIN_EDGE_MARGIN, "foreground patch touches/clips the left canvas edge")
+	_expect(used.position.y >= MIN_EDGE_MARGIN, "foreground patch touches/clips the top canvas edge")
+	_expect(used.end.x <= image.get_width() - MIN_EDGE_MARGIN, "foreground patch touches/clips the right canvas edge")
+	_expect(used.end.y <= image.get_height() - MIN_EDGE_MARGIN, "foreground patch touches/clips the bottom canvas edge")
+
+	print("Bed seam used rect: %s; footprint: %.4f; visible: %.4f; soft-alpha: %.4f" % [
+		used,
+		footprint_ratio,
+		visible_ratio,
+		soft_alpha_ratio,
+	])
 
 
 func _expect(condition: bool, message: String) -> void:
