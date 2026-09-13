@@ -787,7 +787,7 @@ func _on_home_activity(id: String) -> void:
 
 # ---------------------------------------------------------------- 过夜
 
-## 20:00 之后、或凌晨 5:00 之前上床就是睡一整夜；白天躺下只是小睡。
+## 20:00 之后、或凌晨 5:00 之前上床就是睡一整夜；白天躺下只是两小时小睡。
 func _is_sleep_hour() -> bool:
 	if time_sys == null:
 		return false
@@ -1153,10 +1153,10 @@ func _sync_needs_to_time() -> void:
 		need_fraction -= 1.0
 		fullness = maxi(0, fullness - FULLNESS_PER_HOUR)
 		energy = maxi(0, energy - ENERGY_PER_HOUR)
-	if fullness <= 0:
-		health = maxi(0, health - 2)
-	if energy <= 0:
-		mood = maxi(0, mood - 2)
+		if fullness <= 0:
+			health = maxi(0, health - 2)
+		if energy <= 0:
+			mood = maxi(0, mood - 2)
 	_warn_if_need_low()
 
 ## 告急时用角色的口气说一句话，而不是弹出“饱食度过低”这种数值提示。
