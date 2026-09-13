@@ -7,7 +7,7 @@ const DEFAULT_VIEWPORT := Vector2i(1280, 720)
 const NARROW_VIEWPORT := Vector2i(960, 540)
 const EXPECTED_OPTIONS := 8
 
-var ui: Control
+var ui
 var phase := 0
 var frames := 0
 var failures: Array[String] = []
@@ -53,7 +53,7 @@ func _process(_delta: float) -> bool:
 
 func _show_long_event() -> void:
 	var options: Array = []
-	for index in EXPECTED_OPTIONS:
+	for index in range(EXPECTED_OPTIONS):
 		options.append({
 			"index": index,
 			"enabled": true,
@@ -110,7 +110,7 @@ func _check_event_layout(label: String, expected_viewport: Vector2i) -> void:
 	_expect(vbar.max_value > vbar.page + 0.5, "%s: stress content must expose a usable vertical scroll range" % label)
 
 	var scroll_rect := scroll.get_global_rect()
-	for index in options.get_child_count():
+	for index in range(options.get_child_count()):
 		var button: Button = options.get_child(index) as Button
 		_expect(button != null, "%s: option %d must remain a Button" % [label, index])
 		if button == null:
