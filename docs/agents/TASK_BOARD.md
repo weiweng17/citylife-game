@@ -1,107 +1,103 @@
 # Multi-Agent Task Board
 
-## Sprint: Bootstrap & Stabilization Baseline
+## Sprint: Baseline accepted → critical repair wave
 
-Current product context: `docs/ITERATION_PLAN.md` shows the game code has progressed through Phase 3 and into Phase 4 content work. The `*-001` tasks below are therefore **baseline audits of the current repository**, not permission to rewrite systems. Their purpose is to establish a shared, current bug/risk inventory before parallel fixes begin.
+Current product context: Phase 3 code is substantially complete and Phase 4 content work has begun. First-wave repository audits are now accepted for Gameplay, Scene/UI and NPC/Content. QA repository health audit remains outstanding. Critical repairs may start before QA-001 finishes when their file ownership does not conflict.
 
 ### ORCH-001 — Multi-agent control layer
 - Owner: orchestrator
 - Branch: `orchestrator/multi-agent-bootstrap`
 - Status: DONE
 - Objective: establish rules, task board, ownership, reporting, recovery and review process.
-- Allowed: `docs/agents/**`, coordination/report metadata, `.github/**` only after explicit review.
-- Forbidden: gameplay code/assets during bootstrap; direct changes to `main`.
-- Acceptance:
-  - Rules documented.
-  - Ownership documented.
-  - Worker roles documented.
-  - Recovery workflow documented.
-  - Worker/task-board ownership conflict removed.
-  - First-wave tasks include branch, writable scope, forbidden scope, acceptance and validation procedure.
-- Validation procedure: repository/document review only; no Godot/runtime claim required.
+- Validation: repository/document review only.
 
 ### GAME-001 — Current gameplay blocker inventory
 - Owner: gameplay
 - Branch: `agent/game-001-blocker-audit`
-- Status: READY
-- Objective: identify current gameplay/system blockers and risky seams before feature expansion, reconciling current code with the latest architecture/iteration/QA handoff.
-- Read scope: `scripts/**`, `data/**`, `scenes/**`, relevant `tools/verify_*.gd`, `HANDOFF.md`, `docs/ARCHITECTURE.md`, `docs/ITERATION_PLAN.md`, latest handoff/QA.
-- Writable files: `agent-reports/gameplay.md` only.
-- Forbidden: all source/data/scene/asset/config edits; `docs/agents/**`; `main`; `project.godot`; `export_presets.cfg`; `.github/**`.
-- Acceptance:
-  - Player interaction, daily flow, save/state and scene-transition risks are inventoried.
-  - Findings use exact file paths/symbols when available and are grouped by severity.
-  - Known already-fixed/history-only items are not reported as current bugs without evidence.
-  - Repository-verified findings are separated from runtime/manual checks still needed.
-  - A prioritized set of narrowly scoped follow-up repair tasks is proposed with likely file ownership.
-- Validation procedure: GitHub repository inspection only. Do not claim Godot tests were rerun. Reference historical QA evidence explicitly as historical evidence.
+- Status: DONE
+- Result: accepted report-only audit. Highest priority finding is the daily-event → `_year_pass()` seam; additional findings cover need-zero penalty cadence, terminal-state checks, partial-hour need persistence and save hardening.
+- Evidence: branch diff touches only `agent-reports/gameplay.md`; no source/config ownership violation.
 
 ### UI-001 — Scene/UI visual integration audit
 - Owner: scene-ui
 - Branch: `agent/ui-001-visual-audit`
-- Status: READY
-- Objective: audit current scene composition, character/background integration, layering, positioning and HUD/UI risks, including areas that cannot be accepted without visual Godot verification.
-- Read scope: `scenes/**`, `scripts/ui/**`, presentation-relevant `scripts/world/**` and `scripts/systems/LocationManager.gd`, `assets/backgrounds/**`, `assets/characters/**`, `assets/sprites/**`, relevant capture/visual verification tools and current QA/handoff docs.
-- Writable files: `agent-reports/scene-ui.md` only.
-- Forbidden: scene/script/asset edits; `docs/agents/**`; `main`; `project.godot`; `export_presets.cfg`.
-- Acceptance:
-  - Problem/risk scenes and UI surfaces are identified with exact paths.
-  - Each item states target behavior, suspected owner/files and severity.
-  - Text/repository-detectable defects are separated from issues that require rendered screenshots/manual play.
-  - Current home/NPC/background integration risks are covered where supported by repository evidence.
-  - Follow-up fixes are decomposed so visual work does not silently modify gameplay logic.
-- Validation procedure: repository inspection only. Any visual assertion requiring rendering must be listed for Codex/local validation rather than marked passed.
+- Status: DONE
+- Result: accepted report-only audit. Highest priorities are unresolved home-bed composition, NPC grounding/scale mismatch, HUD/header layout coupling and expanded-location visual calibration.
+- Evidence: branch diff touches only `agent-reports/scene-ui.md`; no source/config ownership violation.
 
 ### NPC-001 — NPC/content audit
 - Owner: npc-content
 - Branch: `agent/npc-001-content-audit`
-- Status: READY
-- Objective: establish the current NPC/content inventory and identify missing/broken presentation, schedule, dialogue/event/quest attachment gaps and content risks.
-- Read scope: `scenes/world/NPC.tscn`, NPC-related `scripts/world/**`, `scripts/systems/NPCScheduleSystem.gd`, `NpcRelations.gd`, `StorySystem.gd`, `EventSystem.gd`, `EncounterSystem.gd`, `QuestSystem.gd`, relevant `data/**`, NPC assets and NPC/quest verification tools.
-- Writable files: `agent-reports/npc-content.md` only.
-- Forbidden: source/data/scene/asset edits; `docs/agents/**`; `main`; shared high-conflict files.
-- Acceptance:
-  - NPC inventory maps data/schedule/entity/presentation resources.
-  - Missing/broken/unattached resources and content gaps are listed with exact paths.
-  - Dialogue/event/quest risks are distinguished from engine/runtime presentation checks.
-  - Recommended repair/content order is prioritized and split into non-overlapping follow-up tasks.
-- Validation procedure: repository inspection only. Historical `verify_npc`/quest results may be cited as prior evidence but not as a new test run.
+- Status: DONE
+- Result: accepted report-only audit. Six core NPCs and schedules exist; active NPC rendering is static, walk assets are unattached, schedule position data is detached from the formal renderer, and several relationship/quest/content integration gaps were identified.
+- Evidence: branch diff touches only `agent-reports/npc-content.md`; no source/config ownership violation.
 
 ### QA-001 — Repository health audit
 - Owner: qa-build
 - Branch: `agent/qa-001-repo-health`
 - Status: READY
-- Objective: perform the GitHub-visible half of the health audit: project/export/workflow configuration, resource references, existing verification scripts, deployment setup and likely build blockers.
-- Read scope: entire repository, with focus on `project.godot`, `export_presets.cfg`, `.github/workflows/**`, `scenes/**`, resource references, `tools/**`, latest QA/handoff docs.
+- Objective: inspect project/export/workflow configuration, resource references, verification scripts and deployment setup, then package exact runtime checks for QA-002.
 - Writable files: `agent-reports/qa-build.md` only.
-- Forbidden: config/workflow/source/asset changes; `docs/agents/**`; `main`; claims that Godot/Web export/browser checks were rerun.
+- Forbidden: config/workflow/source/asset changes; `docs/agents/**`; `main`; claims that Godot/Web checks were rerun.
 - Acceptance:
-  - GitHub-visible health findings are grouped Critical/High/Medium/Low.
-  - Main scene/export/workflow/reference configuration is inspected and exact suspicious paths are recorded.
-  - Existing historical QA evidence is summarized without presenting it as a fresh run.
-  - A narrow runtime validation package is produced: exact Godot commands/checks, expected evidence and deployment checks needed next.
-  - Any blocker needing local/Codex execution is explicitly escalated rather than guessed.
-- Validation procedure: repository inspection only.
+  - Findings grouped Critical/High/Medium/Low.
+  - Main scene/export/workflow/reference configuration inspected.
+  - Historical QA separated from fresh evidence.
+  - Narrow QA-002 runtime package produced with exact commands/checks and expected evidence.
+
+### GAME-FIX-001 — Separate daily event closure from annual progression
+- Owner: gameplay
+- Branch: `agent/game-fix-001-daily-event-separation`
+- Status: READY
+- Priority: CRITICAL
+- Source: GAME-001 / G-001.
+- Objective: normal independent-location regular events must not call annual progression, increment age, or run `Rules.year_tick()`.
+- Writable files: `scripts/Game.gd`; one narrowly scoped new or existing `tools/verify_*.gd` regression file if needed; `agent-reports/gameplay.md`.
+- Forbidden: `LocationManager.gd`, UI, assets, content rebalance, unrelated refactors, `main`, `docs/agents/**`.
+- Acceptance:
+  - Closing a regular independent-location event does not change age merely because the event closed.
+  - Annual progression remains explicit and separately callable where intentionally retained.
+  - No unrelated event/encounter semantics change.
+  - Add a regression that fails on the previous event→year behavior.
+  - Worker report distinguishes repository/code reasoning from actual Godot runtime evidence.
+- Runtime gate: requires QA-002/local Godot execution before final product acceptance.
+
+### UI-FIX-001 — Active NPC grounding and animation integration
+- Owner: scene-ui
+- Branch: `agent/ui-fix-001-active-npc-integration`
+- Status: READY
+- Priority: HIGH
+- Source: UI-001 / UI-AUD-02 and NPC-001 P1.
+- Objective: replace the active independent-location NPC "static sticker" presentation with a player-compatible visual contract using existing NPC walk resources where practical: feet anchor, scale/depth behavior, shadow contact, tint/lighting, click target and idle/walk-capable rendering.
+- Writable files: `scripts/systems/LocationManager.gd`; narrowly scoped helper under `scripts/world/` if created; existing NPC visual resource references only; `agent-reports/scene-ui.md`.
+- Forbidden: gameplay settlement, quest/content semantics, `Game.gd`, unrelated scene/HUD refactors, replacing art wholesale, `main`, `docs/agents/**`.
+- Acceptance:
+  - Active formal NPC path no longer depends on a single static atlas frame where a walk sheet is available.
+  - Grounding/shadow/scale logic is consistent with the current scene depth model.
+  - Click/talk request behavior remains intact.
+  - Legacy `NPC.tscn` is not treated as the authoritative active path.
+  - Visual PASS is withheld until rendered/local capture evidence exists.
+- Runtime gate: requires rendered Godot captures for representative NPCs/locations before final product acceptance.
 
 ### QA-002 — Godot/Web runtime acceptance
 - Owner: qa-build (Codex/local execution)
 - Branch: `codex/qa-002-runtime-acceptance`
 - Status: BLOCKED
-- Blocked by: QA-001 runtime-validation package and availability of a local Godot execution context.
-- Objective: execute the minimum runtime/build checks required to establish a fresh baseline after the repository audits.
-- Allowed: only files explicitly granted by the orchestrator after QA-001 review; default is validation-only/no source edits.
-- Forbidden: broad refactors, unrelated fixes, direct `main` changes.
-- Acceptance:
-  - Godot 4.7.2 project startup result captured.
-  - Orchestrator-selected verification scripts executed with exit/output evidence.
-  - Web export result captured.
-  - Browser/runtime console or deployment evidence captured when requested.
-  - Failures become separate repair tasks; they are not silently fixed inside the validation task.
-- Validation procedure: actual local/Codex/CI execution required; repository inspection alone cannot complete this task.
+- Blocked by: QA-001 runtime-validation package and availability of actual Godot/browser execution context.
+- Objective: run fresh project startup, selected verification scripts, Web export and browser/runtime checks. Failures become separate repair tasks rather than silent fixes.
+
+## Deferred next repairs
+After GAME-FIX-001 / UI-FIX-001 and QA-001 evidence are reviewed, orchestrator should queue, in order:
+1. GAME-FIX-002 — need-zero penalty cadence.
+2. GAME-FIX-003 — centralized terminal-state evaluation.
+3. UI-FIX-002 — home bed seam cleanup.
+4. UI-FIX-003 — HUD/header layout decoupling.
+5. NPC-CONTENT-002 — q3 narrative/mechanic alignment and low-conflict content cleanup.
+6. SAVE-HARDEN-001 — backup/atomic-ish single-slot save hardening.
 
 ## Status values
 `READY` → `IN_PROGRESS` → `NEEDS_REVIEW` → `DONE`
 
-Use `BLOCKED` when another task, asset, permission, execution environment or decision prevents progress.
+Use `BLOCKED` when another task, permission, execution environment or decision prevents progress.
 
-Only the orchestrator edits this task board. Workers request `NEEDS_REVIEW` or `BLOCKED` through their assigned report.
+Only the orchestrator edits this task board. Workers request review/blocking through their assigned report.
