@@ -293,6 +293,22 @@
 - 验证：`verify_hospital` **首跑 5 组 0 失败**；**17 套全员回归全绿**（navigation `6646/0`、home_edges `6252/0`，其余 `exit=0`）；截图确认站位与文案换行正常。
 - 尚未做：旧巷、天台；医院与事件系统没有交叉（生病/受伤事件还不会把你送到这里）；医院没有 NPC。
 
+## 2026-09-13 阶段 4 单元 4：旧巷 + 天台（阶段 4 场景扩展收官）
+
+第 4 阶段最后两个场景，一次做完。都是免费的慢节奏去处，旧巷多一炷 5 元的香。
+
+- 提交：`44c1b77 feat: alley and rooftop interactions (incense, door rest, skyline, bench)`（6 文件）。
+- 新增 `scripts/systems/AlleyActivities.gd`：
+  - `shrine` 神龛 · 上柱香（640, 400）：5 元、15 分钟、心情+8；余额不足不上香（同一套检查）；
+  - `door` 木门前 · 歇歇脚（445, 400）：免费、20 分钟、心情+6（文案落点："这扇门总亮着灯，你从没见谁进出"）。
+- 新增 `scripts/systems/RooftopActivities.gd`：
+  - `ledge` 栏杆边 · 看夜景（640, 530）：免费、25 分钟、心情+10；
+  - `bench` 长椅 · 吹吹风（330, 480）：免费、20 分钟、心情+8 精力+5。
+- `Game` 两个场景各按七处清单接入。站位五步清单又双双首跑零返工。
+- 新增 `tools/verify_alley.gd`（5 组）、`tools/verify_rooftop.gd`（4 组）、`tools/capture_alley_rooftop.gd`（4 张截图，一个脚本跑两个场景）。
+- 验证：两套均**首跑 0 失败**；**19 套全员回归全绿**（navigation `6646/0`、home_edges `6252/0`，其余 `exit=0`）；四张截图确认站位与文案换行正常。
+- **阶段 4 的逐场景内容扩展到此收官**（公园/咖啡馆/医院/旧巷/天台全部有互动）。遗留债：五个 `*Activities.gd` 是同一份模板抄五遍（configure/_process/_activate/_request/_style_button 完全重复），**值得抽基类**；行为已被 19 套测试锁住，放到独立的重构单元做。
+
 ## 尚未完成
 
 - 全部行走方向的身体比例与动画接地视觉抽查：碰撞与可达已由 `verify_home_edges.gd` 自动覆盖，姿态观感仍需人工看截图与试玩。
@@ -346,6 +362,8 @@ $godotExe = 'F:\Downloads\Godot_v4.7.2-stable_win64.exe\Godot_v4.7.2-stable_win6
 & $godotExe --headless --path . --script res://tools/verify_park.gd
 & $godotExe --headless --path . --script res://tools/verify_cafe.gd
 & $godotExe --headless --path . --script res://tools/verify_hospital.gd
+& $godotExe --headless --path . --script res://tools/verify_alley.gd
+& $godotExe --headless --path . --script res://tools/verify_rooftop.gd
 & $godotExe --path . --rendering-method gl_compatibility --script res://tools/capture_store.gd
 & $godotExe --path . --rendering-method gl_compatibility --script res://tools/capture_npc.gd
 & $godotExe --path . --rendering-method gl_compatibility --script res://tools/capture_job.gd
@@ -353,6 +371,7 @@ $godotExe = 'F:\Downloads\Godot_v4.7.2-stable_win64.exe\Godot_v4.7.2-stable_win6
 & $godotExe --path . --rendering-method gl_compatibility --script res://tools/capture_park.gd
 & $godotExe --path . --rendering-method gl_compatibility --script res://tools/capture_cafe.gd
 & $godotExe --path . --rendering-method gl_compatibility --script res://tools/capture_hospital.gd
+& $godotExe --path . --rendering-method gl_compatibility --script res://tools/capture_alley_rooftop.gd
 & $godotExe --path . --rendering-method gl_compatibility --script res://tools/verify_home_input.gd
 # 排查"点了没反应"：打印命中控件与盖在该点上的全部控件（只读，不做断言）
 & $godotExe --path . --rendering-method gl_compatibility --script res://tools/diag_click.gd
