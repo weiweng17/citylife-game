@@ -1,34 +1,111 @@
 # Scene/UI Agent Report
 
 ## Task
-- ID: UI-001
+- ID: UI-FIX-004
 - Agent: scene-ui
-- Branch/worktree: `agent/ui-001-visual-audit`
-- Status: READY
+- Branch/worktree: `agent/ui-fix-004-event-panel-overflow`
+- Status: NEEDS_REVIEW
 
 ## Scope
-Repository audit only. Scene/script/assets are read-only for this task. The only writable file is this report.
+Contain EventUI vertical overflow without changing event/gameplay semantics.
+
+Authorized writable paths from the task board:
+- `scripts/ui/EventUI.gd`
+- one narrow `tools/verify_*.gd` regression if needed
+- `agent-reports/scene-ui.md`
+
+`Game.gd`, `scripts/systems/LocationManager.gd`, event data, EventSystem/gameplay settlement, NPC semantics, navigation, `main`, and `docs/agents/TASK_BOARD.md` remained read-only.
 
 ## Summary
-Not started.
+UI-FIX-004 is complete at repository/layout-contract level and ready for orchestrator review.
 
-## Findings
-- Pending.
+The previous EventUI used a fixed ~340px bottom panel with `clip_contents = true`, while wrapped narrative text, a dynamic option VBox, and the result continue button all shared the same unbounded VBox. If content minimum height exceeded the panel, lower controls could be clipped instead of gaining an explicit overflow path.
 
-## Files inspected
-- Pending.
+The repair keeps the public EventUI API and event semantics unchanged while making overflow ownership explicit:
+1. Event panel height is now bounded against the current logical viewport rather than being permanently tied to one fixed top offset.
+2. Dynamic narrative text and option buttons now live inside `EventScroll`, a vertical `ScrollContainer` with horizontal scrolling disabled.
+3. `follow_focus = true` allows focused choice buttons to be brought into view by the scroll owner.
+4. Long option labels use word wrapping and a stable minimum action height instead of forcing horizontal width growth.
+5. Full option text is retained in each button tooltip.
+6. The result `ContinueButton` stays outside the scroll region, so long result prose cannot push the primary continuation action below the panel.
+7. Option removal now detaches children from `EventOptions` immediately before queue-freeing them, so stale choice nodes do not keep temporary layout height when switching to result view.
+8. Event/result transitions reset vertical scroll position to the top without changing signals or settlement behavior.
+
+## Files changed
+- `scripts/ui/EventUI.gd`
+  - adds viewport-owned panel height constants;
+  - adds `EventScroll` / `EventScrollContent` as the dynamic overflow owner;
+  - keeps the header and result continue action outside dynamic scrolling where appropriate;
+  - wraps long choice labels and preserves full text in tooltips;
+  - immediately removes old option nodes from layout before queue-free.
+- `tools/verify_event_panel_overflow.gd`
+  - narrow headless-prepared EventUI-only regression;
+  - injects long narrative copy plus eight long enabled options;
+  - checks default 1280×720 and smaller 960×540 logical viewports;
+  - verifies panel containment, explicit vertical scroll range, horizontal containment, option preservation/wrapping, and result continue-button reachability.
+- `agent-reports/scene-ui.md`
+  - this review request.
+
+No gameplay/data/shared-manager file was modified.
+
+## Repository-verified contract
+- Task branch started identical to orchestrator baseline `ecb3b9331ef1b94095529a083c12636e47983176` (ahead 0 / behind 0).
+- Existing public signals are unchanged:
+  - `option_selected(index: int)`
+  - `continue_requested`
+- Existing public methods are unchanged:
+  - `show_event(...)`
+  - `show_result(...)`
+  - `close_event()`
+  - `is_busy()`
+- Event option `index`, `enabled`, and text values are still consumed only for presentation/forwarding; conditions/effects/results are not modified here.
+- At the normal 720px logical height the bounded formula preserves the previous ~340px panel height.
+- At a shorter logical viewport the panel shrinks within top/bottom safe margins instead of preserving a fixed 340px vertical band.
+- Dynamic body/options content now has one vertical scroll owner; result continuation remains structurally outside that scroll owner.
 
 ## Validation
-- Commands/tests run: none; web audit must not claim rendered/Godot validation.
-- Result: pending repository inspection.
-- Manual checks: list required visual/runtime checks for escalation.
+### Performed in this web worker
+- Read latest `TASK_BOARD`, `FILE_OWNERSHIP`, `WEB_AGENT_LAUNCHPAD`, current task-branch report, branch comparison and current EventUI source before editing.
+- Confirmed UI-FIX-004 is `READY`, owned by `scene-ui`, and grants exactly EventUI + one narrow regression + Scene/UI report.
+- Confirmed task branch was identical to the latest orchestrator baseline before editing.
+- Repository-inspected Godot 4 Button/ScrollContainer API expectations used by the implementation (`autowrap_mode`, vertical scroll mode, `follow_focus`).
+- Re-read the edited EventUI and verifier for node paths, type usage and viewport/layout consistency.
+- Corrected the verifier to keep the EventUI instance dynamically typed so task-specific methods are not rejected by an overly narrow `Control` annotation.
+- Before report update, branch diff was limited to the two authorized implementation/verification paths and was ahead 3 / behind 0.
 
-## Evidence
-- Repository evidence: pending.
-- Screenshot/runtime evidence: none yet.
+### Not performed
+- Godot was **not** launched.
+- `tools/verify_event_panel_overflow.gd` was **not** executed.
+- Browser/Web export/runtime inspection was **not** executed.
+- No screenshot or rendered PASS is claimed.
 
-## Known issues / risks
-- Pending.
+### Prepared headless command
+Run on the exact review SHA in a Godot 4.7.2-capable environment:
+
+`godot --headless --path . --script res://tools/verify_event_panel_overflow.gd`
+
+The regression explicitly sets/asserts the logical viewport, rather than assuming physical window size equals the logical layout size.
+
+### Required rendered evidence before visual PASS
+On the exact review SHA, inspect EventUI at 1280×720 and 960×540 logical viewports with intentionally long content. Confirm:
+1. EventPanel remains fully inside the viewport with the expected side/bottom margins.
+2. Header remains visible while long body/choice content scrolls vertically.
+3. All choice buttons can be reached by scrolling/focus and long choice text wraps without horizontal overflow.
+4. Switching from choices to a long result removes old choices immediately.
+5. Long result prose scrolls while `ContinueButton` remains visible/clickable inside the panel.
+6. Background/shade presentation still fills the EventUI root when a background is supplied.
+7. Selecting an option and continuing still emit the same signals and preserve normal event flow.
+
+## Known risks / review notes
+- This web worker did not execute Godot, so actual Control minimum-size negotiation, scrollbar metrics, focus-driven scrolling and font wrapping remain runtime acceptance items.
+- The chosen smaller contract is 960×540 desktop/Web. Mobile layouts are not claimed by this task.
+- The outer panel still uses clipping defensively, but normal dynamic overflow should now be owned by `EventScroll`; rendered evidence should confirm no unexpected child escapes the scroll contract.
+- Option text wrapping can increase individual button height by design. The vertical scroll region is intended to absorb that growth rather than truncating choices or increasing panel height.
+
+## Commits
+- `989764669c047344a6da1fbf6fc4a7fa9829b7b7` — `fix: contain event panel overflow`
+- `10c2d26471a08ba58ff615c04d28db695f4f2d4d` — `test: guard event panel overflow contract`
+- `ba7b5f2c61407b017695de628c23839525c21937` — `test: keep EventUI verifier dynamically typed`
 
 ## Handoff
-Begin UI-001 from the assigned branch. When complete, set this report to `NEEDS_REVIEW`; do not edit `docs/agents/TASK_BOARD.md`.
+UI-FIX-004 is ready for orchestrator review at repository level. The implementation is isolated to EventUI presentation plus one task-specific regression. Do not mark rendered visual acceptance complete until the prepared Godot regression and real 1280×720 / 960×540 EventUI captures pass on the exact review SHA.
