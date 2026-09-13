@@ -107,6 +107,31 @@
 - 新增 `tools/verify_needs.gd`：按真实分钟消耗、吃饭/睡觉补给与每日标记、告急独白每天一次、存档往返。
 - 七套测试全绿（needs/daily_routine/home_activities/home_edges/navigation/locations + 真实输入 home_input）。
 
+## 2026-09-13 再后续：便利店购买与背包消耗
+
+- 新增 `scripts/systems/Inventory.gd`：物品目录（名称/价钱/耗时/效果/描述/食用文案）+ 数量增减 + 存档往返。**目录只写这一处**，货架面板、背包面板和结算全部读同一份定义，避免价钱对不上。目前六样：桶装泡面 6 元、三角饭团 7 元、袋装面包 5 元、罐装咖啡 8 元、盒装牛奶 6 元、感冒药 18 元。
+- 新增 `scripts/systems/StoreActivities.gd`：仿 `OfficeActivities` 的便利店货架互动点，位置 `Vector2(455, 515)`（在碰撞体外侧、与出生点连通，已由 `walk_to` 断言可达），朝向 `(-1, 0)` 面向左侧货架。提示行放在 y=580——底部面板从 y=608 起，放在 600 会被盖住（顺带把 `OfficeActivities` 同样错位的提示行一并下移到 580）。
+- 新增 `scripts/ui/ShopUI.gd`：一块面板两种用法，`open_buy` 看货架、`open_bag` 看背包。**必须挂在 `UI` CanvasLayer 里**（放在 `ending_ui` 之后），这样才盖得住 HUD；放在 `LocationManager.root` 里不管 z_index 多高都会被 layer 2 的 HUD 压住。整屏 `ColorRect` 用 `MOUSE_FILTER_STOP` 吃掉点击，面板打开时点不到地面和地点按钮。
+- 买不起的行直接把按钮 `disabled`，并单独覆写 `disabled` stylebox（默认主题的 disabled 底色和暗色面板不搭）。
+- 结算仍在 `Game`：`_on_shop_buy` 扣钱入包；`_on_shop_use` 施加效果、推进分钟、消耗一件，并把"能顶一顿"的（效果 `fullness >= MEAL_FULLNESS = 20`）记入每日 `meal` 目标——牛奶只补 12，糊弄不过每日目标。
+- 面板打开计入 `ui_busy`：锁住走动并暂停时间，免得挑东西的时候饱食一直在掉。
+- HUD 第一行加「背包」按钮，带件数（`refresh_bag`）。
+- 存档新增 `inventory` 字段；读档/选出身/重开都会先收起面板并重置背包。`apply_save_dict` 会丢掉目录里已不存在的旧物品，不让无效条目带进存档。
+- 新增 `tools/verify_store.gd`（10 组断言：解锁与可达、面板列出全部货品、开面板锁走动、买不起无副作用且按钮置灰、购买扣钱入包与 HUD 同步、取用回补并消耗、牛奶不算一顿饭、药品只养身体、背包只列持有物、存档往返与未知物品丢弃）。
+- 新增 `tools/capture_store.gd`：截货架标签/货架面板/背包面板到 `build/qa/store_*.png`（排版只能靠眼睛看）。
+- 复跑全绿：新增 `verify_store` 10 组，其余各套同轮复跑通过。
+
+### 这一轮踩到的两个坑（都不在逻辑里，在布局里）
+
+- **挂在 `CanvasLayer` 上的 Control 不要指望 `PRESET_FULL_RECT` 自动撑开**：`ShopUI` 根节点是 `CanvasLayer(UI)` 的子节点，用 FULL_RECT 锚点时根节点尺寸是 0，结果是整屏遮罩根本没铺开、面板贴在左上角。改成 `PRESET_TOP_LEFT` + 自己监听 `size_changed` 同步视口尺寸（和 `LocationManager.root` 的 `_sync_web_layout` 同一套做法）才正常。
+- **容器的最小尺寸要等布局刷新，刚重建完量到的是旧值**：面板里的列表原本套了 `ScrollContainer` 再按 `list_box.get_combined_minimum_size()` 设高度，结果"先开货架 6 行、再开空背包"时量到的是 6 行的高度，背包面板撑出一大片空白；而且同一个列表，父容器报的高度（342）和单行自己报的（62）还对不上。最后**去掉 `ScrollContainer`，让面板直接按内容撑高**——6 件货品刚好一屏，背包里只有一件时就只有一件的高度。货品目录涨到十几件时再换回固定高度的滚动区。
+
+## 2026-09-13 再后续：清理两个失效的旧测试
+
+- `tools/verify.gd` 是单张世界地图时代的套件（旧 `Player.moving/set_target`、`Game._detect_near()`、固定坐标 GOAL(600,600)、建筑/树木/POI 计数）。MAP-002 独立地点场景迁移（`c43c30e`）之后旧世界被隐藏、交互改由 `InteractionSystem` 负责，这份套件统计出来全是 0、却在 `_detect_near` 处抛 SCRIPT ERROR，而且因为断言宽松还会照打 `[OK]`——**给的是误导性的绿灯**。已在文件头和阶段 2 入口标明废弃，一旦发现旧接口不在就 `quit(2)` 并指向替代套件。
+- `tools/verify_onboard.gd` 断言的是迁移前那份 6 行新手引导文案（"点击地图 / 发光 / 说话 / 家 / 60 岁"），文案早就换成了地点场景版本，于是六条关键词全部落空。更麻烦的是它把失败分支写成 `_init()` 里的 `quit(1)`，**后面的 `quit()` 会把退出码覆盖回 0**——打了 FAIL 却仍然退出 0。已改为断言当前文案（行数、无空行、包含 22 岁 / 独立场景 / 解锁 / 行动 / 旅行），并在末尾按失败数统一决定退出码。
+- 另外记录：`verify_art` / `verify_hud` / `verify_interior` / `verify_layout` / `verify_min` 是 `extends Node` 的脚本，**不能用 `--script` 直接跑**（会挂住不返回）；能这样跑的是 `extends SceneTree` 的那些。
+
 ## 尚未完成
 
 - 全部行走方向的身体比例与动画接地视觉抽查：碰撞与可达已由 `verify_home_edges.gd` 自动覆盖，姿态观感仍需人工看截图与试玩。
@@ -115,18 +140,19 @@
 - 房门等"触发即切图"的互动，转身朝向与切图同帧发生，玩家看不到转身；当前朝向只对不切图的家具（床/书桌/厨房）有实际观感。
 - NPC 尺寸、脚点、方向动画尚未全面统一。
 - 出租屋以外的碰撞及遮挡多数仍为矩形近似，不能宣称全地图无视觉穿模。
-- 阶段 2 的完整一天流程尚未实现：家→地铁→公司工作→便利店购买→回家休息→次日结算。
+- 阶段 2 的完整一天流程尚未实现：家→地铁→公司工作→便利店购买→回家休息→次日结算。其中通勤、公司工作、便利店购买与背包消耗已完成；**只剩回家睡觉触发次日结算，以及中途存档恢复的验收**。
+- 便利店购买与背包消耗已完成（见上），但货架站位是粗略标定，尚未逐帧对照便利店美术校正；吃/喝的动作也只有进度文案与数值，没有专属姿态。
 - 旧年度人生事件与新的分钟/每日循环仍需正式分离。
 
 ## 下一任务
 
-阶段 1 先封闭出租屋可玩样板：逐家具边缘检查、四方向角色融合、互动反馈。随后进入阶段 2 的最小闭环：
+阶段 1 先封闭出租屋可玩样板：逐家具边缘检查、四方向角色融合、互动反馈。阶段 2 的最小闭环进度：
 
-1. 定义每日目标和流程状态，不依赖调试跳转。
-2. 地铁增加通勤入口与固定分钟消耗。
-3. 公司增加工作活动、工资/健康/心情结算。
-4. 便利店增加购买与背包消耗。
-5. 回家睡眠触发次日，并验证中途存档恢复。
+1. [完成] 定义每日目标和流程状态，不依赖调试跳转。
+2. [完成] 地铁增加通勤入口与固定分钟消耗。
+3. [完成] 公司增加工作活动、工资/健康/心情结算。
+4. [完成] 便利店增加购买与背包消耗。
+5. [待做] 回家睡眠触发次日，并验证中途存档恢复。
 
 ## 常用命令
 
@@ -134,7 +160,9 @@
 $godotExe = 'F:\Downloads\Godot_v4.7.2-stable_win64.exe\Godot_v4.7.2-stable_win64_console.exe'
 & $godotExe --headless --path . --script res://tools/verify_navigation.gd
 & $godotExe --headless --path . --script res://tools/verify_home_activities.gd
+& $godotExe --headless --path . --script res://tools/verify_store.gd
 & $godotExe --headless --path . --script res://tools/verify_locations.gd
+& $godotExe --path . --rendering-method gl_compatibility --script res://tools/capture_store.gd
 & $godotExe --path . --rendering-method gl_compatibility --script res://tools/verify_home_input.gd
 ```
 

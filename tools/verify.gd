@@ -1,6 +1,16 @@
 extends SceneTree
 ## 无头验证：地图、NPC、对话系统、主线推进
 ##
+## ⚠ 已废弃（MAP-002）：这份套件针对「单张世界地图」的旧实现——旧 Player 的
+## `moving/set_target`、`Game._detect_near()`、固定坐标 GOAL(600,600) 与
+## 建筑/树木/POI 计数。独立地点场景迁移（c43c30e）之后旧世界被隐藏
+## （`set_legacy_world_visible(false)`）、交互改由 `InteractionSystem` 负责，
+## 本套件统计出来的都是 0，还会在 `_detect_near` 处抛 SCRIPT ERROR，
+## 且因为断言宽松会照打 [OK]——继续跑它只会给出误导性的绿灯。
+## 现在一旦发现旧接口不在就直接退出并指向替代套件。
+## 替代：verify_locations / verify_navigation / verify_home_activities /
+## verify_home_edges / verify_needs / verify_store。
+##
 ## 运行：Godot --headless --path <项目> --script res://tools/verify.gd
 ##
 ## 必须在引擎的物理帧回调里驱动检查——在 _init() 里查，
@@ -50,6 +60,12 @@ func _physics_process(_delta: float) -> bool:
 
 	# 阶段 2：NPC 与对话测试
 	if phase == 2:
+		# 旧接口没了就别继续——继续跑只会在 _detect_near 上抛错并打出误导性的 [OK]。
+		if not main.has_method("_detect_near"):
+			printerr("verify.gd 已废弃：MAP-002 独立地点场景迁移后，旧单张世界与 Game._detect_near() 均已移除。")
+			printerr("请改用：verify_locations / verify_navigation / verify_home_activities / verify_store。")
+			quit(2)
+			return true
 		_test_npc()
 		return true
 

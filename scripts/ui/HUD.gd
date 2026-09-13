@@ -4,6 +4,7 @@ class_name GameHUD
 signal save_requested
 signal load_requested
 signal quit_requested
+signal backpack_requested
 
 ## 《都市浮生》顶部 HUD。
 ## 只负责展示玩家状态，不直接修改游戏数据。
@@ -22,6 +23,7 @@ var health_fill: StyleBoxFlat
 var mood_fill: StyleBoxFlat
 var fullness_fill: StyleBoxFlat
 var energy_fill: StyleBoxFlat
+var bag_btn: Button
 
 
 func _ready() -> void:
@@ -73,6 +75,13 @@ func _build_ui() -> void:
 	money_label.add_theme_font_size_override("font_size", 16)
 	money_label.add_theme_color_override("font_color", Color(1.0, 0.84, 0.36))
 	row1.add_child(money_label)
+
+	bag_btn = Button.new()
+	bag_btn.text = "背包"
+	bag_btn.tooltip_text = "看看身上带着什么"
+	bag_btn.custom_minimum_size = Vector2(70, 32)
+	bag_btn.pressed.connect(func(): backpack_requested.emit())
+	row1.add_child(bag_btn)
 
 	var save_btn := Button.new()
 	save_btn.text = "保存"
@@ -191,6 +200,14 @@ func refresh(state, stage_name: String, stage_goal: String, dark_clue_total: int
 func refresh_daily(text: String) -> void:
 	if daily_label:
 		daily_label.text = "今日：%s" % text
+
+
+## 背包按钮上带件数，让玩家不用打开就知道身上有没有吃的。
+func refresh_bag(total: int) -> void:
+	if bag_btn == null:
+		return
+	var count: int = maxi(0, total)
+	bag_btn.text = "背包" if count <= 0 else "背包 %d" % count
 
 
 func refresh_time(day: int, clock_text: String, period_name: String) -> void:

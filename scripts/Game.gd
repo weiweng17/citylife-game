@@ -22,6 +22,9 @@ const SaveManagerScript = preload("res://scripts/systems/SaveManager.gd")
 const WeatherSystemScript = preload("res://scripts/systems/WeatherSystem.gd")
 const DailyRoutineScript = preload("res://scripts/systems/DailyRoutine.gd")
 const OfficeActivitiesScript = preload("res://scripts/systems/OfficeActivities.gd")
+const StoreActivitiesScript = preload("res://scripts/systems/StoreActivities.gd")
+const InventoryScript = preload("res://scripts/systems/Inventory.gd")
+const ShopUIScript = preload("res://scripts/ui/ShopUI.gd")
 const LocationManagerScript = preload("res://scripts/systems/LocationManager.gd")
 
 const SCHEDULE_LOCATION_ALIASES := {
@@ -37,6 +40,8 @@ const MURMURS := {
 	"fullness": "肚子在叫。你想不起来上一顿是什么时候吃的了。",
 	"energy": "眼皮沉得抬不起来。这城市还没睡，你已经撑不住了。",
 }
+# 能顶一顿的才算“吃饭”：牛奶这种垫垫肚子的不算，免得每日目标被随手糊弄过去。
+const MEAL_FULLNESS := 20
 
 # 地点（与 tools/gen_scene.py 的 BUILDINGS / POI 坐标一致；都落在建筑脚下的可走地面）
 const POI_DATA := [
@@ -131,7 +136,9 @@ var weather_sys
 var location_sys
 var home_activities
 var office_activities
+var store_activities
 var daily_routine
+var inventory
 var activity_running: bool = false
 var interaction_sys
 var events_sys: Node
@@ -149,6 +156,7 @@ var game_over := false
 var hud
 var interact_btn: Button
 var dialog_ui
+var shop_ui
 var toast_label: Label
 
 # 开局 / 出身
@@ -213,6 +221,15 @@ func _ready() -> void:
 	add_child(office_activities)
 	office_activities.configure(location_sys)
 	office_activities.activity_requested.connect(_on_office_activity)
+	store_activities = StoreActivitiesScript.new()
+	store_activities.name = "StoreActivities"
+	add_child(store_activities)
+	store_activities.configure(location_sys)
+	store_activities.activity_requested.connect(_on_store_activity)
+	# 背包只存物品数量；买到的东西随时可以取用，具体效果由这里结算。
+	inventory = InventoryScript.new()
+	inventory.name = "Inventory"
+	add_child(inventory)
 	# 每日循环只跟踪一天内的目标，不推进年龄、不触发年度结算。
 	daily_routine = DailyRoutineScript.new()
 	daily_routine.name = "DailyRoutine"
@@ -251,6 +268,7 @@ func _setup_ui() -> void:
 	hud.save_requested.connect(_save_game)
 	hud.load_requested.connect(_load_game)
 	hud.quit_requested.connect(_quit_game)
+	hud.backpack_requested.connect(_open_bag)
 
 	interact_btn = Button.new()
 	interact_btn.name = "InteractBtn"
@@ -291,11 +309,19 @@ func _setup_ui() -> void:
 	ending_ui = EndingUIScript.new()
 	ending_ui.restart_requested.connect(_restart)
 	ui.add_child(ending_ui)
+	# 货架/背包面板放在 UI 层最后，保证它盖在 HUD 与地点视图之上。
+	shop_ui = ShopUIScript.new()
+	shop_ui.buy_requested.connect(_on_shop_buy)
+	shop_ui.use_requested.connect(_on_shop_use)
+	shop_ui.closed.connect(_on_shop_closed)
+	ui.add_child(shop_ui)
 
 
 func _refresh_ui() -> void:
 	if hud and daily_routine:
 		hud.refresh_daily(daily_routine.summary())
+	if hud and inventory:
+		hud.refresh_bag(inventory.total_count())
 	var stage: Dictionary = story_sys.current_stage(_state()) if story_sys else {}
 	if hud and not stage.is_empty():
 		hud.refresh(game_state, str(stage.get("name", "")), str(stage.get("goal", "")), Data.DARK_CLUE_TOTAL)
@@ -354,6 +380,10 @@ func _choose_origin(o: Dictionary) -> void:
 		location_sys.reset_new_game()
 	if daily_routine:
 		daily_routine.reset(1)
+	if inventory:
+		inventory.reset()
+	if shop_ui and shop_ui.is_open():
+		shop_ui.close()
 	need_fraction = 0.0
 	murmur_shown = {}
 	# 开局即记录时间基准，否则第一次同步只会初始化、漏掉开局后流逝的时间。
@@ -396,6 +426,7 @@ func _save_game() -> void:
 		"world": world_manager.to_save_dict(player) if world_manager else {},
 		"locations": location_sys.to_save_dict() if location_sys else {},
 		"daily": daily_routine.to_save_dict() if daily_routine else {},
+		"inventory": inventory.to_save_dict() if inventory else {},
 		"origin": origin.duplicate(true),
 	}
 	var result: Dictionary = save_sys.save_game(payload)
@@ -418,6 +449,9 @@ func _load_game() -> void:
 	if not bool(result.get("ok", false)):
 		_show_toast(str(result.get("message", "读取失败。")))
 		return
+	# 读档会整体替换状态，货架/背包面板必须先收起来。
+	if shop_ui and shop_ui.is_open():
+		shop_ui.close()
 	var payload: Dictionary = result.get("payload", {})
 	game_state.apply_dict(payload.get("game_state", {}))
 	var saved_origin = payload.get("origin", {})
@@ -436,6 +470,8 @@ func _load_game() -> void:
 		location_sys.apply_save_dict(payload.get("locations", {}))
 	if daily_routine:
 		daily_routine.apply_save_dict(payload.get("daily", {}))
+	if inventory:
+		inventory.apply_save_dict(payload.get("inventory", {}))
 	if npc_schedule_sys:
 		npc_schedule_sys.reset(time_sys, weather_sys)
 	if dark_location_sys:
@@ -511,9 +547,12 @@ func _process(delta: float) -> void:
 	_check_stage()
 	var ui_busy: bool = (dialog_ui != null and dialog_ui.is_busy()) or (event_ui != null and event_ui.is_busy()) or (ending_ui != null and ending_ui.visible)
 	ui_busy = ui_busy or activity_running
+	# 货架/背包打开时也算“界面占用”：不让角色走开，也暂停时间，免得挑东西的时候一直在掉饱食。
+	ui_busy = ui_busy or (shop_ui != null and shop_ui.is_open())
 	location_sys.input_blocked = ui_busy
 	home_activities.blocked = ui_busy
 	office_activities.blocked = ui_busy
+	store_activities.blocked = ui_busy
 	if time_sys:
 		time_sys.set_paused(ui_busy)
 		time_sys.tick(delta)
@@ -625,6 +664,90 @@ func _on_office_activity(id: String) -> void:
 	office_activities.blocked = still_busy
 	_refresh_ui()
 	_show_toast("你把一整天交给了格子间。下班时雨还在下，手机里多了 120 块。身体发沉，话也不想说。（工资+120 健康−6 心情−4，耗时4小时）")
+
+
+# ---------------------------------------------------------------- 便利店与背包
+
+func _on_store_activity(id: String) -> void:
+	if activity_running or not game_started or game_over or dialog_ui.is_busy() or event_ui.is_busy():
+		return
+	if location_sys.current_location != "store" or not store_activities.SPOTS.has(id):
+		return
+	if id == "shop":
+		_open_shop()
+
+
+func _open_shop() -> void:
+	if shop_ui == null:
+		return
+	shop_ui.open_buy(money, inventory)
+
+
+func _open_bag() -> void:
+	if shop_ui == null or not game_started or game_over:
+		return
+	if activity_running:
+		_show_toast("请等待当前行动完成，再打开背包。")
+		return
+	if (dialog_ui and dialog_ui.is_busy()) or (event_ui and event_ui.is_busy()):
+		_show_toast("请先结束当前对话或事件。")
+		return
+	shop_ui.open_bag(money, inventory)
+
+
+func _on_shop_closed() -> void:
+	_refresh_ui()
+
+
+func _on_shop_buy(item_id: String) -> void:
+	if inventory == null or not InventoryScript.ITEMS.has(item_id):
+		return
+	var price: int = InventoryScript.price_of(item_id)
+	if money < price:
+		# 面板里按钮已经按下去表示买不起了，这里兜住键盘/异常路径。
+		shop_ui.set_status("你把口袋翻了个底朝天，还差 %d 元。这一样先放回去了。" % (price - money))
+		return
+	money -= price
+	inventory.add(item_id, 1)
+	shop_ui.refresh(money, inventory)
+	shop_ui.set_status("你把%s放上收银台。扫码的滴声很轻，塑料袋在手里晃了一下。（−%d元）" % [
+		InventoryScript.item_name(item_id), price,
+	])
+	_refresh_ui()
+
+
+func _on_shop_use(item_id: String) -> void:
+	if inventory == null or not InventoryScript.ITEMS.has(item_id) or not inventory.has(item_id):
+		return
+	var effects: Dictionary = InventoryScript.ITEMS[item_id].get("effects", {})
+	if not inventory.remove(item_id, 1):
+		return
+	for key in effects:
+		var delta: int = int(effects[key])
+		match str(key):
+			"fullness":
+				fullness = clampi(fullness + delta, 0, 100)
+			"energy":
+				energy = clampi(energy + delta, 0, 100)
+			"health":
+				health = clampi(health + delta, 0, 100)
+			"mood":
+				mood = clampi(mood + delta, 0, 100)
+			"skill":
+				skill = clampi(skill + delta, 0, 100)
+	var minutes: int = InventoryScript.minutes_of(item_id)
+	if time_sys:
+		time_sys.advance_minutes(minutes)
+	# 能顶一顿的算吃饭；牛奶这种垫肚子的不算，免得每日目标被随手糊弄过去。
+	if daily_routine and int(effects.get("fullness", 0)) >= MEAL_FULLNESS:
+		daily_routine.complete("meal")
+	shop_ui.refresh(money, inventory)
+	shop_ui.set_status("%s（%s，耗时%d分钟）" % [
+		InventoryScript.use_text(item_id),
+		InventoryScript.effect_text(item_id),
+		minutes,
+	])
+	_refresh_ui()
 
 
 ## 需求按真实流经的分钟数消耗，不依赖 hour_changed——
@@ -985,6 +1108,10 @@ func _restart() -> void:
 		player.set_target(Vector2(300, 400))
 	if location_sys:
 		location_sys.set_active(false)
+	if inventory:
+		inventory.reset()
+	if shop_ui and shop_ui.is_open():
+		shop_ui.close()
 	_show_start_screen()
 
 # ---------------------------------------------------------------- 对话
