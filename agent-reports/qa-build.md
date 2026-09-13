@@ -1,9 +1,13 @@
 # QA/Build Agent Report
 
-Status: READY
+## Task
+- ID: QA-001
+- Agent: qa-build
+- Branch/worktree: `agent/qa-001-repo-health`
+- Status: READY
 
-## Assigned task
-QA-001
+## Scope
+Repository audit only. Project/export/workflow/source files are read-only for this task. The only writable file is this report.
 
 ## Summary
 Not started.
@@ -14,11 +18,17 @@ Not started.
 ## Files inspected
 - Pending.
 
-## Tests / verification
-- No runtime tests performed yet. Repository-only audit is pending.
+## Validation
+- Commands/tests run: none; repository audit only.
+- Result: pending repository inspection.
+- Runtime checks: must be packaged for QA-002/Codex rather than claimed complete.
 
-## Risks / dependencies
+## Evidence
+- Repository evidence: pending.
+- Fresh Godot/Web export evidence: none yet.
+
+## Known issues / risks
 - Pending.
 
-## Recommended next action
-- Begin QA-001 repository audit from the web agent, then escalate only runtime/export checks to Codex.
+## Handoff
+Begin QA-001 from the assigned branch. When complete, set this report to `NEEDS_REVIEW`, include the narrow QA-002 runtime validation package, and do not edit `docs/agents/TASK_BOARD.md`.
