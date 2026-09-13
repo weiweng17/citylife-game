@@ -35,32 +35,41 @@ Final result copy is:
 - Final corrective commit: `e78ad96b72374033c89f4bc5ac9bfc7743b43f5d`.
 - That corrective commit changes exactly one line in `data/events.json`: `老周` -> `隔壁床的病友` in the result string.
 
-## Files changed versus coordination branch
-Final branch comparison against the latest `orchestrator/multi-agent-bootstrap` shows only the three authorized paths:
-- `data/quests.json`
-- `data/events.json`
-- `agent-reports/npc-content.md`
+## Latest continuation pass
+The task was re-opened from the latest GitHub state while `docs/agents/TASK_BOARD.md` still records `NPC-CONTENT-002` as `IN_PROGRESS`. I re-read the current task board, `FILE_OWNERSHIP.md`, `WEB_AGENT_LAUNCHPAD.md`, and this report before taking any action.
 
-Data-level diff size remains narrow:
-- `data/quests.json`: 2 additions / 2 deletions (two copy-string replacements).
-- `data/events.json`: 1 addition / 1 deletion (one result-string replacement in final branch diff).
+The latest task-board instruction is unchanged: q3 is accepted; the only requested correction is replacing the hospital `老周` result copy with a non-core generic identity, then returning the task to `NEEDS_REVIEW`. That correction is already present at the task branch tip, so no additional narrative/data edit was repeated.
+
+Repository comparison before this report refresh:
+- Coordination HEAD: `125419dac51af9539e0fcd5c1da34bb4824d64c0`.
+- Task branch HEAD: `425ba232757887a1a25fdf007de8a16dccff1a05`.
+- Branch relation: diverged, task branch ahead 6 / behind 3.
+- Final diff paths remain exactly the three authorized files:
+  - `data/quests.json`
+  - `data/events.json`
+  - `agent-reports/npc-content.md`
+- Data diff remains narrow:
+  - `data/quests.json`: 2 additions / 2 deletions.
+  - `data/events.json`: 1 addition / 1 deletion.
+
+No additional same-task content step is safely necessary: the explicit acceptance correction is already closed and further copy changes would exceed the current review request rather than advance it.
 
 ## Validation
-- Latest task board was re-read while task status was `IN_PROGRESS`; its explicit review instruction was to keep q3 and replace only the hospital `老周` result copy with a non-core generic identity.
-- Current q3 was re-read after the hospital correction and still has `type=counter`, `key=store_buy`, `count=1`, with the accepted purchase-only copy.
-- Current `e_final_health` was re-read after the correction and contains the generic `隔壁床的病友` wording while all surrounding condition/effect fields remain unchanged.
+- Latest task board was re-read while task status was `IN_PROGRESS`; its explicit review instruction is satisfied by the current branch tip.
+- Current q3 retains `type=counter`, `key=store_buy`, `count=1`, with purchase-only copy.
+- Current `e_final_health` contains the generic `隔壁床的病友` wording while its mechanics remain unchanged.
 - Commit `e78ad96b72374033c89f4bc5ac9bfc7743b43f5d` was inspected directly; GitHub reports a one-line patch in `data/events.json` only.
-- JSON structure is preserved by value-only string substitutions: no keys, delimiters, arrays, object structure, IDs, counters, conditions, rewards, effects, or flow fields were edited. No separate terminal JSON-parser command was run.
+- JSON structure is preserved by value-only string substitutions: no keys, delimiters, arrays, object structure, IDs, counters, conditions, rewards, effects, or flow fields were edited. No terminal JSON-parser command was run.
 - Godot/Web/browser/runtime execution: **not run and not claimed**. This task is copy-only; runtime acceptance remains with the QA/local lane.
 
 ## Branch / integration note
-The task branch has diverged from the moving coordination branch because the orchestrator continued making coordination commits while this worker stayed isolated. At the latest pre-report comparison it was ahead by 5 task commits and behind by 3 coordination commits. The final diff still touched only authorized paths. Orchestrator should review/integrate against its current coordination head rather than blindly merging unrelated coordination history.
+The task branch is intentionally isolated and has diverged from the moving coordination branch because the orchestrator continued making coordination commits. The final diff still touches only authorized paths. Orchestrator should review/integrate against its current coordination head rather than blindly merging unrelated coordination history.
 
 ## Known risks
-- No fresh rendered/runtime evidence was produced; none is required to claim a visual/runtime PASS here.
+- No fresh rendered/runtime evidence was produced; none is claimed.
 - The intermediate historical commit that used `老周` remains in branch history, but the branch tip content and final diff are corrected to the generic identity. Review the final branch state, not the superseded intermediate wording.
 
 ## Handoff
 NPC-CONTENT-002 requests `NEEDS_REVIEW`.
 
-Acceptance intent is now satisfied: q3 matches the actual store-purchase mechanic; the hospital result no longer collides with any core NPC name; IDs/counters/conditions/effects/flow remain unchanged; changes are limited to authorized files. The orchestrator alone should mirror the task state in `docs/agents/TASK_BOARD.md` after review.
+Acceptance intent is satisfied: q3 matches the actual store-purchase mechanic; the hospital result no longer collides with any core NPC name; IDs/counters/conditions/effects/flow remain unchanged; changes are limited to authorized files. The orchestrator alone should mirror the task state in `docs/agents/TASK_BOARD.md` after review.
