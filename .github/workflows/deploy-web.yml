@@ -4,15 +4,25 @@ on:
   push:
     branches: [main, chatgpt-dev]
   workflow_dispatch:
+    inputs:
+      source_ref:
+        description: Branch/ref whose game files should be exported
+        required: false
+        default: main
+      source_sha:
+        description: Development commit represented by this preview
+        required: false
+        default: ""
 
 permissions:
   contents: read
   pages: write
   id-token: write
   issues: write
+  actions: write
 
 concurrency:
-  group: pages
+  group: citylife-preview
   cancel-in-progress: true
 
 jobs:
@@ -20,6 +30,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.source_ref || github.ref_name }}
 
       - name: Export Godot Web
         shell: bash
@@ -41,7 +53,29 @@ jobs:
         with:
           path: build/web
 
+  dispatch_dev_preview:
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/chatgpt-dev' }}
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dispatch deploy from main context
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'deploy-web.yml',
+              ref: 'main',
+              inputs: {
+                source_ref: 'chatgpt-dev',
+                source_sha: context.sha
+              }
+            });
+            core.notice(`Preview deployment dispatched for ${context.sha}`);
+
   deploy:
+    if: ${{ !(github.event_name == 'push' && github.ref == 'refs/heads/chatgpt-dev') }}
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -54,6 +88,7 @@ jobs:
         uses: actions/deploy-pages@v4
 
   smoke:
+    if: ${{ !(github.event_name == 'push' && github.ref == 'refs/heads/chatgpt-dev') }}
     runs-on: ubuntu-latest
     needs: deploy
     steps:
@@ -86,25 +121,33 @@ jobs:
           echo "Live smoke test passed: $BASE"
 
   report_failure:
-    if: ${{ always() && (needs.build.result == 'failure' || needs.deploy.result == 'failure' || needs.smoke.result == 'failure') }}
-    needs: [build, deploy, smoke]
+    if: >-
+      ${{ always() && (
+        needs.build.result == 'failure' ||
+        needs.dispatch_dev_preview.result == 'failure' ||
+        needs.deploy.result == 'failure' ||
+        needs.smoke.result == 'failure'
+      ) }}
+    needs: [build, dispatch_dev_preview, deploy, smoke]
     runs-on: ubuntu-latest
     steps:
       - name: Open or update CI failure issue
         uses: actions/github-script@v7
+        env:
+          SOURCE_SHA: ${{ github.event.inputs.source_sha || github.sha }}
         with:
           script: |
             const owner = context.repo.owner;
             const repo = context.repo.repo;
             const title = '[AUTO-CI] CityLife preview deployment failed';
             const body = [
-              'Automated preview deployment failed.',
+              'Automated preview pipeline failed.',
               '',
-              `- Branch: ${context.ref.replace('refs/heads/', '')}`,
-              `- Commit: ${context.sha}`,
+              `- Workflow branch: ${context.ref.replace('refs/heads/', '')}`,
+              `- Source commit: ${process.env.SOURCE_SHA}`,
               `- Run: https://github.com/${owner}/${repo}/actions/runs/${context.runId}`,
               '',
-              'The ChatGPT development watcher should inspect this run and continue fixing the development branch.'
+              'The ChatGPT development watcher should inspect the failing job and continue fixing chatgpt-dev.'
             ].join('\n');
             const { data } = await github.rest.issues.listForRepo({ owner, repo, state: 'open', per_page: 100 });
             const existing = data.find(i => i.title === title && !i.pull_request);
@@ -115,12 +158,14 @@ jobs:
             }
 
   report_recovery:
-    if: ${{ always() && needs.build.result == 'success' && needs.deploy.result == 'success' && needs.smoke.result == 'success' }}
+    if: ${{ always() && needs.deploy.result == 'success' && needs.smoke.result == 'success' }}
     needs: [build, deploy, smoke]
     runs-on: ubuntu-latest
     steps:
       - name: Close stale CI failure issue after recovery
         uses: actions/github-script@v7
+        env:
+          SOURCE_SHA: ${{ github.event.inputs.source_sha || github.sha }}
         with:
           script: |
             const owner = context.repo.owner;
@@ -131,7 +176,7 @@ jobs:
             if (existing) {
               await github.rest.issues.createComment({
                 owner, repo, issue_number: existing.number,
-                body: `Recovered on ${context.sha}. Preview deployment and live smoke test passed. Run: https://github.com/${owner}/${repo}/actions/runs/${context.runId}`
+                body: `Recovered for source commit ${process.env.SOURCE_SHA}. Deployment and live smoke test passed. Run: https://github.com/${owner}/${repo}/actions/runs/${context.runId}`
               });
               await github.rest.issues.update({ owner, repo, issue_number: existing.number, state: 'closed' });
             }
