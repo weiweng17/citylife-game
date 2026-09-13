@@ -2,7 +2,7 @@ name: Deploy CityLife Web Preview
 
 on:
   push:
-    branches: [main]
+    branches: [main, chatgpt-dev]
   workflow_dispatch:
 
 permissions:
