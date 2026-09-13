@@ -15,6 +15,10 @@ config/description="半开放式都市人生模拟 · 都市手绘氛围风"
 run/main_scene="res://scenes/Main.tscn"
 config/features=PackedStringArray("4.7", "GL Compatibility")
 
+[autoload]
+
+InteractionCutin="*res://scripts/ui/InteractionCutin.gd"
+
 [display]
 
 window/size/viewport_width=1280
