@@ -152,6 +152,19 @@
 - `tools/verify_onboard.gd` 断言的是迁移前那份 6 行新手引导文案（"点击地图 / 发光 / 说话 / 家 / 60 岁"），文案早就换成了地点场景版本，于是六条关键词全部落空。更麻烦的是它把失败分支写成 `_init()` 里的 `quit(1)`，**后面的 `quit()` 会把退出码覆盖回 0**——打了 FAIL 却仍然退出 0。已改为断言当前文案（行数、无空行、包含 22 岁 / 独立场景 / 解锁 / 行动 / 旅行），并在末尾按失败数统一决定退出码。
 - 另外记录：`verify_art` / `verify_hud` / `verify_interior` / `verify_layout` / `verify_min` 是 `extends Node` 的脚本，**不能用 `--script` 直接跑**（会挂住不返回）；能这样跑的是 `extends SceneTree` 的那些。
 
+## 2026-09-13 再后续：修掉真实输入测试的偶发红灯
+
+阶段 2 收尾做全员回归时，`verify_home_input` 报过一次 `real click did not queue furniture approach`。**同一份代码时而红时而绿**（连跑四次红一次、连跑六次红一次），这种红灯比不测还坏，必须查清。
+
+- **先排除产品问题**：新增 `tools/diag_click.gd`（只读诊断，不做断言），复现那次点击并打印几何与命中结果——命中控件确实是床标签按钮（`STOP`、排在最后即最上层），点击后 `home.pending=rest`、`walk_path=2`。**点击链路本身是好的，问题在测试。**
+- **真正原因**：`location.input_blocked` 和 `home_activities.blocked` **只在 `Game._process()` 里按 `ui_busy` 写**（`Game.gd:568-571`）。而测试关掉开场对话后只等了一帧就 `main.set_process(false)`——那一帧里 `_process` 有没有跑、`dialog_ui.is_busy()` 是不是已经变假，是不确定的。闸门一旦停在 `true`，就再也没人把它写回来了：`walk_to()` 开头 `if input_blocked or not active: return false` 直接返回，`_request()` 也早退，于是点击看起来"毫无反应"。
+- **修法（只改测试，未动运行时）**：
+  - 关掉对话后**显式跑一次 `main._process(0.0)`**，让 Game 自己把闸门算清楚，再冻结 processing；
+  - 补一条 `check(not location.input_blocked and not home.blocked, "input gate still blocked after closing intro dialog")`，以后这类问题会直接指名"闸门没放行"，而不是在下面某个断言上伪装成"点击没反应"；
+  - `click_at()` 里加 `Input.warp_mouse(position)`：窗口刚获得焦点时引擎会按真实光标位置补发一次移动事件，光标若停在别处，会把刚按下的按钮判成"指针已移出"（这是次要风险，顺手挡掉）。
+- **验证**：修前 4 次红 1；修后连跑 18 次（8 + 10）全绿。
+- **教训**：凡是"真实输入"测试，只要它依赖的闸门是由 `Game._process` 写出来的，就**不能提前 `set_process(false)` 了事**——要么先手动驱一次 `_process`，要么改成轮询到闸门放行为止。
+
 ## 尚未完成
 
 - 全部行走方向的身体比例与动画接地视觉抽查：碰撞与可达已由 `verify_home_edges.gd` 自动覆盖，姿态观感仍需人工看截图与试玩。
@@ -188,6 +201,8 @@ $godotExe = 'F:\Downloads\Godot_v4.7.2-stable_win64.exe\Godot_v4.7.2-stable_win6
 & $godotExe --headless --path . --script res://tools/verify_locations.gd
 & $godotExe --path . --rendering-method gl_compatibility --script res://tools/capture_store.gd
 & $godotExe --path . --rendering-method gl_compatibility --script res://tools/verify_home_input.gd
+# 排查"点了没反应"：打印命中控件与盖在该点上的全部控件（只读，不做断言）
+& $godotExe --path . --rendering-method gl_compatibility --script res://tools/diag_click.gd
 ```
 
 本地试玩可双击 `tools\play-local.cmd`。截图输出到被 Git 忽略的 `build/qa/`。

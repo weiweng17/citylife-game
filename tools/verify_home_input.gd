@@ -11,9 +11,14 @@ func check(condition: bool, message: String) -> void:
 		push_error(message)
 
 func click_at(position: Vector2) -> void:
+	# 除了合成事件，顺手把真实光标也挪到目标点上：窗口刚拿到焦点时，引擎会按真实光标
+	# 位置补发一次移动事件，光标若停在别处，会把刚按下的按钮判成"指针已移出"。
+	Input.warp_mouse(position)
+	await process_frame
 	var motion := InputEventMouseMotion.new()
 	motion.position = position
 	root.push_input(motion)
+	await process_frame
 	for pressed in [true, false]:
 		var event := InputEventMouseButton.new()
 		event.button_index = MOUSE_BUTTON_LEFT
@@ -34,9 +39,15 @@ func run() -> void:
 	main.dialog_queue.clear()
 	main.dialog_ui.close_dialog()
 	await process_frame
-	main.set_process(false)
+	# input_blocked 与 home.blocked 只在 Game._process 里按 ui_busy 写。这里刚关掉开场对话，
+	# 若不等它算一次就停掉 processing，闸门会停在"对话还开着"那一帧的 true 上，
+	# 之后 walk_to 直接 return false、_request 也早退，点击看起来毫无反应。
+	# 这是这套真实输入测试偶发红灯的真正原因（连跑六次会红一次）。先让 Game 把闸门算清楚，再冻结。
+	main._process(0.0)
 	var location = main.location_sys
 	var home = main.home_activities
+	check(not location.input_blocked and not home.blocked, "input gate still blocked after closing intro dialog")
+	main.set_process(false)
 	location.set_process(false)
 	home.set_process(false)
 	main.health = 50
