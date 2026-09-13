@@ -23,6 +23,7 @@ var health_fill: StyleBoxFlat
 var mood_fill: StyleBoxFlat
 var fullness_fill: StyleBoxFlat
 var energy_fill: StyleBoxFlat
+var skill_label: Label
 var bag_btn: Button
 
 
@@ -137,6 +138,15 @@ func _build_ui() -> void:
 	energy_fill = energy_bar.get_theme_stylebox("fill") as StyleBoxFlat
 	row2.add_child(energy_bar)
 
+	# 技能与岗位档位：状态行末尾的一小段文字，不占新行（HUD 高度被地点标题的
+	# 偏移量盯着，加行会撞上，见 LocationManager 的 header offset）。
+	skill_label = Label.new()
+	skill_label.name = "SkillLabel"
+	skill_label.add_theme_font_size_override("font_size", 12)
+	skill_label.add_theme_color_override("font_color", Color(0.96, 0.88, 0.62))
+	skill_label.tooltip_text = "手艺越熟，岗位工资越高。上班会慢慢攒。"
+	row2.add_child(skill_label)
+
 	daily_label = Label.new()
 	daily_label.name = "DailyRow"
 	daily_label.add_theme_font_size_override("font_size", 12)
@@ -200,6 +210,13 @@ func refresh(state, stage_name: String, stage_goal: String, dark_clue_total: int
 func refresh_daily(text: String) -> void:
 	if daily_label:
 		daily_label.text = "今日：%s" % text
+
+
+## 技能与岗位档位。数字给玩家看，档位名给玩家"我混成什么样了"的感觉。
+func refresh_skill(value: int, title: String) -> void:
+	if skill_label == null:
+		return
+	skill_label.text = "技能 %d · %s" % [value, title]
 
 
 ## 背包按钮上带件数，让玩家不用打开就知道身上有没有吃的。

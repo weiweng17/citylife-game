@@ -20,6 +20,11 @@ var jobless_years: int = 0
 # 用"记下是哪一天"而不是"每天重置标记"，跨天就不需要额外清理，也不怕漏重置。
 var relations: Dictionary = {}
 var talk_day: Dictionary = {}
+# 工作技能成长：`work_exp` 是上班攒的熟练度（攒够就涨一点技能），
+# `raise_steps` 是谈成的岗位工资级数，`raise_day` 是"最后一次谈薪在第几天"（同 `talk_day` 的思路）。
+var work_exp: int = 0
+var raise_steps: int = 0
+var raise_day: int = 0
 
 
 func reset_default() -> void:
@@ -38,6 +43,9 @@ func reset_default() -> void:
 	jobless_years = 0
 	relations = {}
 	talk_day = {}
+	work_exp = 0
+	raise_steps = 0
+	raise_day = 0
 
 
 func reset_from_origin(origin_data: Dictionary, origin_flag: String = "") -> void:
@@ -58,6 +66,9 @@ func reset_from_origin(origin_data: Dictionary, origin_flag: String = "") -> voi
 	jobless_years = 0
 	relations = {}
 	talk_day = {}
+	work_exp = 0
+	raise_steps = 0
+	raise_day = 0
 
 
 func to_dict() -> Dictionary:
@@ -77,6 +88,9 @@ func to_dict() -> Dictionary:
 		"stage_idx": stage_idx,
 		"relations": relations,
 		"talk_day": talk_day,
+		"work_exp": work_exp,
+		"raise_steps": raise_steps,
+		"raise_day": raise_day,
 	}
 
 
@@ -96,3 +110,6 @@ func apply_dict(data: Dictionary) -> void:
 	stage_idx = int(data.get("stage_idx", stage_idx))
 	relations = data.get("relations", relations)
 	talk_day = data.get("talk_day", talk_day)
+	work_exp = int(data.get("work_exp", work_exp))
+	raise_steps = int(data.get("raise_steps", raise_steps))
+	raise_day = int(data.get("raise_day", raise_day))

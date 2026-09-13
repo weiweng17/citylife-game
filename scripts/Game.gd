@@ -25,6 +25,7 @@ const OfficeActivitiesScript = preload("res://scripts/systems/OfficeActivities.g
 const StoreActivitiesScript = preload("res://scripts/systems/StoreActivities.gd")
 const InventoryScript = preload("res://scripts/systems/Inventory.gd")
 const NpcRelationsScript = preload("res://scripts/systems/NpcRelations.gd")
+const JobGrowthScript = preload("res://scripts/systems/JobGrowth.gd")
 const ShopUIScript = preload("res://scripts/ui/ShopUI.gd")
 const LocationManagerScript = preload("res://scripts/systems/LocationManager.gd")
 
@@ -332,6 +333,22 @@ func _refresh_ui() -> void:
 	# 床位提示随时刻变化，所以每帧写一次（只是一个字符串赋值）。
 	if home_activities:
 		home_activities.rest_detail = _rest_detail_text()
+	# 工位的时薪、谈薪是否够格、今天谈过没，都由 Game 算好喂给交互层（判定不放在那边）。
+	if office_activities:
+		var today: int = time_sys.day if time_sys else 0
+		var laozhang_relation: int = 0
+		if npc_relations_sys != null:
+			laozhang_relation = npc_relations_sys.value_of(game_state.relations, "laozhang")
+		office_activities.sync_context({
+			"skill": skill,
+			"wage": JobGrowthScript.wage_of(skill, game_state.raise_steps),
+			"title": JobGrowthScript.title_of(skill),
+			"can_negotiate": JobGrowthScript.can_negotiate(skill),
+			"raised_today": int(game_state.raise_day) == today,
+			"friend": bool(JobGrowthScript.negotiate(skill, network, laozhang_relation).get("friend", false)),
+		})
+	if hud:
+		hud.refresh_skill(skill, JobGrowthScript.title_of(skill))
 	var stage: Dictionary = story_sys.current_stage(_state()) if story_sys else {}
 	if hud and not stage.is_empty():
 		hud.refresh(game_state, str(stage.get("name", "")), str(stage.get("goal", "")), Data.DARK_CLUE_TOTAL)
@@ -727,18 +744,31 @@ func _on_office_activity(id: String) -> void:
 		return
 	if location_sys.current_location != "office" or not office_activities.SPOTS.has(id):
 		return
+	if id == "negotiate":
+		await _do_negotiate()
+		return
+	await _do_work_shift()
+
+
+## 上班：拿钱、掉状态、攒熟练度。时薪按技能档位走，所以"多上班"本身会涨价。
+func _do_work_shift() -> void:
+	var wage: int = JobGrowthScript.wage_of(skill, game_state.raise_steps)
 	activity_running = true
 	location_sys.input_blocked = true
 	home_activities.blocked = true
 	office_activities.blocked = true
-	location_sys.set_activity_feedback("工作中", true, id)
+	location_sys.set_activity_feedback("工作中", true, "work")
 	for step in range(10):
 		office_activities.prompt.text = "键盘敲个不停… %d%%" % ((step + 1) * 10)
 		await get_tree().create_timer(0.12).timeout
-	money += 120
+	money += wage
 	health = maxi(0, health - 6)
 	mood = maxi(0, mood - 4)
 	time_sys.advance_minutes(240)
+	# 先结算工资再涨技能：同一班不会因为刚涨了档就按新价算，账才对得上。
+	var growth: Dictionary = JobGrowthScript.gain_shift(skill, game_state.work_exp)
+	skill = int(growth["skill"])
+	game_state.work_exp = int(growth["exp"])
 	if daily_routine:
 		daily_routine.complete("work")
 	activity_running = false
@@ -748,7 +778,73 @@ func _on_office_activity(id: String) -> void:
 	home_activities.blocked = still_busy
 	office_activities.blocked = still_busy
 	_refresh_ui()
-	_show_toast("你把一整天交给了格子间。下班时雨还在下，手机里多了 120 块。身体发沉，话也不想说。（工资+120 健康−6 心情−4，耗时4小时）")
+	_show_toast("你把一整天交给了格子间。下班时雨还在下，手机里多了 %d 块。身体发沉，话也不想说。（工资+%d 健康−6 心情−4，耗时4小时）%s" % [wage, wage, _work_growth_line(growth)])
+
+
+## 上班这一班的"手艺长进"。没长进时也给一句，免得玩家觉得白干。
+func _work_growth_line(growth: Dictionary) -> String:
+	if bool(growth.get("tier_up", false)):
+		return "手上的活终于有了章法——你算得上「%s」了。（时薪 %d）" % [
+			str(growth["tier_title"]), JobGrowthScript.wage_of(skill, game_state.raise_steps),
+		]
+	if bool(growth.get("leveled", false)):
+		return "活儿还是这些活儿，你做得比上个月快了。（技能 %d/%d）" % [skill, JobGrowthScript.MAX_SKILL]
+	return "同样的报表，你今天少改了两遍。"
+
+
+## 谈薪：技能到「熟练」才有资格开口；谈得下来要看技能+人脉，老张熟络了会替你说一句。
+## 一天只能谈一次——不管成没成，今天都算数，省得反复进出门刷结果。
+func _do_negotiate() -> void:
+	var today: int = time_sys.day if time_sys else 0
+	if not JobGrowthScript.can_negotiate(skill):
+		_show_toast("话到嘴边又咽了回去——手上的活还不够硬。（谈薪要技能 %d，你现在 %d）" % [
+			JobGrowthScript.NEGOTIATE_SKILL, skill,
+		])
+		return
+	if int(game_state.raise_day) == today:
+		_show_toast("今天已经找过主管了。再进去一次，就不叫争取了。")
+		return
+	if int(game_state.raise_steps) >= JobGrowthScript.MAX_RAISES:
+		_show_toast("你的岗位工资已经到顶了。剩下的路，不在这一间办公室里。")
+		return
+	game_state.raise_day = today
+	activity_running = true
+	location_sys.input_blocked = true
+	home_activities.blocked = true
+	office_activities.blocked = true
+	location_sys.set_activity_feedback("在门口", true, "negotiate")
+	for step in range(10):
+		office_activities.prompt.text = "你在主管门口站了一会儿… %d%%" % ((step + 1) * 10)
+		await get_tree().create_timer(0.12).timeout
+	var relation: int = 0
+	if npc_relations_sys != null:
+		relation = npc_relations_sys.value_of(game_state.relations, "laozhang")
+	var result: Dictionary = JobGrowthScript.negotiate(skill, network, relation)
+	var feedback: String
+	if bool(result["ok"]):
+		game_state.raise_steps = mini(JobGrowthScript.MAX_RAISES, int(game_state.raise_steps) + 1)
+		mood = mini(100, mood + 6)
+		feedback = "主管翻完你的考核表，沉默了一会儿，说「下个月起调一下」。（岗位工资+%d，现在 %d；心情+6）" % [
+			JobGrowthScript.RAISE_BONUS, JobGrowthScript.wage_of(skill, game_state.raise_steps),
+		]
+		if bool(result["friend"]):
+			feedback += "出门的时候老张在走廊抽烟，冲你点了点头。"
+	else:
+		mood = maxi(0, mood - 6)
+		feedback = "主管头也没抬：「再攒攒。」你站了两秒，说了声好。（心情−6）"
+		if bool(result["friend"]):
+			feedback += "老张后来替你说了一句，但这次没顶用。"
+		else:
+			feedback += "你想起老张说过，会干活的不如会说话的。"
+	time_sys.advance_minutes(JobGrowthScript.NEGOTIATE_MINUTES)
+	activity_running = false
+	location_sys.set_activity_feedback("", false)
+	var still_busy: bool = dialog_ui.is_busy() or event_ui.is_busy() or game_over
+	location_sys.input_blocked = still_busy
+	home_activities.blocked = still_busy
+	office_activities.blocked = still_busy
+	_refresh_ui()
+	_show_toast(feedback)
 
 
 # ---------------------------------------------------------------- 便利店与背包

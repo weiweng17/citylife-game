@@ -1,12 +1,23 @@
 extends Node
 ## 公司工作互动。结构与出租屋活动保持一致：距离校验、防重复结算、
-## 活动期间锁输入；具体数值结算交给 Game，这里只负责触发与朝向。
-## 站位按当前公司背景粗略标定，尚未逐帧对照美术校正。
+## 活动期间锁输入；具体数值结算交给 Game，这里只负责触发、朝向与**展示**。
+##
+## 第 3 阶段起有两处互动：
+##  - `work`：工位上班。时薪随技能档位走，所以标签上的数字由 Game 每帧喂进来。
+##  - `negotiate`：大堂找主管谈薪。技能不到「熟练」不显示，避免玩家点了个必然被拒的按钮。
+## 门槛的**判定**仍然在 Game（数值结算只在 Game），这里只管好不好看。
+##
+## 站位按当前公司背景（写字楼入口雨夜）粗略标定，尚未逐帧对照美术校正。
 
 signal activity_requested(id: String)
 
 const SPOTS := {
-	"work": {"position": Vector2(700, 470), "facing": Vector2(0, -1), "label": "工位 · 上班", "detail": "4小时 · 工资+120 健康−6 心情−4"},
+	"work": {"position": Vector2(700, 470), "facing": Vector2(0, -1), "label": "工位 · 上班", "detail": "4小时 · 健康−6 心情−4"},
+	"negotiate": {
+		"position": Vector2(920, 500), "facing": Vector2(0, -1),
+		"label": "大堂 · 谈薪", "detail": "30分钟 · 看手艺，也看人",
+		"requires_skill": 55,
+	},
 }
 const LOCATION_ID := "office"
 
@@ -18,6 +29,8 @@ var nearest: String = ""
 var blocked: bool = false
 var pending: String = ""
 var pending_target := Vector2.ZERO
+## 由 Game 每帧喂进来的展示上下文：技能、时薪、档位名、能不能谈薪、今天谈过没、有没有人帮腔。
+var context: Dictionary = {}
 
 func configure(manager) -> void:
 	location = manager
@@ -47,6 +60,40 @@ func configure(manager) -> void:
 	prompt.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	layer.add_child(prompt)
 
+
+## Game 每个 `_refresh_ui()` 喂一次。缺字段时按"最保守"取值，宁可显示旧数字也不崩。
+func sync_context(info: Dictionary) -> void:
+	context = info
+
+
+## 技能不够的互动点直接不显示；显示出来的都点得动。
+func _spot_available(id: String) -> bool:
+	var spot: Dictionary = SPOTS[id]
+	if not spot.has("requires_skill"):
+		return true
+	return int(context.get("skill", 0)) >= int(spot["requires_skill"])
+
+
+func _label_of(id: String) -> String:
+	if id == "negotiate" and bool(context.get("raised_today", false)):
+		return "大堂 · 今天谈过了"
+	return str(SPOTS[id]["label"])
+
+
+## 标签上写清"这一趟能拿多少"，玩家不用去猜自己现在值多少钱。
+func _detail_of(id: String) -> String:
+	match id:
+		"work":
+			return "4小时 · 工资+%d 健康−6 心情−4" % int(context.get("wage", 0))
+		"negotiate":
+			if bool(context.get("raised_today", false)):
+				return "一天一次 · 明天再来"
+			if bool(context.get("friend", false)):
+				return "30分钟 · 老张说替你提一句"
+			return "30分钟 · 技能+人脉够了才谈得下来"
+	return str(SPOTS[id]["detail"])
+
+
 func _process(_delta: float) -> void:
 	if location == null:
 		return
@@ -54,6 +101,12 @@ func _process(_delta: float) -> void:
 	if not layer.visible or blocked:
 		pending = ""
 		return
+	for id in SPOTS:
+		var button: Button = buttons[id]
+		button.visible = _spot_available(str(id))
+		if button.visible:
+			button.text = _label_of(str(id))
+			button.tooltip_text = _detail_of(str(id))
 	if not pending.is_empty():
 		if location.player_target.distance_to(pending_target) > 1.0:
 			pending = ""
@@ -64,13 +117,15 @@ func _process(_delta: float) -> void:
 	nearest = ""
 	var distance: float = 82.0
 	for id in SPOTS:
+		if not _spot_available(str(id)):
+			continue
 		var current: float = location.player_sprite.position.distance_to(SPOTS[id].position)
 		if current < distance:
 			distance = current
 			nearest = str(id)
 		buttons[id].modulate = Color.WHITE if current < 82.0 else Color(0.65, 0.68, 0.72, 0.8)
 	if not blocked:
-		prompt.text = "走近工位，按 E 或点击标签开始工作" if nearest.is_empty() else "[E] %s  —  %s" % [SPOTS[nearest].label, SPOTS[nearest].detail]
+		prompt.text = "走近工位，按 E 或点击标签开始工作" if nearest.is_empty() else "[E] %s  —  %s" % [_label_of(nearest), _detail_of(nearest)]
 
 func _unhandled_key_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_E:
