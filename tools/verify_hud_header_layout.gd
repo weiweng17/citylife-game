@@ -4,6 +4,7 @@ extends SceneTree
 
 const Data = preload("res://scripts/Data.gd")
 const EXPECTED_HUD_HEIGHT := 112.0
+const DEFAULT_VIEWPORT := Vector2i(1280, 720)
 const NARROW_VIEWPORT := Vector2i(1024, 720)
 
 var main: Node
@@ -24,9 +25,11 @@ func _process(_delta: float) -> bool:
 		if frames < 5:
 			return false
 		_prepare_long_content()
-		_run_layout_checks("default")
-		# Exercise one narrower desktop/Web width in the same regression. Waiting a few
-		# frames lets anchors and the HUD viewport-size callback settle before rechecking.
+		_run_layout_checks("1280x720", DEFAULT_VIEWPORT)
+		# The project uses canvas_items stretch with a 1280x720 logical viewport. Changing only
+		# Window.size can therefore resize the physical window without changing HUD layout space.
+		# Change content_scale_size as well so this phase genuinely exercises 1024 logical pixels.
+		get_root().content_scale_size = NARROW_VIEWPORT
 		get_root().size = NARROW_VIEWPORT
 		phase = 1
 		frames = 0
@@ -36,7 +39,7 @@ func _process(_delta: float) -> bool:
 		return false
 	var hud = main.get("hud")
 	hud._sync_viewport()
-	_run_layout_checks("1024x720")
+	_run_layout_checks("1024x720", NARROW_VIEWPORT)
 	_finish()
 	return true
 
@@ -68,19 +71,23 @@ func _prepare_long_content() -> void:
 	hud._sync_viewport()
 
 
-func _run_layout_checks(label: String) -> void:
+func _run_layout_checks(label: String, expected_viewport: Vector2i) -> void:
 	var hud = main.get("hud")
 	var location = main.get("location_sys")
 	var header: Control = location.root.get_node("LocationHeader") as Control
 	var hud_rect := hud.get_global_rect()
 	var header_rect := header.get_global_rect()
-	var viewport_width := get_root().size.x
+	var logical_viewport := get_root().get_visible_rect().size
+	var expected_size := Vector2(expected_viewport)
 
+	# This assertion prevents a stretched physical window from masquerading as a narrower
+	# logical layout test. HUD._sync_viewport() reads this same visible-rect size.
+	_expect(logical_viewport.is_equal_approx(expected_size), "%s: logical viewport must actually be %s, got %s" % [label, expected_size, logical_viewport])
 	_expect(is_equal_approx(hud.size.y, EXPECTED_HUD_HEIGHT), "%s: HUD external height must remain the owned 112px reservation" % label)
 	_expect(is_equal_approx(hud.get_reserved_height(), EXPECTED_HUD_HEIGHT), "%s: HUD must expose the same reserved-height contract" % label)
 	_expect(hud.clip_contents, "%s: HUD must clip unexpected child overflow inside its own reservation" % label)
 	_expect(hud_rect.end.y <= header_rect.position.y, "%s: HUD reservation must remain separated from LocationHeader" % label)
-	_expect(hud_rect.position.x >= -0.5 and hud_rect.end.x <= float(viewport_width) + 0.5, "%s: HUD envelope must stay inside the viewport width" % label)
+	_expect(hud_rect.position.x >= -0.5 and hud_rect.end.x <= logical_viewport.x + 0.5, "%s: HUD envelope must stay inside the logical viewport width" % label)
 
 	var content: Control = hud.get_node("HUDContent") as Control
 	var primary: Control = hud.get_node("HUDContent/PrimaryRow") as Control
@@ -112,8 +119,9 @@ func _run_layout_checks(label: String) -> void:
 			)
 			_expect(inside_hud, "%s: %s must remain inside the HUD reservation" % [label, button_name])
 
-	print("[%s] viewport=%s HUD=%s header=%s primary=%s status=%s" % [
+	print("[%s] logical_viewport=%s window=%s HUD=%s header=%s primary=%s status=%s" % [
 		label,
+		logical_viewport,
 		get_root().size,
 		hud_rect,
 		header_rect,
