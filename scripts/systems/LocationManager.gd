@@ -187,6 +187,8 @@ const NPC_LOCATION_POS := {
 	"store": {"chenjie": Vector2(845, 315)},
 	"office": {"laozhang": Vector2(370, 455)},
 	"park": {"laozhou": Vector2(420, 455)},
+	# 咖啡馆：阿哲中午坐吧台前的高脚位（12:00-14:00，见 npc_schedules.json）。
+	"cafe": {"azhe": Vector2(900, 545)},
 	"subway": {"laozhang": Vector2(735, 430), "azhe": Vector2(510, 475)},
 	"alley": {"daoshi": Vector2(845, 455)},
 }

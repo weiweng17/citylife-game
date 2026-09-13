@@ -133,6 +133,15 @@
         ]
       },
       {
+        "start": "12:00",
+        "end": "14:00",
+        "location": "cafe",
+        "pos": [
+          900,
+          545
+        ]
+      },
+      {
         "start": "17:00",
         "end": "22:30",
         "location": "subway",

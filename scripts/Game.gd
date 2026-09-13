@@ -28,6 +28,7 @@ const NpcRelationsScript = preload("res://scripts/systems/NpcRelations.gd")
 const JobGrowthScript = preload("res://scripts/systems/JobGrowth.gd")
 const QuestSystemScript = preload("res://scripts/systems/QuestSystem.gd")
 const ParkActivitiesScript = preload("res://scripts/systems/ParkActivities.gd")
+const CafeActivitiesScript = preload("res://scripts/systems/CafeActivities.gd")
 const ShopUIScript = preload("res://scripts/ui/ShopUI.gd")
 const LocationManagerScript = preload("res://scripts/systems/LocationManager.gd")
 
@@ -146,6 +147,7 @@ var home_activities
 var office_activities
 var store_activities
 var park_activities
+var cafe_activities
 var daily_routine
 var inventory
 var activity_running: bool = false
@@ -245,6 +247,12 @@ func _ready() -> void:
 	add_child(park_activities)
 	park_activities.configure(location_sys)
 	park_activities.activity_requested.connect(_on_park_activity)
+	# 咖啡馆是第 4 阶段扩展内容的第二个场景：点杯咖啡要花钱，发呆免费。
+	cafe_activities = CafeActivitiesScript.new()
+	cafe_activities.name = "CafeActivities"
+	add_child(cafe_activities)
+	cafe_activities.configure(location_sys)
+	cafe_activities.activity_requested.connect(_on_cafe_activity)
 	# 背包只存物品数量；买到的东西随时可以取用，具体效果由这里结算。
 	inventory = InventoryScript.new()
 	inventory.name = "Inventory"
@@ -628,6 +636,7 @@ func _process(delta: float) -> void:
 	office_activities.blocked = ui_busy
 	store_activities.blocked = ui_busy
 	park_activities.blocked = ui_busy
+	cafe_activities.blocked = ui_busy
 	if time_sys:
 		time_sys.set_paused(ui_busy)
 		time_sys.tick(delta)
@@ -667,6 +676,7 @@ func _begin_activity(prompt_label: Label, progress_text: String, feedback_text: 
 	office_activities.blocked = true
 	store_activities.blocked = true
 	park_activities.blocked = true
+	cafe_activities.blocked = true
 	location_sys.set_activity_feedback(feedback_text, true, activity_id)
 	for step in range(10):
 		prompt_label.text = "%s… %d%%" % [progress_text, (step + 1) * 10]
@@ -683,6 +693,7 @@ func _end_activity() -> void:
 	office_activities.blocked = still_busy
 	store_activities.blocked = still_busy
 	park_activities.blocked = still_busy
+	cafe_activities.blocked = still_busy
 	_refresh_ui()
 
 
@@ -907,6 +918,33 @@ func _on_park_activity(id: String) -> void:
 			mood = mini(100, mood + 8)
 			time_sys.advance_minutes(20)
 			feedback = "池塘边的石栏被雨洗得发亮。你看了会儿水面的圈。（心情+8，耗时20分钟）"
+	_end_activity()
+	_show_toast(feedback)
+
+
+func _on_cafe_activity(id: String) -> void:
+	if activity_running or not game_started or game_over or dialog_ui.is_busy() or event_ui.is_busy():
+		return
+	if location_sys.current_location != "cafe" or not cafe_activities.SPOTS.has(id):
+		return
+	# 咖啡要先看钱：余额不足时不下单、不结算，和做饭的食材检查同一套做法。
+	if id == "coffee" and money < 15:
+		_show_toast("一杯咖啡15元，当前余额不足。")
+		return
+	var feedback: String = ""
+	match id:
+		"coffee":
+			await _begin_activity(cafe_activities.prompt, "咖啡机的蒸汽声", "冲泡中", "coffee")
+			money -= 15
+			energy = mini(100, energy + 15)
+			mood = mini(100, mood + 6)
+			time_sys.advance_minutes(30)
+			feedback = "靠窗的位置看得到雨。咖啡是烫的，你捧着杯子没说话，觉得缓过来一点。（−15元 精力+15 心情+6，耗时30分钟）"
+		"idle":
+			await _begin_activity(cafe_activities.prompt, "雨点敲着玻璃", "发呆中", "idle")
+			mood = mini(100, mood + 8)
+			time_sys.advance_minutes(20)
+			feedback = "你对着一桌子的烛光坐了二十分钟，谁的消息也没回。有些累是闲下来的那一刻才追上你的。（心情+8，耗时20分钟）"
 	_end_activity()
 	_show_toast(feedback)
 
