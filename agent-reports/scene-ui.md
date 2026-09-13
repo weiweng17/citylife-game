@@ -54,8 +54,13 @@ Current content evidence from `scripts/systems/Inventory.gd`:
 - current item descriptions are sentence-length strings and are displayed with word wrapping in `_add_row()`.
 
 Current integration contract from `scripts/Game.gd`:
-- Game creates one `ShopUIScript` instance and connects only `buy_requested`, `use_requested`, and `closed` back into gameplay.
-- The responsive repair therefore does not require a Game callsite or settlement change if ShopUI preserves its public methods/signals.
+- Game creates one `ShopUIScript` instance and connects `buy_requested`, `use_requested`, and `closed` back into gameplay.
+- `_open_shop()` calls `shop_ui.open_buy(money, inventory)`.
+- `_open_bag()` calls `shop_ui.open_bag(money, inventory)`.
+- both buy and use flows call `shop_ui.refresh(money, inventory)` after inventory/money mutation, then call `shop_ui.set_status(...)` with the resulting user-facing status copy.
+- This means the responsive repair does not require a Game callsite or settlement change if ShopUI preserves its public methods/signals, but a future regression must cover same-mode `refresh()` rebuilds in addition to buy↔bag mode switches.
+
+Current `tools/` inventory contains no dedicated `verify_shop*` regression. A future UI-FIX-006 can therefore add one narrow ShopUI-only verifier without replacing or reconciling an existing task-specific ShopUI test.
 
 ## Failure mode
 At shorter logical heights, six content-driven rows can make the centered panel's minimum height exceed the viewport because `ShopList` has no bounded scroll path. Since status/footer/close are below that list in the same VBox, the bottom controls can be displaced outside the visible region rather than remaining independently reachable.
@@ -102,10 +107,12 @@ Give only the ShopUI item-list region an explicit bounded vertical overflow path
 4. Title/subtitle and status/footer/close remain outside the scroll region and stay reachable while the list overflows.
 5. Buy mode with all six current `DISPLAY_ORDER` rows exposes a usable vertical scroll path when required and the last row can be brought fully into view.
 6. Bag mode with all six current items owned exposes the same bounded list behavior; switching between buy/bag does not preserve an invalid old scroll offset or stale list height.
-7. A buy-row activation still emits exactly the selected item id once; a bag-row activation still emits exactly the selected item id once; close still emits once.
-8. Current wrapped descriptions/effect/meta/action content does not create a new horizontal scrollbar at the declared 960px width.
-9. Do not change item data, counts, prices/effects, settlement, save schema, gameplay, navigation, or NPC semantics.
-10. Rendered PASS still requires actual Godot evidence on the exact review/integration SHA.
+7. Calling `refresh()` after a buy or use rebuild does not preserve an invalid old scroll offset or stale list height in the same mode.
+8. A buy-row activation still emits exactly the selected item id once; a bag-row activation still emits exactly the selected item id once; close still emits once.
+9. `set_status()` still updates the fixed non-scrolling status region after a rebuild.
+10. Current wrapped descriptions/effect/meta/action content does not create a new horizontal scrollbar at the declared 960px width.
+11. Do not change item data, counts, prices/effects, settlement, save schema, gameplay, navigation, or NPC semantics.
+12. Rendered PASS still requires actual Godot evidence on the exact review/integration SHA.
 
 ### Suggested verifier boundary
 A future narrow verifier can instantiate ShopUI directly rather than booting Game, supply a lightweight inventory object compatible with the existing read methods, and exercise:
@@ -115,7 +122,9 @@ A future narrow verifier can instantiate ShopUI directly rather than booting Gam
 - last-row reachability after scrolling;
 - fixed status/footer/close reachability;
 - buy/use/closed signal forwarding;
-- buy → bag → buy rebuilds with scroll reset and no stale measured height.
+- buy → bag → buy rebuilds with scroll reset and no stale measured height;
+- same-mode `refresh()` after a simulated buy/use update with scroll reset and no stale measured height;
+- `set_status()` after refresh while the list is scrolled, proving the status region remains outside the scroll owner and reachable.
 
 The verifier should not modify inventory/gameplay state beyond the presentation-facing stub required to render rows.
 
@@ -131,15 +140,18 @@ The verifier should not modify inventory/gameplay state beyond the presentation-
 - `scripts/Game.gd` (read-only ShopUI/DialogUI/EndingUI integration evidence)
 - `scripts/Data.gd` (read-only dialogue-content pressure)
 - `data/rules.json` (read-only ending-description pressure)
+- `tools/` directory inventory (read-only verifier coverage)
 
 ## Validation
 ### Repository checks performed
-- Confirmed UI-AUDIT-006 is `READY`, owned by `scene-ui`, and report-only.
-- Confirmed its assigned branch started identical to the latest coordination baseline `46d1ab5ce72331ef20c2260c29dccdd0a4b250f2` (ahead 0 / behind 0).
+- Confirmed UI-AUDIT-006 is still `READY`, owned by `scene-ui`, and report-only on the latest coordination branch.
+- Confirmed the audit branch remains ahead 1 / behind 0 and differs only in `agent-reports/scene-ui.md` before this continuation update.
 - Confirmed UI-FIX-001..005 remain held for exact-SHA rendered/runtime evidence and were excluded from write scope.
 - Re-read all clean remaining UI helpers from the latest coordination branch rather than relying only on UI-AUDIT-005's prior ranking.
 - Confirmed the current shop catalog still has exactly six ordered items and both buy/bag modes can render the same six-row maximum through existing code.
 - Confirmed the proposed repair can preserve the current Game-facing ShopUI signal contract without editing Game.
+- Re-read exact Game callsites and confirmed `open_buy`, `open_bag`, `refresh`, and `set_status` are all active integration surfaces; therefore same-mode refresh behavior belongs in the future acceptance contract.
+- Checked the current coordination-branch `tools/` inventory and found no dedicated `verify_shop*` regression.
 
 ### Not performed
 - Godot was not launched.
@@ -151,7 +163,7 @@ The verifier should not modify inventory/gameplay state beyond the presentation-
 ## Known risks / review notes
 - Exact Control minimum-size negotiation, current-font wrapping, final row heights, and whether production copy already overflows at 960×540 require real Godot evidence; this audit does not fabricate that result.
 - The fixed 660px horizontal minimum remains a separate responsive limitation below the declared 960px-width contract. Do not silently expand UI-FIX-006 into a full narrow/mobile row redesign.
-- If a list ScrollContainer is introduced, `_rebuild()` must explicitly avoid carrying a stale bottom scroll offset across buy/bag/refresh transitions.
+- If a list ScrollContainer is introduced, `_rebuild()` and same-mode `refresh()` must explicitly avoid carrying a stale bottom scroll offset across buy/bag/refresh transitions.
 - Header/status/footer should remain outside the scrolling list; moving the whole panel into a scroll region would recreate the historical stale-height/control-reachability problem documented in the source comment.
 
 ## Handoff
