@@ -109,6 +109,8 @@
 
 ## 2026-09-13 再后续：便利店购买与背包消耗
 
+本轮提交：`629a64f feat: add daily needs system (fullness and energy)`（上一轮被打断补交）、`1f381aa feat: add convenience store shopping and inventory`。
+
 - 新增 `scripts/systems/Inventory.gd`：物品目录（名称/价钱/耗时/效果/描述/食用文案）+ 数量增减 + 存档往返。**目录只写这一处**，货架面板、背包面板和结算全部读同一份定义，避免价钱对不上。目前六样：桶装泡面 6 元、三角饭团 7 元、袋装面包 5 元、罐装咖啡 8 元、盒装牛奶 6 元、感冒药 18 元。
 - 新增 `scripts/systems/StoreActivities.gd`：仿 `OfficeActivities` 的便利店货架互动点，位置 `Vector2(455, 515)`（在碰撞体外侧、与出生点连通，已由 `walk_to` 断言可达），朝向 `(-1, 0)` 面向左侧货架。提示行放在 y=580——底部面板从 y=608 起，放在 600 会被盖住（顺带把 `OfficeActivities` 同样错位的提示行一并下移到 580）。
 - 新增 `scripts/ui/ShopUI.gd`：一块面板两种用法，`open_buy` 看货架、`open_bag` 看背包。**必须挂在 `UI` CanvasLayer 里**（放在 `ending_ui` 之后），这样才盖得住 HUD；放在 `LocationManager.root` 里不管 z_index 多高都会被 layer 2 的 HUD 压住。整屏 `ColorRect` 用 `MOUSE_FILTER_STOP` 吃掉点击，面板打开时点不到地面和地点按钮。
