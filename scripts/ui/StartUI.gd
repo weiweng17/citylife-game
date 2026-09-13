@@ -125,6 +125,10 @@ func _make_origin_card(o: Dictionary, money_formatter: Callable, card_index: int
 
 func open() -> void:
 	visible = true
+	# StartUI is reused after restart. Do not carry a previous run's bottom-of-list
+	# position into the next origin selection screen.
+	if scroll_container != null:
+		scroll_container.set_deferred("scroll_vertical", 0)
 
 
 func close() -> void:
