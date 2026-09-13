@@ -197,6 +197,28 @@
 - **踩坑（重要）**：`queue_free()` 只标记不立即离树，节点到帧末才走；`_clear_npcs` 原来只调 `queue_free()`，导致重建后同一帧按名字取到的是待删除的旧节点，标签显示上一档位。凡"同名节点重建"都要 `remove_child` 再 `queue_free`；测试按名字找子节点要跳过 `is_queued_for_deletion()`。已写进 `docs/ARCHITECTURE.md` 模块边界第 7 条。
 - 尚未做：工作技能成长、首批连续任务；关系目前只由"每天聊一次"推动，无对话选项/事件加成/门槛解锁；可交谈的仅当前日程表里的 NPC。
 
+## 2026-09-13 阶段 3 单元 2：工作技能成长（手艺分档 + 谈薪）
+
+把"上班拿固定 120"变成"上班攒手艺，手艺换钱，并开出一条新选项"。
+
+- 提交：`b764121 feat: work skill growth and a skill-gated raise talk`（7 文件）。
+- 新增 `scripts/systems/JobGrowth.gd`（**全静态、无状态**）：
+  - 五个手艺档 学徒 0（90 元）/ 上手 35（120）/ 熟练 55（155）/ 骨干 72（195）/ 独当一面 88（245）——档位由技能定，时薪由档位定。
+  - 上班攒熟练度（`WORK_EXP_PER_SHIFT = 12`）；`exp_needed() = 24 + 技能/2`，**技能越高涨得越慢**（48 技时约 4 班 1 点）。攒够涨技能、可连涨；满 100 后不再累积。
+  - **谈薪**：技能 ≥ 55（熟练）才有资格；`技能 + 人脉 >= 95` 判成败；**老张到「熟络」替你说话，门槛降 10**。**刻意不用随机数**——玩家没法读档刷结果，测试也能直接断言成败。
+- `GameState` 加 `work_exp` / `raise_steps` / `raise_day`，塞进现有 `game_state`，**未新增存档键**。
+- `OfficeActivities` 加第二个互动点 `negotiate`（大堂 · 谈薪，(920, 500)）；技能不到 55 **按钮直接不显示**；工位标签改成显示当前时薪。交互层用 `sync_context()` 接 Game 每帧喂来的展示数字，**自己不读 `GameState`**。
+- `Game` 拆出 `_do_work_shift()` / `_do_negotiate()`：上班**先按当前档位结工资、再攒熟练度**（同一班不会按刚涨的新价算）；谈薪一天一次（成不成都能算），每次 +30 岗位工资、**最多 3 级**，成功 +6 心情、失败 −6 心情并如实说明。
+- `HUD` 状态行末尾加 `技能 55 · 熟练`（**没加新行**，HUD 高度被地点标题偏移量盯着）。
+- 新增 `tools/verify_job_growth.gd`（9 组）与 `tools/capture_job.gd`（3 张截图）。
+- 验证：`verify_job_growth` 9 组 0 失败；**13 套全员回归全绿**（navigation `6646/0`、home_edges `6252/0`，其余 `exit=0`）。
+- **原有测试为什么没被打破**：`verify_daily_routine` / `verify_day_flow` 硬断言"上班 +120"。把**上手档时薪定成 120**，而出身「小镇做题家」技能 48（上手）、`raise_steps` 0，数值自然落在同一点上，不需要改测试迁就代码。
+- **两个测试侧坑（已写进 `ARCHITECTURE.md` 模块边界第 10 条）**：
+  1. 展示上下文由 `Game._refresh_ui()` 推，而测试开场后就 `set_process(false)` 冻结了 `Game._process` → 得手动推一次。
+  2. `process_frame` 信号在节点 `_process` **之前**发出，只 `await process_frame` 一帧会断言在"刚改完、还没刷"的空档上——按钮显隐是在交互层 `_process` 里刷的，**要等两帧**。
+- 截图脚本也踩了一次：进度动画不能用固定帧数等（开窗帧率不稳，95 帧只到 60%），要**盯着 `activity_running` 落下来**再截（同 `capture_activity_props.gd` 当年的教训）。
+- 尚未做：首批连续任务；谈薪是一次性收益，谈满 3 级就到头，没有"升职/换岗/带团队"；`Rules.gd` 那套年度收入/晋升规则**与本系统尚未打通**（两套经济并存的老问题仍在）。
+
 ## 尚未完成
 
 - 全部行走方向的身体比例与动画接地视觉抽查：碰撞与可达已由 `verify_home_edges.gd` 自动覆盖，姿态观感仍需人工看截图与试玩。
@@ -204,7 +226,9 @@
 - 2026-09-13 已增加最小头顶互动反馈，但尚不是正式姿态/物品/音效系统。
 - 房门等"触发即切图"的互动，转身朝向与切图同帧发生，玩家看不到转身；当前朝向只对不切图的家具（床/书桌/厨房）有实际观感。
 - NPC 尺寸、脚点、方向动画尚未全面统一。
-- NPC 关系（阶段 3 单元 1）目前只由"每天聊一次"推动，**没有对话选项、没有事件加成、没有关系门槛解锁的内容**；`朋友` 档位暂时只是显示与一次心情回补。工作技能成长、首批连续任务尚未开始。
+- NPC 关系（阶段 3 单元 1）目前只由"每天聊一次"推动，**没有对话选项、没有事件加成、没有关系门槛解锁的内容**；`朋友` 档位暂时只是显示与一次心情回补。
+- 工作技能成长（阶段 3 单元 2）的谈薪是**一次性收益**：谈满 3 级后这条路就到头，还没有"升职/换岗/带团队"。时薪只影响上班收入，`Rules.gd` 里那套年度收入/晋升/上市规则**与分钟循环里的这套经济尚未打通**——两套经济并存的问题依旧存在。
+- "上班攒手艺"比"回家读书"慢得多（4 班 1 点 vs 读书 1 小时 +3）是刻意的，但**哪个更划算没做过平衡验证**；谈薪门槛 95、老张降 10 也只在自动测试里验证过。首批连续任务尚未开始。
 - 出租屋以外的碰撞及遮挡多数仍为矩形近似，不能宣称全地图无视觉穿模。
 - 阶段 2 的完整一天闭环已实现：家→地铁→公司工作→便利店购买→回家睡觉跨到次日。**只剩"无调试跳转走完 20–30 分钟完整流程"的人工试玩验收没做**——这一项自动测试替代不了：游戏内 1 秒＝2 分钟，现实里走完一天要 6 分钟，无头脚本只能覆盖切图与结算。
 - 过夜目前只有"睡到明早 7:30"一种；还没有"被闹钟叫醒/熬夜加班/失眠"这类分支。
@@ -226,7 +250,7 @@
 
 7. [完成] NPC 实体化与交谈：日程热点、点击开聊、带档位的对话标题。
 8. [完成] 关系反馈：好感/档位/每日一次/升档叙述/存档往返。
-9. [待做] 工作技能成长，让关系与技能影响后续选择。
+9. [完成] 工作技能成长：手艺分档→时薪、上班攒熟练度、熟练后解锁「谈薪」（老张熟络降门槛）。
 10. [待做] 首批连续任务：不重复结算、不形成死路。
 
 ## 常用命令
@@ -240,8 +264,10 @@ $godotExe = 'F:\Downloads\Godot_v4.7.2-stable_win64.exe\Godot_v4.7.2-stable_win6
 & $godotExe --headless --path . --script res://tools/verify_day_flow.gd
 & $godotExe --headless --path . --script res://tools/verify_locations.gd
 & $godotExe --headless --path . --script res://tools/verify_npc.gd
+& $godotExe --headless --path . --script res://tools/verify_job_growth.gd
 & $godotExe --path . --rendering-method gl_compatibility --script res://tools/capture_store.gd
 & $godotExe --path . --rendering-method gl_compatibility --script res://tools/capture_npc.gd
+& $godotExe --path . --rendering-method gl_compatibility --script res://tools/capture_job.gd
 & $godotExe --path . --rendering-method gl_compatibility --script res://tools/verify_home_input.gd
 # 排查"点了没反应"：打印命中控件与盖在该点上的全部控件（只读，不做断言）
 & $godotExe --path . --rendering-method gl_compatibility --script res://tools/diag_click.gd

@@ -3,7 +3,7 @@
 ## 当前检查点
 
 - 项目：`D:\打工人模拟器\citylife-game-github`
-- 当前 HEAD：`53a06cb feat: NPC relationship feedback (affinity, daily limit, tiers)`（本日最后一条是阶段 3 单元 1）
+- 当前 HEAD：`b764121 feat: work skill growth and a skill-gated raise talk`（本日最后一条是阶段 3 单元 2）
 - 工作树：干净（`git status --porcelain` 无输出）
 - **本地领先远程若干提交，需要用户双击 `tools\push-local.cmd` 上传**（自动化环境 PATH 被替换，助手无法 push，原因见 `HANDOFF.md`「推送远程」一节）。禁止 force push / reset。
 - 详细证据见 `docs/QA_2026-09-13.md`（含第 2 阶段与第 3 阶段单元 1 两部分）；长期项目状态见根目录 `HANDOFF.md`；阶段计划见 `docs/ITERATION_PLAN.md`；目录与模块职责见 `docs/ARCHITECTURE.md`。
@@ -41,6 +41,20 @@
 - 本段踩的坑（已写进 `ARCHITECTURE.md` 模块边界第 7 条）：**`queue_free()` 只标记不立即离树**，只调它会让同一帧的同名旧节点被重新取到（标签显示旧档位）；同名节点重建要 `remove_child` 再 `queue_free`。
 - 未做：工作技能成长、首批连续任务；关系无对话选项/事件加成/门槛解锁。
 
+## 今天最后一段（第 3 阶段：NPC 与成长 · 单元 2）
+
+| 提交 | 内容 |
+| --- | --- |
+| `b764121` | 工作技能成长（手艺分档 → 时薪、上班攒熟练度、熟练后「谈薪」） |
+
+- 新增 `scripts/systems/JobGrowth.gd`（全静态无状态）：五档 学徒/上手/熟练/骨干/独当一面 决定时薪；上班攒熟练度，攒够涨技能；技能 ≥ 55 解锁「大堂 · 谈薪」，**技能 + 人脉 ≥ 95** 才谈得成，**老张到「熟络」降 10 门槛**；判定不含随机数。
+- `OfficeActivities` 加第二个互动点（技能不够**按钮不显示**）；工位标签显示当前时薪；展示数字由 `Game.sync_context` 每帧喂，交互层不读 `GameState`。
+- `HUD` 状态行加 `技能 55 · 熟练`（未加新行，HUD 高度被地点标题偏移量约束）。
+- `GameState` 加 `work_exp` / `raise_steps` / `raise_day`（塞进 `game_state`，**未新增存档键**）。
+- 新增 `tools/verify_job_growth.gd`（9 组 0 失败）与 `tools/capture_job.gd`（3 张截图）。**13 套全员回归全绿**。
+- 新增两个测试侧坑（已进 `ARCHITECTURE.md` 模块边界第 10 条）：展示上下文要手动 `main._refresh_ui()`；按钮显隐在交互层 `_process` 刷，`process_frame` 信号在节点处理**之前**发出，**要等两帧**。
+- 未做：首批连续任务；谈薪是一次性收益（满 3 级到头）；`Rules.gd` 年度经济与本系统尚未打通。
+
 ## 今天的关键修复与踩坑（接手请务必看）
 
 - **真实输入测试偶发红灯（已修）**：`input_blocked` / `home_activities.blocked` **只在 `Game._process()` 里按 `ui_busy` 写**。测试若在 `Game._process` 算出闸门之前就 `set_process(false)`，闸门会永久停在 `true`，`walk_to()` 直接 `return false`，表现成"点了没反应"。修法是先手动驱一次 `_process` 再冻结。**凡依赖该闸门的真实输入测试都适用这条。**
@@ -65,8 +79,8 @@
 
 1. ~~NPC 实体化与交谈~~：已完成——找得到、聊得上、有回应；日程热点 + 带档位的对话标题。
 2. ~~NPC 日程与关系反馈~~：已完成——好感/档位/每日一次/升档叙述/存档往返。
-3. **工作技能成长**（下一步）：让关系与技能影响后续选择。
-4. 首批连续任务：不重复结算、不形成死路。
+3. ~~工作技能成长~~：已完成——手艺分档决定时薪、上班攒熟练度、熟练后「谈薪」（关系能降门槛）。
+4. **首批连续任务**（下一步）：不重复结算、不形成死路。
 5. 之后才是第 4 阶段扩展地图（公园、咖啡馆、医院、旧巷等要逐场景标定碰撞与遮挡）。
 
 **在第 3 阶段推进的同时，第 2 阶段还剩一项人工验收**：无调试跳转走完 20–30 分钟完整流程，判断节奏与观感是否成立。自动测试覆盖了切图与结算，但替代不了这一项。
