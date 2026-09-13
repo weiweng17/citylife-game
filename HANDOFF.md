@@ -278,6 +278,21 @@
 - 验证：`verify_cafe` **首跑 6 组 0 失败**（此前几个单元都要返工测试侧，这次一步到位——站位标定清单起了作用）；**16 套全员回归全绿**（navigation `6646/0`、home_edges `6252/0`，其余 `exit=0`）；截图确认站位、阿哲站位与文案换行都正常。
 - 尚未做：医院、旧巷、天台；咖啡馆与任务链/事件没有交叉；咖啡的"花钱买精力"与便利店罐装咖啡（8 元买进背包随身喝）的平衡没验证过。
 
+## 2026-09-13 阶段 4 单元 3：医院互动（看病 + 候诊椅）
+
+第 4 阶段第三块。健康此前只有睡觉 +12 和感冒药能补，医院补上第一个正经的健康恢复出口。
+
+- 提交：`b1fd2bb feat: hospital interactions (clinic visit, waiting bench)`（4 文件）。
+- 新增 `scripts/systems/HospitalActivities.gd`（沿用标准结构，两个互动点）：
+  - `clinic` 诊桌前 · 看一次病（560, 520）：**50 元**、60 分钟、健康+25——贵但补得多，比睡觉的 +12 高一档；
+  - `bench` 候诊椅 · 缓一缓（420, 530）：免费、15 分钟、心情+5（文案落点："喊到的名字都不是你的，这样想想好像也值得高兴"）。
+  - 余额不足不挂号、不扣钱、不推进时间（与做饭/咖啡同一套检查）。
+- `Game` 按七处清单接入（preload / var / `_ready` / `_process` 闸门 / `_begin/_end_activity` 两把锁 / `_on_hospital_activity`）。
+- 站位标定沿用单元 2 的五步清单（美术原图 → blocked 矩形 → occluders 下缘 → 按钮布局 → 实走断言），**又是首跑零返工**。候诊椅按钮下缘 576 卡在提示行 580 之前，视觉上略挤但没有重叠。
+- 新增 `tools/verify_hospital.gd`（5 组）、`tools/capture_hospital.gd`（2 张截图）。
+- 验证：`verify_hospital` **首跑 5 组 0 失败**；**17 套全员回归全绿**（navigation `6646/0`、home_edges `6252/0`，其余 `exit=0`）；截图确认站位与文案换行正常。
+- 尚未做：旧巷、天台；医院与事件系统没有交叉（生病/受伤事件还不会把你送到这里）；医院没有 NPC。
+
 ## 尚未完成
 
 - 全部行走方向的身体比例与动画接地视觉抽查：碰撞与可达已由 `verify_home_edges.gd` 自动覆盖，姿态观感仍需人工看截图与试玩。
@@ -330,12 +345,14 @@ $godotExe = 'F:\Downloads\Godot_v4.7.2-stable_win64.exe\Godot_v4.7.2-stable_win6
 & $godotExe --headless --path . --script res://tools/verify_quests.gd
 & $godotExe --headless --path . --script res://tools/verify_park.gd
 & $godotExe --headless --path . --script res://tools/verify_cafe.gd
+& $godotExe --headless --path . --script res://tools/verify_hospital.gd
 & $godotExe --path . --rendering-method gl_compatibility --script res://tools/capture_store.gd
 & $godotExe --path . --rendering-method gl_compatibility --script res://tools/capture_npc.gd
 & $godotExe --path . --rendering-method gl_compatibility --script res://tools/capture_job.gd
 & $godotExe --path . --rendering-method gl_compatibility --script res://tools/capture_quest.gd
 & $godotExe --path . --rendering-method gl_compatibility --script res://tools/capture_park.gd
 & $godotExe --path . --rendering-method gl_compatibility --script res://tools/capture_cafe.gd
+& $godotExe --path . --rendering-method gl_compatibility --script res://tools/capture_hospital.gd
 & $godotExe --path . --rendering-method gl_compatibility --script res://tools/verify_home_input.gd
 # 排查"点了没反应"：打印命中控件与盖在该点上的全部控件（只读，不做断言）
 & $godotExe --path . --rendering-method gl_compatibility --script res://tools/diag_click.gd
