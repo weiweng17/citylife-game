@@ -128,6 +128,24 @@
 - **挂在 `CanvasLayer` 上的 Control 不要指望 `PRESET_FULL_RECT` 自动撑开**：`ShopUI` 根节点是 `CanvasLayer(UI)` 的子节点，用 FULL_RECT 锚点时根节点尺寸是 0，结果是整屏遮罩根本没铺开、面板贴在左上角。改成 `PRESET_TOP_LEFT` + 自己监听 `size_changed` 同步视口尺寸（和 `LocationManager.root` 的 `_sync_web_layout` 同一套做法）才正常。
 - **容器的最小尺寸要等布局刷新，刚重建完量到的是旧值**：面板里的列表原本套了 `ScrollContainer` 再按 `list_box.get_combined_minimum_size()` 设高度，结果"先开货架 6 行、再开空背包"时量到的是 6 行的高度，背包面板撑出一大片空白；而且同一个列表，父容器报的高度（342）和单行自己报的（62）还对不上。最后**去掉 `ScrollContainer`，让面板直接按内容撑高**——6 件货品刚好一屏，背包里只有一件时就只有一件的高度。货品目录涨到十几件时再换回固定高度的滚动区。
 
+## 2026-09-13 再后续：回家过夜与次日结算（阶段 2 最后一项）
+
+- 床位（`rest`）现在看时刻分两种结果：**20:00 之后或凌晨 5:00 之前上床＝睡一整夜**，跨过午夜到次日 07:30；**白天上床仍然只是两小时小睡**（原行为不变）。这样一张床不用加第二个按钮，玩家也不会被抢走小睡的选择。
+- 提示语跟着变：`Game._rest_detail_text()` 在 `_refresh_ui()` 里每帧写进 `HomeActivities.rest_detail`，夜里显示"睡到明早 7:30 · 跨天结算"，白天显示原来的"2小时 · 健康+12 心情+8 精力+50"。按 E 之前就能看到这一觉会睡多久。
+- 结算顺序（`Game._sleep_through_night()`）：**先记下昨天**（`daily_routine.complete("sleep")` + `summary()`）→ 再 `advance_minutes()` 跨天（`day_changed` 会把当日目标清空，所以顺序不能反）→ 再 `_sync_needs_to_time()` 把这一夜该掉的饱食掉掉 → 最后回满精力、健康+12 心情+8。
+  于是醒来是**"睡饱了但饿"**（11 小时扣 44 饱食），而不是睡完还累，也不是顶着一身力气却饿着。
+- 跨天之后不再补记"休息"：新的一天从空白目标开始。这是刻意的，理由写在代码注释里。
+- 附带的规则交互（已在测试里锁住）：饿着肚子、精力见底才上床，这一觉会额外触发"精力归零再掉 2 点心情"——那是需求系统的规则，不是睡眠加成出问题。
+
+### 存档改成 payload 进出，并修掉一个读档丢需求的坑
+
+- `Game._save_game/_load_game` 里内联的 payload 抽成 `build_save_payload()` / `apply_save_payload()`。好处是**"中途存档 → 读回"可以在内存里整份往返验证，不必去碰玩家真正的存档文件**（`user://savegame.json`）——和 `verify_home_input.gd` 不碰玩家存档是同一个顾虑。
+- **修的坑**：读档会把时间整体跳到存档那一刻（可能是好几天前）。`_sync_needs_to_time()` 按 `day*1440+minute` 的差值扣需求，不重设基准就会把这一整跳当成"真实流过的时间"扣掉一大截饱食与精力。`apply_save_payload()` 现在会重置 `_last_total_minutes` 与 `need_fraction`。
+- 新增 `tools/verify_day_cycle.gd`（4 组：白天只小睡、夜里睡到次日、过午夜后睡同一个早晨、中途存档读回且不扣需求）。存档往返那组逐项断言钱/健康/心情/技能/饱食/精力/天数/时钟/所在地/背包/每日进度/剧情 flag/origin，并检查 payload 的十个字段齐全。
+- 新增 `tools/verify_day_flow.gd`（整条链的接线测试，6 组）：家→地铁→公司上班→便利店买泡面→回家做饭→睡到次日，**全程走真实交互**（点家具标签、走地点按钮、按面板按钮），不直接改状态；唯一的取巧是把时钟快进到夜里（白天到晚上要真等 6 分钟现实时间）。第四组 PASS 时钱从 2000 变成 2094，正好对上 +120 工资 −6 泡面 −20 做饭。
+- **注意**：活动层（`HomeActivities.layer` 等）是在它自己的 `_process` 里按"当前地点"开关的。切完图要等它真的亮起来再 `_activate`，否则会因为 `layer.visible` 还是 `false` 而**静默返回**——看起来像"点了没反应"。`verify_day_flow.gd` 里的 `_wait_for_layer()` 就是干这个的。
+- 注：测试里为了摆场景会直接跳时间，跳完把 `_last_total_minutes` 对齐一次，否则那一跳会被当成真实流逝的时间扣需求（和上面读档是同一个原理）。
+
 ## 2026-09-13 再后续：清理两个失效的旧测试
 
 - `tools/verify.gd` 是单张世界地图时代的套件（旧 `Player.moving/set_target`、`Game._detect_near()`、固定坐标 GOAL(600,600)、建筑/树木/POI 计数）。MAP-002 独立地点场景迁移（`c43c30e`）之后旧世界被隐藏、交互改由 `InteractionSystem` 负责，这份套件统计出来全是 0、却在 `_detect_near` 处抛 SCRIPT ERROR，而且因为断言宽松还会照打 `[OK]`——**给的是误导性的绿灯**。已在文件头和阶段 2 入口标明废弃，一旦发现旧接口不在就 `quit(2)` 并指向替代套件。
@@ -142,7 +160,8 @@
 - 房门等"触发即切图"的互动，转身朝向与切图同帧发生，玩家看不到转身；当前朝向只对不切图的家具（床/书桌/厨房）有实际观感。
 - NPC 尺寸、脚点、方向动画尚未全面统一。
 - 出租屋以外的碰撞及遮挡多数仍为矩形近似，不能宣称全地图无视觉穿模。
-- 阶段 2 的完整一天流程尚未实现：家→地铁→公司工作→便利店购买→回家休息→次日结算。其中通勤、公司工作、便利店购买与背包消耗已完成；**只剩回家睡觉触发次日结算，以及中途存档恢复的验收**。
+- 阶段 2 的完整一天闭环已实现：家→地铁→公司工作→便利店购买→回家睡觉跨到次日。**只剩"无调试跳转走完 20–30 分钟完整流程"的人工试玩验收没做**——这一项自动测试替代不了：游戏内 1 秒＝2 分钟，现实里走完一天要 6 分钟，无头脚本只能覆盖切图与结算。
+- 过夜目前只有"睡到明早 7:30"一种；还没有"被闹钟叫醒/熬夜加班/失眠"这类分支。
 - 便利店购买与背包消耗已完成（见上），但货架站位是粗略标定，尚未逐帧对照便利店美术校正；吃/喝的动作也只有进度文案与数值，没有专属姿态。
 - 旧年度人生事件与新的分钟/每日循环仍需正式分离。
 
@@ -154,7 +173,8 @@
 2. [完成] 地铁增加通勤入口与固定分钟消耗。
 3. [完成] 公司增加工作活动、工资/健康/心情结算。
 4. [完成] 便利店增加购买与背包消耗。
-5. [待做] 回家睡眠触发次日，并验证中途存档恢复。
+5. [完成] 回家睡眠触发次日，并验证中途存档恢复。
+6. [待人工] 无调试跳转走完 20–30 分钟完整流程的试玩验收；通过后阶段 2 出口达成，可进入阶段 3（NPC 与成长）。
 
 ## 常用命令
 
@@ -163,6 +183,8 @@ $godotExe = 'F:\Downloads\Godot_v4.7.2-stable_win64.exe\Godot_v4.7.2-stable_win6
 & $godotExe --headless --path . --script res://tools/verify_navigation.gd
 & $godotExe --headless --path . --script res://tools/verify_home_activities.gd
 & $godotExe --headless --path . --script res://tools/verify_store.gd
+& $godotExe --headless --path . --script res://tools/verify_day_cycle.gd
+& $godotExe --headless --path . --script res://tools/verify_day_flow.gd
 & $godotExe --headless --path . --script res://tools/verify_locations.gd
 & $godotExe --path . --rendering-method gl_compatibility --script res://tools/capture_store.gd
 & $godotExe --path . --rendering-method gl_compatibility --script res://tools/verify_home_input.gd

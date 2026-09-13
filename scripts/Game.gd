@@ -322,6 +322,9 @@ func _refresh_ui() -> void:
 		hud.refresh_daily(daily_routine.summary())
 	if hud and inventory:
 		hud.refresh_bag(inventory.total_count())
+	# 床位提示随时刻变化，所以每帧写一次（只是一个字符串赋值）。
+	if home_activities:
+		home_activities.rest_detail = _rest_detail_text()
 	var stage: Dictionary = story_sys.current_stage(_state()) if story_sys else {}
 	if hud and not stage.is_empty():
 		hud.refresh(game_state, str(stage.get("name", "")), str(stage.get("goal", "")), Data.DARK_CLUE_TOTAL)
@@ -417,7 +420,16 @@ func _save_game() -> void:
 	if (dialog_ui and dialog_ui.is_busy()) or (event_ui and event_ui.is_busy()):
 		_show_toast("请先结束当前对话或事件，再保存。")
 		return
-	var payload := {
+	var result: Dictionary = save_sys.save_game(build_save_payload())
+	_show_toast(str(result.get("message", "存档失败。")))
+	if start_ui:
+		start_ui.set_load_available(save_sys.has_save())
+
+
+## 存档内容集中在这一个函数里。这样"中途存档 → 读回"可以在内存里整份往返验证，
+## 不必去碰玩家真正的存档文件（user://savegame.json）。
+func build_save_payload() -> Dictionary:
+	return {
 		"game_state": game_state.to_dict(),
 		"time": time_sys.to_save_dict() if time_sys else {},
 		"weather": weather_sys.to_save_dict() if weather_sys else {},
@@ -429,30 +441,10 @@ func _save_game() -> void:
 		"inventory": inventory.to_save_dict() if inventory else {},
 		"origin": origin.duplicate(true),
 	}
-	var result: Dictionary = save_sys.save_game(payload)
-	_show_toast(str(result.get("message", "存档失败。")))
-	if start_ui:
-		start_ui.set_load_available(save_sys.has_save())
 
 
-func _load_game() -> void:
-	if activity_running:
-		_show_toast("请等待当前行动完成，再读取存档。")
-		return
-	if save_sys == null:
-		_show_toast("存档系统尚未初始化。")
-		return
-	if (dialog_ui and dialog_ui.is_busy()) or (event_ui and event_ui.is_busy()):
-		_show_toast("请先结束当前对话或事件，再读取。")
-		return
-	var result: Dictionary = save_sys.load_game()
-	if not bool(result.get("ok", false)):
-		_show_toast(str(result.get("message", "读取失败。")))
-		return
-	# 读档会整体替换状态，货架/背包面板必须先收起来。
-	if shop_ui and shop_ui.is_open():
-		shop_ui.close()
-	var payload: Dictionary = result.get("payload", {})
+## 读档的唯一入口：把 payload 整份盖回运行时状态。
+func apply_save_payload(payload: Dictionary) -> void:
 	game_state.apply_dict(payload.get("game_state", {}))
 	var saved_origin = payload.get("origin", {})
 	origin = saved_origin if typeof(saved_origin) == TYPE_DICTIONARY else {}
@@ -476,6 +468,10 @@ func _load_game() -> void:
 		npc_schedule_sys.reset(time_sys, weather_sys)
 	if dark_location_sys:
 		dark_location_sys.reset(time_sys, _state())
+	# 读档会把时间整体跳到存档那一刻，必须重设消耗基准，否则这一跳会被当成
+	# "真实流过的时间"扣掉一大截饱食与精力。
+	need_fraction = 0.0
+	_last_total_minutes = time_sys.day * 1440 + time_sys.get_minute_of_day() if time_sys != null else -1
 	dialog_queue.clear()
 	dialog_pending_clue = ""
 	cur_event = null
@@ -483,6 +479,26 @@ func _load_game() -> void:
 	cur_event_time_cost = 0
 	game_over = false
 	game_started = true
+
+
+func _load_game() -> void:
+	if activity_running:
+		_show_toast("请等待当前行动完成，再读取存档。")
+		return
+	if save_sys == null:
+		_show_toast("存档系统尚未初始化。")
+		return
+	if (dialog_ui and dialog_ui.is_busy()) or (event_ui and event_ui.is_busy()):
+		_show_toast("请先结束当前对话或事件，再读取。")
+		return
+	var result: Dictionary = save_sys.load_game()
+	if not bool(result.get("ok", false)):
+		_show_toast(str(result.get("message", "读取失败。")))
+		return
+	# 读档会整体替换状态，货架/背包面板必须先收起来。
+	if shop_ui and shop_ui.is_open():
+		shop_ui.close()
+	apply_save_payload(result.get("payload", {}))
 	if start_ui:
 		start_ui.close()
 	if ending_ui:
@@ -605,13 +621,19 @@ func _on_home_activity(id: String) -> void:
 		home_activities.prompt.text = "%s… %d%%" % [str(progress_words.get(id, "进行中")), (step + 1) * 10]
 		await get_tree().create_timer(0.12).timeout
 	var feedback: String = ""
+	var slept_through := false
 	match id:
 		"rest":
-			health = mini(100, health + 12)
-			mood = mini(100, mood + 8)
-			energy = mini(100, energy + 50)
-			time_sys.advance_minutes(120)
-			feedback = "你躺下睡了两个钟头，梦里什么都没有。醒来时身体松快了些。（健康+12 心情+8 精力+50）"
+			# 夜里上床就是睡一整夜、跨到次日；白天躺下只是两小时小睡。
+			if _is_sleep_hour():
+				feedback = _sleep_through_night()
+				slept_through = true
+			else:
+				health = mini(100, health + 12)
+				mood = mini(100, mood + 8)
+				energy = mini(100, energy + 50)
+				time_sys.advance_minutes(120)
+				feedback = "你躺下睡了两个钟头，梦里什么都没有。醒来时身体松快了些。（健康+12 心情+8 精力+50）"
 		"study":
 			skill = mini(100, skill + 3)
 			mood = maxi(0, mood - 3)
@@ -623,7 +645,9 @@ func _on_home_activity(id: String) -> void:
 			fullness = mini(100, fullness + 45)
 			time_sys.advance_minutes(30)
 			feedback = "一个人也要好好吃饭。热汤下肚，身上暖了起来。（−20元 健康+5 饱食+45）"
-	if daily_routine:
+	# 睡整夜时"休息"已经在跨天前记进昨天了，跨天会把当日进度清空，
+	# 所以新的一天从小目标全空开始，不能在这里再补一次。
+	if daily_routine and not slept_through:
 		if id == "meal":
 			daily_routine.complete("meal")
 		elif id == "rest":
@@ -636,6 +660,58 @@ func _on_home_activity(id: String) -> void:
 	office_activities.blocked = still_busy
 	_refresh_ui()
 	_show_toast(feedback)
+
+
+# ---------------------------------------------------------------- 过夜
+
+## 20:00 之后、或凌晨 5:00 之前上床就是睡一整夜；白天躺下只是小睡。
+func _is_sleep_hour() -> bool:
+	if time_sys == null:
+		return false
+	var minute: int = time_sys.get_minute_of_day()
+	return minute >= 20 * 60 or minute < 5 * 60
+
+
+## 从当前时刻睡到次日 07:30 需要多少分钟。
+func _sleep_minutes_to_morning() -> int:
+	if time_sys == null:
+		return 0
+	var minute: int = time_sys.get_minute_of_day()
+	var wake: int = 7 * 60 + 30
+	if minute < 5 * 60:
+		# 已经过了午夜，睡到"今天"早上就够了。
+		return wake - minute
+	return (24 * 60 - minute) + wake
+
+
+## 床位的提示语按当前时刻变化：夜里告诉玩家这一觉睡到明早，白天就照常写两小时小睡。
+func _rest_detail_text() -> String:
+	if _is_sleep_hour():
+		return "睡到明早 7:30 · 跨天结算"
+	return "2小时 · 健康+12 心情+8 精力+50"
+
+
+## 睡一整夜：跨过午夜触发次日，醒来是早上 7:30。
+## 昨天一天的目标必须在跨天之前先记下来——跨天会把当日进度清空。
+func _sleep_through_night() -> String:
+	var minutes: int = _sleep_minutes_to_morning()
+	var yesterday: String = ""
+	if daily_routine:
+		daily_routine.complete("sleep")
+		yesterday = daily_routine.summary()
+	if time_sys:
+		time_sys.advance_minutes(minutes)
+	# 睡觉本身也是"时间流过"：先把这一夜该掉的饱食掉掉，再回满精力。
+	# 醒来是"睡饱了但饿"，而不是睡完还累。
+	_sync_needs_to_time()
+	health = mini(100, health + 12)
+	mood = mini(100, mood + 8)
+	energy = 100
+	var day_now: int = time_sys.day if time_sys != null else 0
+	var wake_text: String = time_sys.get_clock_text() if time_sys != null else "07:30"
+	return "你把自己扔到床上，灯也没关。再睁眼是第 %d 天的早上 %s，雨还在下。\n昨天：%s\n（睡了 %.1f 小时 · 精力回满 健康+12 心情+8）" % [
+		day_now, wake_text, yesterday, float(minutes) / 60.0,
+	]
 
 func _on_office_activity(id: String) -> void:
 	if activity_running or not game_started or game_over or dialog_ui.is_busy() or event_ui.is_busy():

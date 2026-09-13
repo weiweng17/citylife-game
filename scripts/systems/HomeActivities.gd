@@ -16,6 +16,9 @@ var nearest: String = ""
 var blocked: bool = false
 var pending: String = ""
 var pending_target := Vector2.ZERO
+## 床位的提示语由 Game 按当前时刻写进来：夜里是"睡到明早"，白天是两小时小睡。
+## 空着就退回 SPOTS 里的静态说明。
+var rest_detail: String = ""
 
 func configure(manager) -> void:
 	location = manager
@@ -68,7 +71,13 @@ func _process(_delta: float) -> void:
 			nearest = str(id)
 		buttons[id].modulate = Color.WHITE if current < 82.0 else Color(0.65, 0.68, 0.72, 0.8)
 	if not blocked:
-		prompt.text = "走近家具，按 E 或点击标签互动" if nearest.is_empty() else "[E] %s  —  %s" % [SPOTS[nearest].label, SPOTS[nearest].detail]
+		if nearest.is_empty():
+			prompt.text = "走近家具，按 E 或点击标签互动"
+		else:
+			var detail: String = str(SPOTS[nearest].detail)
+			if nearest == "rest" and not rest_detail.is_empty():
+				detail = rest_detail
+			prompt.text = "[E] %s  —  %s" % [SPOTS[nearest].label, detail]
 
 func _unhandled_key_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_E:
