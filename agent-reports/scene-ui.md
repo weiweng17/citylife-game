@@ -19,11 +19,11 @@ This task therefore keeps the current runtime contract completely unchanged and 
 2. Baked the existing v3 A/B scale/offset relationship into a transparent canvas that still fits the unchanged legacy `LEGACY_BLANKET_TEXTURE` scale/position contract. No sleep script, anchor, gameplay, navigation, or manager coordinate was changed.
 3. Cleaned the crop boundary with a small alpha feather and preserved edge RGB into transparent border pixels to reduce dark/rectangular seam artifacts when linearly filtered.
 4. Replaced only the contents of the existing default path `assets/backgrounds/interactions/home_bed_blanket_foreground_v1.png`, so `HomeInteractionVisual.gd` continues to use its existing default reference without source-code changes.
-5. Added `tools/verify_home_bed_seam.gd` to guard the presentation contract: the default foreground must remain a localized transparent waist/leg patch with feathered alpha rather than regress into a whole-bed overlay.
+5. Added and then hardened `tools/verify_home_bed_seam.gd` so the default foreground must remain a localized transparent waist/leg patch with meaningful feathered alpha, low visible-pixel coverage, and transparent margin around every canvas edge rather than regressing into a whole-bed overlay or clipped patch.
 
 ## Files changed
 - `assets/backgrounds/interactions/home_bed_blanket_foreground_v1.png` — replaced the large default foreground composition with the localized official-background waist/leg patch, baked into the existing default transform contract.
-- `tools/verify_home_bed_seam.gd` — narrow asset-contract regression; checks canvas dimensions, visible bounding box/footprint and presence of soft-alpha seam pixels.
+- `tools/verify_home_bed_seam.gd` — narrow asset-contract regression; checks canvas dimensions, visible bounding box/footprint, actual visible-pixel coverage, meaningful soft-alpha ratio and edge clearance.
 - `agent-reports/scene-ui.md` — completion report / review request.
 
 No `scripts/**`, `scenes/**`, gameplay data, navigation data, `main`, task board, or other coordination files were modified.
@@ -34,16 +34,19 @@ No `scripts/**`, `scenes/**`, gameplay data, navigation data, `main`, task board
 - The replacement transparent canvas is `1200x900`; its visible patch is approximately `709x295`, occupying under 20% of the canvas bounding-footprint ratio used by the guard test.
 - The patch is derived from the repository's existing v3 official-background crop rather than the mismatched candidate bed-group artwork.
 - The alpha edge includes partially transparent pixels so the local occluder can blend under linear filtering instead of ending in a hard rectangular crop.
+- The hardened guard additionally rejects assets whose actual visible pixels exceed 16% of the canvas, whose feathered pixels fall below 2% of visible pixels, or whose visible bounds touch an 8 px canvas-edge safety margin.
 - The existing v3/candidate A/B assets were left intact for historical comparison; no candidate whole-bed resource was enabled.
 - The sleep pose asset `protagonist_sleep_side_v6.png` was intentionally not changed in the same repair, following the handoff rule to avoid simultaneously changing both pose and duvet.
 
 ## Validation
 ### Performed in this web worker
-- Read the latest task contract / ownership / web-agent rules and the existing home-bed visual QA handoff.
-- Confirmed the task branch initially had no task-specific commits and was two commits behind the latest orchestrator baseline; fast-forwarded it to `125419dac51af9539e0fcd5c1da34bb4824d64c0` before making changes.
+- Re-read the latest `TASK_BOARD`, `FILE_OWNERSHIP`, `WEB_AGENT_LAUNCHPAD` and this report from GitHub before continuing.
+- Confirmed the current task board still lists UI-FIX-002 as `READY` and contains no new review finding or expanded write scope; the worker report remains the review request authority until the orchestrator mirrors status.
+- Confirmed the task branch remains based on the latest orchestrator baseline `125419dac51af9539e0fcd5c1da34bb4824d64c0` used for this repair and is not behind it.
+- Confirmed the branch diff remains limited to the three authorized paths listed above.
 - Inspected the existing v3 PNG structure and alpha extent before reuse.
 - Inspected the generated replacement asset before upload: `1200x900` transparent canvas, visible bounding region approximately `(475,28)-(1184,323)`, visible bounding footprint about `19.37%`, and a non-zero soft-alpha edge population.
-- Added a headless-checkable regression that encodes those broad presentation constraints without asserting rendered appearance.
+- Strengthened the headless-checkable regression to guard actual visible-pixel density, soft-alpha density and clipping margins in addition to the original bounding-box constraints.
 
 ### Not performed
 - Godot was **not** launched.
@@ -81,6 +84,7 @@ Run the existing `tools/capture_activity_props.gd` default/legacy path on this e
 ## Commits
 - `c93edc090b1eec13af92500ad2e83bcb3f53f697` — `fix: clean home bed foreground seam asset`
 - `4ed70ea5033d47e692a166a8c83971ae03258fed` — `test: guard localized home bed seam asset`
+- `58e62748b9158b17529b29379dc4f16f92157fc6` — `test: harden home bed seam asset guard`
 
 ## Handoff
-UI-FIX-002 is ready for orchestrator review at repository level. The implementation deliberately stops before claiming visual acceptance. The next step is runtime/QA on the exact review SHA: execute the three headless checks above, then produce and inspect a real home sleep capture. If the capture is clean, the coordinator can accept the repair; if a visible seam remains, use the screenshot to decide whether the sleep-pose lower silhouette needs a separately authorized art-only cleanup rather than introducing more runtime transform magic numbers.
+UI-FIX-002 remains ready for orchestrator review at repository level. This continuation found no new coordinator rework requirement, so the presentation asset was not changed again; only the narrow regression was hardened. Do not mark visual acceptance complete until a Godot 4.7.2 environment executes the three headless checks above and produces a real default-path home sleep capture on the exact review SHA. If the capture is clean, the coordinator can accept the repair; if a visible seam remains, use that rendered evidence to decide whether the sleep-pose lower silhouette needs a separately authorized art-only cleanup rather than introducing more runtime transform magic numbers.
