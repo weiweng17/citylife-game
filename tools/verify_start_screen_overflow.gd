@@ -29,6 +29,9 @@ func _init() -> void:
 		ui.get_node_or_null("StartScroll/StartContent/OriginCard0") != null
 		and ui.get_node_or_null("StartScroll/StartContent/LoadButton") != null
 	)
+	# Mutate after setup so the signal check also catches an implementation that copied
+	# the dictionary instead of forwarding the supplied origin object.
+	origins[EXPECTED_ORIGINS - 1]["post_setup_marker"] = "same supplied origin"
 	ui.origin_selected.connect(_on_origin_selected)
 	ui.load_requested.connect(_on_load_requested)
 	get_root().add_child(ui)
@@ -44,6 +47,10 @@ func _process(_delta: float) -> bool:
 			_expect(pre_tree_setup_ok, "setup() must build the StartUI hierarchy before add_child()")
 			ui.open()
 			ui.set_load_available(false)
+			phase = 1
+			frames = 0
+			return false
+		1:
 			_check_default_layout()
 			ui.close()
 			_expect(not ui.visible, "close() must keep hiding StartUI")
@@ -52,22 +59,22 @@ func _process(_delta: float) -> bool:
 			ui.set_load_available(true)
 			_set_logical_viewport(NARROW_VIEWPORT)
 			ui._sync_viewport()
-			phase = 1
-			frames = 0
-			return false
-		1:
-			_check_narrow_layout()
-			_scroll_to_bottom()
 			phase = 2
 			frames = 0
 			return false
 		2:
-			_check_bottom_reachability()
-			_trigger_signals()
+			_check_narrow_layout()
+			_scroll_to_bottom()
 			phase = 3
 			frames = 0
 			return false
 		3:
+			_check_bottom_reachability()
+			_trigger_signals()
+			phase = 4
+			frames = 0
+			return false
+		4:
 			_check_signal_contract()
 			_finish()
 			return true
@@ -182,7 +189,8 @@ func _trigger_signals() -> void:
 
 func _check_signal_contract() -> void:
 	_expect(origin_signal_count == 1, "origin_selected must emit exactly once for one origin activation")
-	_expect(emitted_origin == origins[EXPECTED_ORIGINS - 1], "origin_selected must forward the exact supplied origin dictionary contents")
+	_expect(emitted_origin == origins[EXPECTED_ORIGINS - 1], "origin_selected must forward the supplied origin dictionary")
+	_expect(str(emitted_origin.get("post_setup_marker", "")) == "same supplied origin", "origin_selected must preserve post-setup mutations on the supplied origin dictionary")
 	_expect(load_signal_count == 1, "load_requested must emit exactly once for one load activation")
 
 
