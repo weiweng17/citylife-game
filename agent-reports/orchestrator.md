@@ -6,48 +6,56 @@
 - Branch/worktree: `orchestrator/multi-agent-bootstrap`
 - Status: DONE / ACTIVE COORDINATION
 
-## Summary
-The multi-agent control layer is established and the first repository-audit wave has now produced three accepted reports: Gameplay, Scene/UI and NPC/Content. QA/Build repository health audit remains outstanding.
+## Current review summary
+Reviewed the latest Gameplay, Scene/UI, NPC/Content and QA worker branches against `docs/agents/TASK_BOARD.md` and `docs/agents/FILE_OWNERSHIP.md`.
 
-The coordinator has moved the board into the first repair wave without waiting for user product decisions where the safe choice is clear:
-- `GAME-FIX-001`: separate normal daily event closure from annual progression.
-- `UI-FIX-001`: integrate active NPC rendering with the current independent-location presentation instead of static sticker-like sprites.
+### GAME-FIX-001
+- Worker report: `NEEDS_REVIEW`.
+- Branch diff against the coordination branch is limited to `scripts/Game.gd`, `tools/verify_event_year_separation.gd`, and `agent-reports/gameplay.md`.
+- The task preserves `_year_pass()` as the explicit annual path while removing ordinary event/no-event fallthrough into annual progression.
+- No fresh Godot runtime evidence was claimed.
+- Orchestrator decision: repository-level acceptance is complete; task advanced to `DONE`. Runtime execution belongs to QA/local acceptance.
+- Next gameplay task queued on isolated branch: `GAME-FIX-002` / `agent/game-fix-002-need-zero-cadence`.
 
-Both repair tasks have isolated branches and non-overlapping high-conflict ownership (`Game.gd` vs `LocationManager.gd`).
+### UI-FIX-001
+- Worker report: `NEEDS_REVIEW`.
+- Branch is current with the coordination baseline at review time and changes only the declared task paths: `LocationManager.gd`, `ActiveNpcVisual.gd`, a narrow regression, and the Scene/UI report.
+- Repository structure preserves the click/talk layer and adds a grounded visual helper with walk-capable resources where available.
+- No rendered Godot evidence exists yet, and the task acceptance explicitly requires rendered grounding/scale/depth coherence.
+- Orchestrator decision: keep `UI-FIX-001` at `NEEDS_REVIEW`; do not mark visual acceptance complete without rendered evidence.
+- To keep the lane productive without overlapping the locked files, queued `UI-FIX-002` / `agent/ui-fix-002-home-bed-seam` with presentation-only ownership.
 
-## Autonomous operating policy
-The user requested regular reporting and automatic development with minimal judgment burden. Therefore the default policy is:
-- continue automatically when scope/ownership/acceptance are clear;
-- prefer the lowest-risk reversible implementation when multiple solutions exist;
-- do not ask the user to choose between routine engineering options;
-- escalate only when a choice materially changes product direction, deletes/overwrites user work, requires unavailable credentials/permissions, or requires an execution environment that is not available;
-- keep `main` untouched until reviewed integration is ready;
-- never represent repository inspection as fresh Godot/browser evidence.
+### NPC-CONTENT-002
+- Worker report: `NEEDS_REVIEW`, but it correctly found a defect in its own prior hospital rename.
+- q3 copy is accepted: it now matches the existing `store_buy` mechanic without claiming a gift handoff.
+- The hospital rename from `老张` to `老周` is not accepted because `老周` is already an established core NPC, recreating the identity ambiguity.
+- Orchestrator decision: task returned to `IN_PROGRESS` on the same isolated branch with one minimal content-only correction: replace only the hospital acquaintance text with a non-core generic identity such as `隔壁床的病友`. No schema/logic change is authorized.
 
-An hourly orchestration/reporting automation has been enabled outside the repository. Each run should inspect current branches/reports, update board state, queue the next safe work and report concise progress.
+### QA-003
+- Worker report: `NEEDS_REVIEW`.
+- Branch diff is report-only, respecting QA-003 ownership.
+- The report classifies all current `verify*.gd` scripts, separates headless/windowed/deprecated cases, proposes a six-script minimum gate, and explicitly avoids claiming fresh execution.
+- Orchestrator decision: accepted and advanced to `DONE`.
+- Next QA task queued on isolated branch: `QA-004` / `agent/qa-004-repair-wave-acceptance-matrix`, report-only, to prepare an exact branch/SHA-specific acceptance matrix for the current repair wave.
 
-## First-wave audit review
-- GAME-001: accepted. Worker branch changed only `agent-reports/gameplay.md`.
-- UI-001: accepted. Worker branch changed only `agent-reports/scene-ui.md`.
-- NPC-001: accepted. Worker branch changed only `agent-reports/npc-content.md`.
-- QA-001: still READY / not started at latest check.
+## Branches created this review
+- `agent/game-fix-002-need-zero-cadence`
+- `agent/ui-fix-002-home-bed-seam`
+- `agent/qa-004-repair-wave-acceptance-matrix`
 
-## Highest-priority accepted findings
-1. Critical gameplay seam: normal independent-location regular event closure can fall into `_year_pass()`, applying annual progression inside the minute/day loop.
-2. Active NPC presentation uses a static `Button + TextureRect` path and does not attach existing walk resources in the formal independent-location experience, causing the reported sticker-like look.
-3. Home sleep composition remains visually unaccepted; lower-body/bed foreground blending is still mixed.
-4. Need-zero penalty cadence and terminal-state evaluation need follow-up after the critical event/year separation fix.
+All were created from the current `orchestrator/multi-agent-bootstrap` coordination branch. No changes were made to `main`.
 
-## Current branches
-- Coordination: `orchestrator/multi-agent-bootstrap`
-- Critical gameplay repair: `agent/game-fix-001-daily-event-separation`
-- Active NPC visual repair: `agent/ui-fix-001-active-npc-integration`
-- QA repository audit: `agent/qa-001-repo-health`
-- Future runtime acceptance: `codex/qa-002-runtime-acceptance` (blocked until QA-001 package + actual Godot execution context)
+## Current lane state
+- Gameplay: `GAME-FIX-002` READY.
+- Scene/UI: `UI-FIX-001` NEEDS_REVIEW pending rendered evidence; non-overlapping `UI-FIX-002` READY.
+- NPC/Content: `NPC-CONTENT-002` IN_PROGRESS with one minimal text correction remaining.
+- QA/Build: `QA-002` remains BLOCKED on actual Godot/browser execution; `QA-004` READY provides safe repository-only work meanwhile.
 
-## Validation
-- First-wave branch hygiene checked with GitHub compare: accepted workers only modified their own reports.
-- No fresh Godot runtime, terminal test, Web export or browser validation has been performed by the orchestrator.
+## Validation and evidence policy
+- GitHub branch/report/diff inspection only was performed in this orchestration pass.
+- No Godot process, Web export, browser runtime, screenshot capture, or local command execution was performed or implied.
+- `main` was not modified.
+- Worker source files were not edited by the orchestrator.
 
 ## Handoff
-Continue from `docs/agents/TASK_BOARD.md`. Do not pause for user approval on routine engineering decisions. Automatically take the next unblocked, non-conflicting task, preserve branch isolation, and only surface decisions that truly require user authority.
+Continue from `docs/agents/TASK_BOARD.md`. Workers should take the highest-priority READY/IN_PROGRESS task assigned to their lane and remain inside the declared writable scope. The orchestrator should next review the NPC correction and any new GAME-FIX-002 / UI-FIX-002 / QA-004 reports, while keeping UI-FIX-001 visual acceptance pending until actual rendered evidence is available.
