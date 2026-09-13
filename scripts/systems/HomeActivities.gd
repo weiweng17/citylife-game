@@ -11,10 +11,25 @@ var rest_detail: String = ""
 
 func _define_spots() -> Dictionary:
 	return {
-		"rest": {"position": Vector2(430, 330), "facing": Vector2(-1, 0), "label": "床 · 休息", "detail": "2小时 · 健康+12 心情+8"},
-		"study": {"position": Vector2(690, 365), "facing": Vector2(0, -1), "label": "书桌 · 学习", "detail": "1小时 · 技能+3 心情−3"},
-		"meal": {"position": Vector2(930, 440), "facing": Vector2(1, -0.35), "label": "厨房 · 做饭", "detail": "30分钟 · 20元 健康+5"},
-		"leave": {"position": Vector2(920, 550), "facing": Vector2(1, 0), "label": "房门 · 出门", "detail": "前往城南地铁站"},
+		# position 是角色实际走到的脚底锚点；display_position 是进入姿态后可选的
+		# 表现位置。其余字段让 LocationManager 不必知道"床/书桌"这些业务名。
+		"rest": {
+			"position": Vector2(430, 330), "display_position": Vector2(282, 434),
+			"facing": Vector2(-1, 0), "pose": "sleep", "depth": 518,
+			"interactionType": "bed", "label": "床 · 休息", "detail": "2小时 · 健康+12 心情+8",
+		},
+		"study": {
+			"position": Vector2(690, 365), "facing": Vector2(0, -1), "pose": "sit", "depth": 402,
+			"interactionType": "desk", "label": "书桌 · 学习", "detail": "1小时 · 技能+3 心情−3",
+		},
+		"meal": {
+			"position": Vector2(930, 440), "facing": Vector2(1, -0.35), "pose": "interact", "depth": 488,
+			"interactionType": "kitchen", "label": "厨房 · 做饭", "detail": "30分钟 · 20元 健康+5",
+		},
+		"leave": {
+			"position": Vector2(920, 550), "facing": Vector2(1, 0), "pose": "interact", "depth": 565,
+			"interactionType": "door", "label": "房门 · 出门", "detail": "前往城南地铁站",
+		},
 	}
 
 

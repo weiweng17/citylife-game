@@ -10,6 +10,7 @@ signal npc_requested(npc_id: String)
 const PLAYER_SHEET := "res://assets/characters/sprites/gameplay/protagonist_walk_4x4.png"
 const ActivityPropScript := preload("res://scripts/world/ActivityProp.gd")
 const MoveMarkerScript := preload("res://scripts/world/MoveMarker.gd")
+const HomeInteractionVisualScript := preload("res://scripts/world/HomeInteractionVisual.gd")
 const PLAYER_FRAME := 256
 const PLAYER_SPEED := 260.0
 const NPC_HIRES_SHEETS := {
@@ -136,7 +137,9 @@ const OCCLUDERS := {
 		{"points": [Vector2(35, 287), Vector2(163, 256), Vector2(255, 302), Vector2(387, 464), Vector2(373, 513), Vector2(212, 554), Vector2(70, 410)], "depth": 514},
 		{"points": [Vector2(430, 382), Vector2(565, 340), Vector2(666, 397), Vector2(660, 437), Vector2(528, 480), Vector2(439, 415)], "depth": 480},
 		{"points": [Vector2(365, 495), Vector2(424, 483), Vector2(477, 541), Vector2(791, 474), Vector2(826, 489), Vector2(826, 596), Vector2(461, 719), Vector2(361, 632)], "depth": 650},
-		{"points": [Vector2(574, 166), Vector2(648, 154), Vector2(796, 216), Vector2(794, 326), Vector2(744, 341), Vector2(736, 253), Vector2(577, 194)], "depth": 341},
+		# 书桌与厨房柜体在互动时盖住角色腿部，建立前后空间关系。
+		{"points": [Vector2(574, 166), Vector2(648, 154), Vector2(796, 216), Vector2(794, 326), Vector2(744, 341), Vector2(736, 253), Vector2(577, 194)], "depth": 430},
+		{"points": [Vector2(950, 250), Vector2(1280, 250), Vector2(1280, 585), Vector2(1003, 585), Vector2(1003, 428), Vector2(1078, 394), Vector2(958, 325)], "depth": 505},
 	],
 	"subway": [
 		{"rect": Rect2(165, 60, 150, 485), "depth": 535},
@@ -216,11 +219,15 @@ var player_shadow: Sprite2D
 var player_feedback: Label
 var activity_prop: Node2D
 var move_marker: Node2D
+var home_interaction_visual: Node2D
 var player_target: Vector2 = Vector2.ZERO
 var npc_layer: Control
 var foreground_layer: Control
 var npc_signature: String = ""
 var current_lighting: Color = Color.WHITE
+var player_pose: String = "idle"
+var interaction_anchor: Dictionary = {}
+var _pose_time := 0.0
 
 func _ready() -> void:
 	layer = 0
@@ -289,6 +296,14 @@ func _build_ui() -> void:
 	activity_prop.visible = false
 	activity_prop.z_index = 8
 	root.add_child(activity_prop)
+
+	# 睡眠时盖住躯干的被子前景。它只在床上姿态时出现。
+	home_interaction_visual = HomeInteractionVisualScript.new()
+	home_interaction_visual.name = "HomeSleepDuvet"
+	home_interaction_visual.position = Vector2(282, 442)
+	home_interaction_visual.z_index = 518
+	home_interaction_visual.visible = false
+	root.add_child(home_interaction_visual)
 
 	move_marker = MoveMarkerScript.new()
 	move_marker.name = "MoveMarker"
@@ -456,7 +471,12 @@ func _refresh() -> void:
 	action_button.text = "在%s行动" % str(info.get("name", current_location)).split(" · ")[0]
 	var spawn: Vector2 = _clamp_walk_position(info.get("spawn", Vector2(640, 460)))
 	player_sprite.position = spawn
-	player_sprite.modulate = current_lighting
+	player_sprite.modulate = _player_light_color()
+	player_sprite.rotation = 0.0
+	player_pose = "idle"
+	interaction_anchor = {}
+	if home_interaction_visual:
+		home_interaction_visual.set_sleeping(false)
 	_update_player_grounding()
 	player_target = spawn
 	walk_path.clear()
@@ -578,17 +598,75 @@ func face_direction(direction: Vector2) -> void:
 	player_sprite.animation = _animation_for_direction(direction)
 	player_sprite.frame = 0
 
-func set_activity_feedback(text: String, active_feedback: bool, activity_id: String = "") -> void:
+func set_activity_feedback(text: String, active_feedback: bool, activity_id: String = "", anchor: Dictionary = {}) -> void:
 	if player_feedback == null or player_sprite == null:
 		return
 	player_feedback.text = text
 	player_feedback.visible = active_feedback
-	player_sprite.scale = Vector2(0.33, 0.31) if active_feedback else Vector2(0.32, 0.32)
+	if active_feedback:
+		_apply_interaction_pose(anchor)
+	else:
+		_restore_free_pose()
 	if player_shadow != null:
-		player_shadow.modulate.a = 0.82 if active_feedback else 1.0
+		player_shadow.modulate.a = 0.70 if active_feedback and player_pose != "sleep" else (0.0 if player_pose == "sleep" else 1.0)
 	if activity_prop != null:
 		activity_prop.setup(activity_id)
+		# 床上姿态已有被子和露出的头部；把"手持枕头"留着反而像漂浮道具。
+		if player_pose == "sleep":
+			activity_prop.visible = false
 	_update_player_grounding()
+
+
+func _apply_interaction_pose(anchor: Dictionary) -> void:
+	interaction_anchor = anchor.duplicate(true)
+	player_pose = str(anchor.get("pose", "interact"))
+	_pose_time = 0.0
+	player_sprite.stop()
+	face_direction(anchor.get("facing", Vector2.DOWN))
+	player_sprite.rotation = 0.0
+	if player_pose == "sleep":
+		# 睡眠阶段改用床面锚点，保留头部并交给被子前景遮住躯干。
+		player_sprite.position = anchor.get("display_position", player_sprite.position)
+		player_sprite.rotation = PI * 0.5
+		player_sprite.scale = Vector2(0.46, 0.39)
+		player_sprite.z_index = int(anchor.get("depth", 518)) - 1
+		if home_interaction_visual:
+			home_interaction_visual.position = player_sprite.position + Vector2(0.0, 8.0)
+			home_interaction_visual.z_index = int(anchor.get("depth", 518))
+			home_interaction_visual.set_sleeping(true)
+	elif player_pose == "sit":
+		player_sprite.scale = _depth_scale(player_sprite.position.y) * 0.91
+		player_sprite.position += Vector2(0.0, 5.0)
+		player_sprite.z_index = int(anchor.get("depth", player_sprite.position.y))
+	else:
+		player_sprite.scale = _depth_scale(player_sprite.position.y) * Vector2(1.0, 0.96)
+		player_sprite.z_index = int(anchor.get("depth", player_sprite.position.y))
+
+
+func _restore_free_pose() -> void:
+	if player_pose == "sleep" and interaction_anchor.has("position"):
+		# 起床回到床边，而不是在床中央直接站起。
+		player_sprite.position = interaction_anchor["position"]
+		player_target = player_sprite.position
+	player_pose = "idle"
+	interaction_anchor = {}
+	_pose_time = 0.0
+	player_sprite.rotation = 0.0
+	player_sprite.scale = _depth_scale(player_sprite.position.y)
+	if home_interaction_visual:
+		home_interaction_visual.set_sleeping(false)
+
+
+func _depth_scale(y: float) -> Vector2:
+	# 以后景到前景的可行走地带，人物高度从约 75px 平滑变到 88px。
+	var t := clampf((y - 280.0) / 350.0, 0.0, 1.0)
+	var value := lerpf(0.292, 0.342, t)
+	return Vector2(value, value)
+
+
+func _player_light_color() -> Color:
+	# 室内暖光 + 少量中性灰，弱化立绘的纯白和过强边缘反差。
+	return current_lighting.lerp(Color(0.92, 0.90, 0.86, 1.0), 0.22)
 
 func _process(delta: float) -> void:
 	_sync_web_layout()
@@ -596,6 +674,7 @@ func _process(delta: float) -> void:
 		return
 	if input_blocked:
 		stop_walking()
+		_animate_pose(delta)
 		return
 	var direction: Vector2 = Input.get_vector("ui_left", "ui_right", "ui_up", "ui_down")
 	if Input.is_key_pressed(KEY_A): direction.x -= 1.0
@@ -609,6 +688,9 @@ func _process(delta: float) -> void:
 		player_target = player_sprite.position
 		return
 	_advance_path(delta)
+	if player_pose != "walk":
+		player_pose = "idle"
+	_animate_pose(delta)
 
 func _advance_path(delta: float) -> void:
 	var remaining := PLAYER_SPEED * minf(delta, 0.033)
@@ -642,11 +724,27 @@ func _move_player(direction: Vector2, delta: float) -> void:
 		player_sprite.animation = anim
 	if not player_sprite.is_playing():
 		player_sprite.play()
+	player_pose = "walk"
+
+
+func _animate_pose(delta: float) -> void:
+	if player_sprite == null or player_pose == "walk":
+		return
+	_pose_time += delta
+	if player_pose == "sleep":
+		# 呼吸只改变极小比例，角色保持躺卧而不是播放站立 idle。
+		var pulse := sin(_pose_time * 1.6) * 0.012
+		player_sprite.scale = Vector2(0.46 + pulse, 0.39 - pulse * 0.4)
+	elif player_pose == "interact":
+		player_sprite.scale = _depth_scale(player_sprite.position.y) * Vector2(1.0, 0.96 + sin(_pose_time * 3.0) * 0.012)
 
 func _update_player_grounding() -> void:
 	if player_sprite == null:
 		return
-	player_sprite.z_index = maxi(5, int(player_sprite.position.y))
+	if player_pose == "idle" or player_pose == "walk":
+		player_sprite.scale = _depth_scale(player_sprite.position.y)
+		player_sprite.z_index = maxi(5, int(player_sprite.position.y))
+		player_sprite.modulate = _player_light_color()
 	if player_shadow != null:
 		player_shadow.position = player_sprite.position + Vector2(0.0, 4.0)
 		player_shadow.z_index = maxi(4, player_sprite.z_index - 1)

@@ -697,7 +697,7 @@ func _update_near_target() -> void:
 
 ## 活动公用的开头：上锁 + 头顶反馈 + 进度条。所有场景活动都从这里走，
 ## 别再各自抄一份（此前三处各抄一份，连"哪些活动脚本要上锁"都对不上）。
-func _begin_activity(prompt_label: Label, progress_text: String, feedback_text: String, activity_id: String) -> void:
+func _begin_activity(prompt_label: Label, progress_text: String, feedback_text: String, activity_id: String, anchor: Dictionary = {}) -> void:
 	activity_running = true
 	location_sys.input_blocked = true
 	home_activities.blocked = true
@@ -708,7 +708,7 @@ func _begin_activity(prompt_label: Label, progress_text: String, feedback_text: 
 	hospital_activities.blocked = true
 	alley_activities.blocked = true
 	rooftop_activities.blocked = true
-	location_sys.set_activity_feedback(feedback_text, true, activity_id)
+	location_sys.set_activity_feedback(feedback_text, true, activity_id, anchor)
 	for step in range(10):
 		prompt_label.text = "%s… %d%%" % [progress_text, (step + 1) * 10]
 		await get_tree().create_timer(0.12).timeout
@@ -745,7 +745,8 @@ func _on_home_activity(id: String) -> void:
 		return
 	var progress_words := {"rest": "睡意渐浓", "study": "书页翻动", "meal": "锅里咕嘟作响"}
 	var activity_icons := {"rest": "Zzz", "study": "专注中", "meal": "烹饪中"}
-	await _begin_activity(home_activities.prompt, str(progress_words.get(id, "进行中")), str(activity_icons.get(id, "进行中")), id)
+	# 先由 SpotActivities 自动走到 position，再把完整锚点交给地点表现层处理姿态与景深。
+	await _begin_activity(home_activities.prompt, str(progress_words.get(id, "进行中")), str(activity_icons.get(id, "进行中")), id, home_activities.SPOTS[id])
 	var feedback: String = ""
 	var slept_through := false
 	match id:
