@@ -244,9 +244,23 @@
 
 ### 已知未处理（如实记下）
 
-- `_on_home_activity` / `_do_work_shift` / `_do_negotiate` 三处的"锁输入 → 进度 → 结算 → 解锁"样板代码重复，值得抽一个 `_run_activity()`；本轮没动（行为已被测试锁住，但重构放到下一轮单独做，避免混在功能提交里）。
 - 阶段 3 的**人工验收**没做：三条任务在真实试玩里是否顺、文案是否突兀、HUD 那行会不会太长，自动测试替代不了。
 - `Rules.gd` 那套年度经济与本系统仍未打通（两套经济并存，阶段 2 遗留）。
+
+## 2026-09-13 阶段 4 单元 1：公园互动 + 活动脚手架重构
+
+阶段 4 的第一块内容，先把单元 3 欠下的 `_run_activity()` 重构还掉，再给只有一张地图和一个 NPC 的公园加上玩法。
+
+- 提交：`75052d7 feat: park interactions (bench break, pond rain-watching) and shared activity scaffold`（4 文件）。
+- **重构（自审遗留债）**：`Game` 抽出 `_begin_activity(prompt_label, progress_text, feedback_text, activity_id)` / `_end_activity()`——统一"锁输入 → 进度 → 结算 → 解锁"脚手架；`_on_home_activity` / `_do_work_shift` / `_do_negotiate` 三处样板全部改走这条路径。**行为被既有测试锁住**，15 套全员回归全绿确认无回归。
+- **公园内容**：新增 `scripts/systems/ParkActivities.gd`（仿其余交互层的标准模式，两个互动点）：
+  - `bench` 长椅 · 歇脚（1020, 520）：30 分钟，精力+20 心情+5——**刻意不触发每日 sleep 标记**，白天歇脚不算睡觉；
+  - `pond` 池塘边 · 看雨（300, 545）：20 分钟，心情+8。
+  - 结算文案延续《众生》调子（数值在括号里）。截图时发现池塘反馈文案换行后"钟）"单字孤行，缩短一字后单行放下。
+- `Game` 接入：`park_activities` 初始化 + `_process` 闸门 + `_on_park_activity(id)`。
+- 新增 `tools/verify_park.gd`（4 组：两点从出生点可达、长椅只结算一次且数值/时长正确、池塘数值正确、交互层随地点显隐）、`tools/capture_park.gd`（两张截图，等 `activity_running` 落下再截——沿用单元 2 的时序教训）。
+- 验证：`verify_park` 4 组 0 失败；**15 套全员回归全绿**（navigation `6646/0`、home_edges `6252/0`，其余 `exit=0`）。
+- 尚未做：公园 NPC 对话内容还是旧的；咖啡馆/医院/旧巷/天台尚未扩展；公园与任务链没有交叉（任务只找老张和小雨）。
 
 ## 尚未完成
 
