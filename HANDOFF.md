@@ -183,6 +183,20 @@
 - **接手第一步**：读 `docs/TODAY_HANDOFF_2026-09-13.md`，然后按 `docs/QA_2026-09-13.md` 末尾的命令跑一遍回归。
 - **阶段 2 出口尚未达成**：只剩"无调试跳转走完 20–30 分钟完整流程"的人工试玩验收。自动部分由 `tools/verify_day_flow.gd` 覆盖，但游戏内 1 秒＝2 分钟，节奏与观感只能靠人眼判断。
 
+## 2026-09-13 阶段 3 开工：NPC 关系反馈（单元 1）
+
+第 3 阶段第一块代码。目标是把"找得到、聊得上"变成"聊出关系"，同时不破坏任何已有测试。
+
+- 提交：`53a06cb feat: NPC relationship feedback (affinity, daily limit, tiers)`（6 文件）。
+- 新增 `scripts/systems/NpcRelations.gd`：每人一条好感值（0–100 封顶），**每天只第一次交谈 +4**；档位 陌生人 0 / 认识 20 / 熟络 45 / 朋友 70，升档回补一点心情并给一句叙述。纯逻辑 `RefCounted`，不挂树、不落盘。
+- `scripts/GameState.gd` 增 `relations` / `talk_day`，塞进现有 `game_state` 里，**未新增存档键**，旧档可读、新状态随存档往返。
+- `scripts/systems/LocationManager.gd`：热点标签/悬停提示带档位（`小雨（熟络）`），档位变则重建热点；**`_clear_npcs` 改为先 `remove_child` 再 `queue_free`**。
+- `scripts/Game.gd`：交谈结果**在 `_on_dialog_finished` 才结算**（中途关掉不算），重复交谈追加"今天已经聊过了"，升档弹提示与叙述。
+- 新增 `tools/verify_npc.gd`（8 组）与 `tools/capture_npc.gd`（3 张截图，输出 `build/qa/npc_*.png`）。
+- 验证：`verify_npc` 8/8 通过；**12 套全员回归全绿**（navigation `6646/0`、home_edges `6252/0`，其余 `exit=0`）；截图确认 `陌生人 → 熟络` 标签实时变化。
+- **踩坑（重要）**：`queue_free()` 只标记不立即离树，节点到帧末才走；`_clear_npcs` 原来只调 `queue_free()`，导致重建后同一帧按名字取到的是待删除的旧节点，标签显示上一档位。凡"同名节点重建"都要 `remove_child` 再 `queue_free`；测试按名字找子节点要跳过 `is_queued_for_deletion()`。已写进 `docs/ARCHITECTURE.md` 模块边界第 7 条。
+- 尚未做：工作技能成长、首批连续任务；关系目前只由"每天聊一次"推动，无对话选项/事件加成/门槛解锁；可交谈的仅当前日程表里的 NPC。
+
 ## 尚未完成
 
 - 全部行走方向的身体比例与动画接地视觉抽查：碰撞与可达已由 `verify_home_edges.gd` 自动覆盖，姿态观感仍需人工看截图与试玩。
@@ -190,6 +204,7 @@
 - 2026-09-13 已增加最小头顶互动反馈，但尚不是正式姿态/物品/音效系统。
 - 房门等"触发即切图"的互动，转身朝向与切图同帧发生，玩家看不到转身；当前朝向只对不切图的家具（床/书桌/厨房）有实际观感。
 - NPC 尺寸、脚点、方向动画尚未全面统一。
+- NPC 关系（阶段 3 单元 1）目前只由"每天聊一次"推动，**没有对话选项、没有事件加成、没有关系门槛解锁的内容**；`朋友` 档位暂时只是显示与一次心情回补。工作技能成长、首批连续任务尚未开始。
 - 出租屋以外的碰撞及遮挡多数仍为矩形近似，不能宣称全地图无视觉穿模。
 - 阶段 2 的完整一天闭环已实现：家→地铁→公司工作→便利店购买→回家睡觉跨到次日。**只剩"无调试跳转走完 20–30 分钟完整流程"的人工试玩验收没做**——这一项自动测试替代不了：游戏内 1 秒＝2 分钟，现实里走完一天要 6 分钟，无头脚本只能覆盖切图与结算。
 - 过夜目前只有"睡到明早 7:30"一种；还没有"被闹钟叫醒/熬夜加班/失眠"这类分支。
@@ -205,7 +220,14 @@
 3. [完成] 公司增加工作活动、工资/健康/心情结算。
 4. [完成] 便利店增加购买与背包消耗。
 5. [完成] 回家睡眠触发次日，并验证中途存档恢复。
-6. [待人工] 无调试跳转走完 20–30 分钟完整流程的试玩验收；通过后阶段 2 出口达成，可进入阶段 3（NPC 与成长）。
+6. [待人工] 无调试跳转走完 20–30 分钟完整流程的试玩验收；通过后阶段 2 出口达成。
+
+阶段 3「NPC 与成长」：
+
+7. [完成] NPC 实体化与交谈：日程热点、点击开聊、带档位的对话标题。
+8. [完成] 关系反馈：好感/档位/每日一次/升档叙述/存档往返。
+9. [待做] 工作技能成长，让关系与技能影响后续选择。
+10. [待做] 首批连续任务：不重复结算、不形成死路。
 
 ## 常用命令
 
@@ -217,7 +239,9 @@ $godotExe = 'F:\Downloads\Godot_v4.7.2-stable_win64.exe\Godot_v4.7.2-stable_win6
 & $godotExe --headless --path . --script res://tools/verify_day_cycle.gd
 & $godotExe --headless --path . --script res://tools/verify_day_flow.gd
 & $godotExe --headless --path . --script res://tools/verify_locations.gd
+& $godotExe --headless --path . --script res://tools/verify_npc.gd
 & $godotExe --path . --rendering-method gl_compatibility --script res://tools/capture_store.gd
+& $godotExe --path . --rendering-method gl_compatibility --script res://tools/capture_npc.gd
 & $godotExe --path . --rendering-method gl_compatibility --script res://tools/verify_home_input.gd
 # 排查"点了没反应"：打印命中控件与盖在该点上的全部控件（只读，不做断言）
 & $godotExe --path . --rendering-method gl_compatibility --script res://tools/diag_click.gd
