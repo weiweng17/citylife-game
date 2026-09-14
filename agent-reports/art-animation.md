@@ -13,246 +13,230 @@
 - Priority: HIGH
 - Task type: player-visible art candidate production + integration manifest
 
-## Scope / contract respected
-- Latest coordination task board was re-read before production.
-- Repository writable scope for this pass is **only** `agent-reports/art-animation.md`.
-- No `assets/**`, scene, script, gameplay, UI, data, coordination or `main` file is modified by 05 in this task.
-- Chat image-generation output is the actual visual candidate deliverable for this pass; it is **not** claimed to exist in GitHub or Godot.
-- No Godot, Web export, browser, screenshot-in-engine, animation playback or runtime validation was performed.
+## Scope / contract compliance
+- Re-read latest `TASK_BOARD.md`, `FILE_OWNERSHIP.md`, `WEB_AGENT_LAUNCHPAD.md`, and this lane report before production.
+- Repository writable scope respected: **only `agent-reports/art-animation.md` changed**.
+- No `assets/**`, scene, script, gameplay, UI, data, coordination, or `main` edit was made.
+- Actual visual candidate output was generated in the 05 chat, as required. It is **not** claimed to exist in GitHub, Godot, a Web export, or the running game.
+- No Godot 4.7.2, Web export, browser, rendered screenshot, animation playback, or exact-SHA runtime validation was performed.
 
 # ART-PROD-002 — First-hour embodied action candidate pack
 
-## 1. Production goal
+## 1. Generated candidate output
 
-Produce one coherent first-pass candidate sheet covering the three highest-frequency missing first-hour player actions:
+Chat-generated candidate contact sheet:
+- working name: `ART002_first_hour_actions_contact_sheet_A`;
+- image-generation id: `9366ef7c-33c5-425e-8297-56b11836a268`;
+- actual generated image metadata checked in this task: **RGBA, transparent background, 1448 × 1086 px**;
+- visual layout: **4 columns × 3 action rows**;
+- row 0: office workstation typing;
+- row 1: home desk study / reading;
+- row 2: home kitchen cooking / stirring;
+- column semantics for every row:
+  1. `enter / approach-contact`,
+  2. `contact / loop_A`,
+  3. `loop_B`,
+  4. `exit / disengage`.
 
-1. `work_type` — office workstation typing;
-2. `study_read` — home desk study / reading;
-3. `cook_stir` — home kitchen cooking / stirring.
+Generated candidate names:
+- `ART002_work_type_v01` — row 0;
+- `ART002_study_read_v01` — row 1;
+- `ART002_cook_stir_v01` — row 2.
 
-The goal is not final polish. The goal is to replace the current “standing body + floating programmatic prop + progress text” presentation with an animation-ready body/hand/prop contact concept that 02/Codex can later integrate and calibrate.
+This is a **key-pose/contact candidate sheet**, not a production sprite atlas. The production target remains exact `256 × 256` RGBA action cells with fixed actor/root anchors. The generated canvas is not a deterministic 1024 × 768 atlas and must not be imported as-is.
 
-## 2. Canonical player identity locked for this pack
+## 2. Canonical identity / style contract
 
-Reference identity is the current runtime protagonist, not a redesign:
+Repository identity target remains the current runtime protagonist:
 - source runtime sheet: `assets/characters/sprites/gameplay/protagonist_walk_4x4.png`;
-- runtime action cell convention: `256×256`;
-- young dark-haired protagonist;
-- messy/soft dark hair silhouette;
-- dark charcoal/gray casual jacket/hoodie silhouette, dark trousers and simple shoes;
-- compact anime/chibi game sprite proportions rather than realistic portrait proportions;
-- soft painted/non-pixel sprite rendering compatible with the current 2.5D illustrated backgrounds;
-- no costume swap, age change, facial redesign or promotional-poster rendering.
+- current action-cell convention: `256 × 256`;
+- soft painted / non-pixel 2D sprite treatment compatible with the current illustrated 2.5D backgrounds;
+- preserve the current protagonist's age, body proportions, dark-hair silhouette, clothing identity, and foot/base convention;
+- no costume redesign, age change, promotional-poster rendering, or alternate character concept.
 
-Known limitation of this web production pass: the image generator is being driven from the canonical repository/style specification and previously established character identity rather than a Godot-rendered frame capture. Therefore exact facial pixels, jacket seam details and sub-pixel silhouette continuity must remain a manual acceptance item before any asset becomes canonical.
+**Known identity limitation of this generated contact sheet:** the image generator did not receive the repository's canonical protagonist sheet as a direct visual reference in this chat. The sheet is internally coherent but should therefore be treated as **motion/contact blocking**, not final canonical face/outfit pixels. An authorized identity-lock cleanup pass is required before repository promotion.
 
-## 3. Candidate sheet layout
+## 3. Shared frame / anchor contract
 
-Chat visual deliverable name:
-- `ART002_first_hour_actions_candidate_v01`
+### Logical production cell
+- target cell: `256 × 256` RGBA;
+- fixed logical base anchor: `(128, 248)` inside each cell, matching the current runtime foot/base convention implied by `LocationManager`'s 256 px player frame and bottom-biased offset;
+- no whole-body vertical drift during loop frames;
+- no camera/background baked into actor frames;
+- furniture in the concept sheet is **contact reference geometry**, not final actor-sprite content.
 
-Logical sheet layout:
-- transparent RGBA background;
-- `4 columns × 3 rows`;
-- each logical cell: `256×256`;
-- row order:
-  - row 0 = `work_type`;
-  - row 1 = `study_read`;
-  - row 2 = `cook_stir`;
-- frame order for every row:
-  - F0 `enter`;
-  - F1 `contact / loop_A`;
-  - F2 `loop_B`;
-  - F3 `exit`.
+### Recommended production split
+- `actor` sheet;
+- `contact_prop` layer where a prop must travel with the hands (book / utensil, optionally laptop if not scene-fixed);
+- `fixture_foreground` for desk/counter/chair occlusion;
+- optional separable `fx` layer (steam, screen glow).
 
-This is intentionally a **candidate key-pose pack**, not a claim that four frames are enough for final production. F1↔F2 must already read as a believable micro-loop. If accepted, the production refinement pass may interpolate/paint additional in-betweens without changing anchor/contact geometry.
+### Initial frame budget
+| Action | Enter | Loop | Exit | Production cell | Facing |
+|---|---:|---:|---:|---|---|
+| Work typing | 3–4f | 4–6f | 3–4f | 256×256 RGBA | up / workstation-facing |
+| Study reading | 3–4f | 4–6f | 3–4f | 256×256 RGBA | up |
+| Cook / stir | 3–4f | 4–6f | 3–4f | 256×256 RGBA | 3/4 right-up |
 
-## 4. Shared geometry contract
+The 4-column generated contact sheet is a pose-language candidate, not a claim that four frames are enough for final motion.
 
-### 4.1 Cell anchor
-- fixed logical action anchor: `(128, 248)` inside every `256×256` cell;
-- the anchor corresponds to the current runtime foot/base convention implied by `LocationManager` using `offset = Vector2(-128, -248)`;
-- no frame may vertically drift the whole body around this anchor;
-- seated frames may move knees/hips, but the chair/floor relation must remain anchored to the same base reference.
+## 4. Candidate A — workstation typing
 
-### 4.2 Scale / camera
-- no camera perspective baked into the sprite;
-- no scene background inside the cells;
-- same 2.5D / three-quarter visual language as current gameplay sprites;
-- intended runtime scale remains compatible with current `0.32` player scale before scene-specific calibration.
+### Repository target
+Current office activity source:
+- `OfficeActivities.work.position = Vector2(700, 470)`;
+- facing = `Vector2(0, -1)`;
+- active `LocationManager` office background = `company_entrance_rain_night.webp`;
+- repository also contains `assets/backgrounds/dialogue/company/open_office_rain_night.webp`, which is semantically more suitable for a workstation scene.
 
-### 4.3 Contact rule
-Props are not decorative badges. In every contact/loop frame:
-- wrists terminate at the actual prop/contact surface;
-- fingers/forearms point into the laptop/book/spoon interaction;
-- prop remains at a stable contact plane across the loop;
-- no floating halo/circular UI backing;
-- desk/counter itself should be represented only by the minimum contact edge/guide needed for pose readability, because final furniture foreground comes from the scene layer.
+### Contact / motion intent
+- enter: turn/settle into chair/workstation;
+- contact: pelvis meets chair seat and torso leans naturally toward desk;
+- loop A/B: alternating shoulder/wrist/head micro-movement while **both hands remain on the keyboard/laptop plane**;
+- exit: hands release keyboard and body rises/withdraws without a root teleport.
 
-## 5. Candidate A — `work_type`
+### Critical dependency
+The candidate depicts a real workstation. The currently active office map is an **entrance**. Therefore `work_type` cannot be visually accepted against the present active office background. 02/00 must authorize the smallest workstation-capable office presentation before final calibration. 05 does not change scene composition in this task.
 
-### Runtime target
-- gameplay location: `office`;
-- current interaction anchor: player foot point `(700, 470)`;
-- facing: up `(0, -1)`;
-- current active background is `company_entrance_rain_night.webp`, which is semantically unsuitable for desk work;
-- intended visual contact target for later integration: existing `assets/backgrounds/dialogue/company/open_office_rain_night.webp`.
+## 5. Candidate B — study / reading
 
-### Four key poses
-- F0 enter: character turns/settles toward chair/workstation, hands moving toward keyboard;
-- F1 contact/loop_A: seated/forward-working pose, both hands contacting keyboard/laptop, shoulders slightly forward;
-- F2 loop_B: alternate typing pose with small wrist/shoulder/head change, laptop stays fixed;
-- F3 exit: hands leave keyboard, torso begins to rise/withdraw without teleporting.
+### Repository target
+- `HomeActivities.study.position = Vector2(690, 365)`;
+- facing = `Vector2(0, -1)`;
+- current pose is `sit`;
+- depth = `402`;
+- current home desk foreground/occluder is authored around visual depth approximately `430`.
 
-### Contact geometry
-- back/up-facing workstation pose;
-- laptop/keyboard contact is centered slightly above the torso hand line;
-- both hands must visibly land on the keyboard plane;
-- chair/desk foreground is not baked as a full object; 02/Codex should place the final desk-front occluder above the lower body.
+### Contact / motion intent
+- enter: body lowers/settles into chair and arms come forward;
+- contact: seated body genuinely meets chair/desk instead of scaling a standing frame;
+- loop A/B: open book stays on one stable desk plane while one/both hands steady/turn/read the page;
+- exit: hand retracts, torso rises, root returns to the gameplay approach point.
 
-### Known production risk
-Because the currently active office map is an entrance background, final acceptance of `work_type` requires a scene integration decision. 05 does not change that scene in this task.
+### Geometry requirement
+- return anchor after exit: `(690,365)`;
+- desk foreground should cover the appropriate lower-body segment;
+- book position/spine must not drift between loop frames.
 
-## 6. Candidate B — `study_read`
+## 6. Candidate C — cooking / stirring
 
-### Runtime target
-- gameplay location: `home`;
-- interaction anchor: player foot point `(690, 365)`;
-- facing: up `(0, -1)`;
-- home desk foreground is already represented by the detailed home occlusion geometry around the desk region.
+### Repository target
+- `HomeActivities.meal.position = Vector2(930, 440)`;
+- facing = `Vector2(1, -0.35)`;
+- current pose is `interact`;
+- depth = `488`;
+- kitchen/cabinet foreground reaches visual depth around `505`.
 
-### Four key poses
-- F0 enter: character lowers/settles toward desk, arms come forward;
-- F1 contact/loop_A: seated reading pose, open book lies on desk plane, both hands touch/steady pages;
-- F2 loop_B: subtle page-turn / hand-shift pose; book spine and desk contact stay fixed;
-- F3 exit: book closes/hand retracts and torso starts returning to standing.
+### Contact / motion intent
+- enter: body angles toward cooker and dominant hand reaches for utensil;
+- contact: utensil visibly enters the pan/pot; off-hand stabilizes the vessel/counter contact;
+- loop A/B: stirring arc changes through shoulder/elbow/wrist while pan/pot origin stays locked;
+- exit: utensil retracts and actor returns to normal standing root.
 
-### Contact geometry
-- the open book remains at one stable desk plane across F1/F2;
-- one hand may hold the page while the other traces/writes, but neither floats away from the book;
-- the body reads as genuinely seated rather than the current fake “standing sprite scaled down” pose;
-- lower legs/chair edge are allowed to be partly hidden by the existing foreground desk layer.
+### Geometry requirement
+- return anchor after exit: `(930,440)`;
+- pan/pot must remain on a single cooker plane;
+- steam should be separated as an FX layer rather than baked as the primary action cue;
+- counter foreground should occlude body/arms only where the scene geometry actually requires it.
 
-## 7. Candidate C — `cook_stir`
+## 7. Consistency defects in the generated candidate
 
-### Runtime target
-- gameplay location: `home`;
-- interaction anchor: player foot point `(930, 440)`;
-- facing: right/up `(1, -0.35)`;
-- kitchen foreground/cabinet occlusion begins immediately to the right of this interaction area, with front-depth around the existing kitchen foreground.
+The output is intentionally **not production-ready**. Known defects/risks recorded for review:
 
-### Four key poses
-- F0 enter: body angles toward counter, dominant hand reaches for spoon/utensil;
-- F1 contact/loop_A: spoon visibly enters pot; off-hand stabilizes pot/counter edge;
-- F2 loop_B: alternate stirring arc with small shoulder/elbow movement; pot position remains locked;
-- F3 exit: utensil lifts/retracts while body begins returning from the counter.
+1. Canonical identity match is not proven because no direct canonical sprite image reference was supplied to generation.
+2. Output canvas is `1448 × 1086`, not twelve exact `256 × 256` cells.
+3. Actor root/foot placement drifts between some enter/contact/exit poses and requires manual normalization.
+4. Furniture dimensions/perspective vary slightly between columns; desks/chairs/counter should not be baked into final actor cells.
+5. Work row is semantically ahead of the current active office entrance scene.
+6. Study hand/book silhouettes vary between frames; page edge and wrist continuity need cleanup.
+7. Cooking steam is oversized/variable; separate it from actor art and reduce amplitude.
+8. Cooking pan/counter placement changes slightly; lock one contact origin before any in-betweens.
+9. Small hand/finger topology requires manual cleanup before loop interpolation.
+10. Scene lighting in the generated art must be neutralized enough to accept warm-home and cool-office runtime tinting.
 
-### Contact geometry
-- 3/4 right-back pose, matching the existing right/up interaction facing;
-- pot sits on a fixed counter/stove plane;
-- utensil tip must overlap the pot interior in loop frames;
-- steam is optional secondary FX and must not carry the action readability by itself;
-- final counter-front occlusion should cover part of the hands/waist only where scene geometry requires it.
+## 8. Exact integration work required from 02 / Codex
 
-## 8. Consistency acceptance checklist for the generated candidate
+No integration was performed here. A later explicitly authorized task should:
 
-Before promotion to a repository asset, 02/Codex/manual art review must reject or correct any frame with:
-- hair silhouette changing between frames;
-- jacket/hoodie hem, sleeves or shoe design changing;
-- face/ear placement changing unnaturally;
-- hand count/finger/arm topology errors;
-- laptop/book/pot changing size or perspective during the loop;
-- body center drifting away from `(128,248)` anchor convention;
-- seated poses changing apparent character scale;
-- contact props floating or clipping through the torso;
-- lighting baked so strongly that it cannot work in both warm home and cooler office tint;
-- opaque/matte background contamination.
+### 02 Scene/UI presentation work
+1. Resolve the office workstation presentation before `work_type` integration:
+   - use/compose the existing open-office art, or
+   - provide another explicitly authorized workstation contact layer.
+2. Create fixed contact/foreground layers for:
+   - home study desk/chair;
+   - home kitchen counter/cooker;
+   - office workstation desk/chair after the office target is decided.
+3. Furniture must stay static while actor/contact props animate.
+4. Preserve existing hotspot/gameplay semantics; do not change timers, costs, rewards, or stats as part of visual integration.
 
-## 9. Exact integration work required from 02 / Codex
-
-No integration is performed here. The narrow follow-up should:
-
-1. Export/crop the accepted chat candidate into separate RGBA cells or a deterministic sprite sheet under a **new 00-authorized `assets/**` path**.
-2. Verify exact `256×256` cell boundaries and `(128,248)` base anchor; correct transparent-edge artifacts.
-3. Add action animations without replacing the existing walk sheet:
+### Codex / Godot action-state work
+Requires a new script/asset writable grant; **not performed here**.
+1. Clean/crop approved art into deterministic `256 × 256` RGBA action cells.
+2. Normalize the base anchor and eliminate transparent-edge/matte artifacts.
+3. Create action states such as:
    - `work_type_enter`, `work_type_loop`, `work_type_exit`;
    - `study_read_enter`, `study_read_loop`, `study_read_exit`;
    - `cook_stir_enter`, `cook_stir_loop`, `cook_stir_exit`.
-4. Map F1/F2 to loop playback; final frame count may expand after in-between cleanup.
-5. Connect action state to existing activity feedback only under explicit Gameplay/Scene authorization; 05 does not alter `LocationManager.gd`.
-6. Home study calibration:
-   - foot/base anchor at `(690,365)`;
-   - face up;
-   - verify desk foreground covers lower body naturally and book lands on the desk plane.
-7. Home cook calibration:
-   - base anchor at `(930,440)`;
-   - 3/4 right-up orientation;
-   - verify pot/counter contact and existing kitchen foreground depth.
-8. Office work calibration:
-   - do **not** approve final work contact against the current entrance background;
-   - use/compose `open_office_rain_night.webp` only in a later explicitly authorized Scene/UI task;
-   - recalibrate the current rough `(700,470)` work anchor to the actual workstation in that scene.
-9. Preserve current walk/idle behavior and free movement when no activity is active.
-10. Add no gameplay-value or settlement changes as part of art integration.
+4. Route current activity presentation into those animation states without modifying settlement values.
+5. Home study calibration baseline: `(690,365)`, facing up, depth `402`.
+6. Home cooking calibration baseline: `(930,440)`, 3/4 right-up, depth `488`.
+7. Office work baseline: current `(700,470)` only as an approach reference; recalibrate to the chosen workstation art.
+8. Ensure action exit restores normal player scale/root/occlusion with no visible pop.
 
-## 10. QA / validation package — prepared, not run
+## 9. Runtime / rendered validation package — PREPARED, NOT RUN
 
-Required exact-SHA Godot/Codex validation after integration:
+No verifier file was added because `TASK_BOARD.md` grants **report-only repository writes** for ART-PROD-002.
 
-### Asset checks
-- texture has alpha and no matte fringe;
-- imported sheet cell dimensions are exact;
-- no accidental filtering/region bleed between cells;
-- action names and loop ranges are deterministic.
+A later exact-SHA Codex/QA package should capture, for each of work / study / cook:
+- first enter frame;
+- first contact frame;
+- loop A;
+- loop B;
+- last exit frame;
+- immediate return to walk/idle.
 
-### Home study
-- approach to `(690,365)` still works;
-- activity starts with enter, reaches F1/F2 loop, exits cleanly;
-- book is visibly contacted by both body and desk;
-- existing desk foreground covers the correct lower-body segment;
-- cancelling/completing activity returns to normal walk/idle without anchor jump.
+Minimum rendered acceptance checks:
+- actor root/feet do not slide during loop;
+- hands stay attached to laptop/book/utensil;
+- seated pelvis does not float over chair;
+- book/pan/laptop do not change size/perspective across loop frames;
+- desk/counter foreground cuts the body at believable depth;
+- no one-frame scale/root jump during walk → action → walk;
+- first/last loop frames do not visibly snap;
+- actor identity/outfit remains constant;
+- existing activity input blocking and exactly-once settlement remain unchanged;
+- exit restores normal movement and occlusion.
 
-### Home cooking
-- approach to `(930,440)` still works;
-- spoon/pot contact holds through the loop;
-- body does not clip visibly through the cabinet foreground;
-- exit returns to the same foot point.
+Office-specific gate:
+- do **not** accept `work_type` because it animates in isolation;
+- it must be rendered against the final authorized workstation-capable office composition;
+- current company-entrance background is not sufficient workstation-contact evidence.
 
-### Office work
-- validate only after an authorized workstation-capable office composition exists;
-- typing loop must visually align to a real desk/laptop/chair;
-- current `company_entrance_rain_night.webp` is not acceptable evidence for workstation contact.
+Runtime evidence boundary:
+- Godot 4.7.2 launch: **NOT RUN**;
+- rendered 1280×720 / 960×540 captures: **NOT RUN**;
+- animation-loop playback: **NOT RUN**;
+- Web export/browser smoke: **NOT RUN**.
 
-### Runtime evidence boundary
-- Godot 4.7.2 headless/manual launch: **NOT RUN**;
-- rendered 1280×720 / 960×540 screenshots: **NOT RUN**;
-- Web export/browser smoke: **NOT RUN**;
-- animation-loop playback: **NOT RUN**.
+## 10. Recommended next narrow art task
 
-These checks belong to the single exact-SHA QA/Codex lane after integration; source/chat inspection is not a runtime PASS.
+After 00 review, safest next 05-only production step:
 
-## 11. Handoff summary
+**ART-PROD-003 — canonical identity lock + cleaned exact-256 keyframes for Home Study and Home Cook first.**
 
-Generated candidate names recorded for this pass:
-- `ART002_work_type_v01` — row 0;
-- `ART002_study_read_v01` — row 1;
-- `ART002_cook_stir_v01` — row 2;
-- combined chat sheet: `ART002_first_hour_actions_candidate_v01`.
+Reason: Home already has the strongest 2.5D contact geometry and can validate the action pipeline without waiting on the office-scene semantic fix. Work can enter final cleanup once 00/02 chooses the workstation presentation.
 
-Recommended disposition after 00 review:
-- accept as **candidate key-pose direction**, not final production-ready sprites;
-- next art step should be consistency cleanup/in-betweens only after 02/Codex confirms scene contact geometry;
-- do not generate a second divergent character design before the first candidate has been tested against Home/Office contact.
+## Files changed
+- `agent-reports/art-animation.md` only.
 
 ## Validation performed in this web task
 - coordination scope re-read: PASS;
-- runtime protagonist path / 256px cell convention re-checked in `LocationManager.gd`: PASS by source inspection;
-- Home study/cook anchors re-checked in `HomeActivities.gd`: PASS by source inspection;
-- Office work anchor and semantic background mismatch re-checked in `OfficeActivities.gd` + `LocationManager.gd`: PASS by source inspection;
-- existing `open_office_rain_night.webp` availability re-checked: PASS by repository inspection;
+- runtime player `256` px convention re-checked by source inspection: PASS;
+- Home study/cook anchors re-checked in `HomeActivities.gd`: PASS;
+- Office work anchor/background semantic mismatch re-checked in `OfficeActivities.gd` + `LocationManager.gd`: PASS;
+- generated candidate metadata checked: RGBA transparent, `1448 × 1086`: PASS;
 - repository production assets modified: **none**;
-- actual candidate art: delivered in the 05 chat for this task, not stored in GitHub;
-- Godot/render/Web validation: **not run**.
+- Godot/render/Web/browser validation: **not run**.
 
 ## Handoff
-`ART-PROD-002` requests 00-Orchestrator review at **NEEDS_REVIEW**. Repository handoff is intentionally report-only per task authorization; the visual candidate is the chat artifact and must be explicitly promoted by a later task before it becomes a repository/Godot asset.
+`ART-PROD-002` requests 00-Orchestrator review at **NEEDS_REVIEW**. The visual candidate exists in this 05 chat (generation id `9366ef7c-33c5-425e-8297-56b11836a268`) but is not a GitHub/Godot asset. Promotion to `assets/**`, scene composition, or animation-state integration requires a later explicit task grant.
