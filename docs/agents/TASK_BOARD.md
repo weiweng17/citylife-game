@@ -34,10 +34,12 @@ GAME-CONTENT-012, NPC-CONTENT-012, ART-PROD-002, AUDIO-CONTENT-002, DIRECTOR-CON
 ### GAME-CONTENT-013 — First-day onboarding gate & objective state
 - Owner: gameplay
 - Branch: `agent/game-content-013-first-day-onboarding-gate`
-- Status: READY
+- Status: IN_PROGRESS
 - Priority: HIGH
 - Player-visible/direct-unblock: YES.
 - Base: accepted GAME-CONTENT-012 exact tip `14ca63ac569680008f9f4b20cb01514672d75caa`.
+- Latest observed task tip this heartbeat: `29082502a61793e14d672695d4b5c14b3aeac933`.
+- Branch now contains task-specific changes in the authorized `scripts/Game.gd`, `scripts/systems/CafeActivities.gd` and `tools/verify_first30_flow.gd`, but `agent-reports/gameplay.md` still describes the already-accepted GAME-CONTENT-012 predecessor. Therefore GAME-CONTENT-013 is active but **not yet review-submitted**.
 - Writable:
   - `scripts/Game.gd` only for narrow onboarding state/objective/event/quest/encounter suppression, meal-before-leave gate and first-night completion;
   - `scripts/systems/CafeActivities.gd` only for onboarding/Day-1 visibility of `side_gig`;
@@ -50,7 +52,7 @@ GAME-CONTENT-012, NPC-CONTENT-012, ART-PROD-002, AUDIO-CONTENT-002, DIRECTOR-CON
 - Cafe side gig hidden during onboarding/Day 1, available Day 2+.
 - Preserve GAME-FIX-001..009 terminal ordering and GAME-CONTENT-012 values.
 - No new save schema, HUD redesign, event/quest data edit, NPC copy edit, LocationManager edit, unrelated refactor or `main` edit.
-- Current observed branch tip remains `14ca63ac569680008f9f4b20cb01514672d75caa`; no GAME-CONTENT-013 task-specific commit is reviewable yet.
+- Prepare verifier only; no Godot PASS without QA-002.
 
 ### GAME-CONTENT-014 — Ordinary city-event minute-scale path
 - Owner: gameplay
@@ -105,7 +107,7 @@ GAME-CONTENT-012, NPC-CONTENT-012, ART-PROD-002, AUDIO-CONTENT-002, DIRECTOR-CON
 
 ### Lane 03 scheduling hold
 - No new READY is created this heartbeat.
-- Reason: `NPC-CONTENT-013 — Relationship Episode Pack A` is intentionally deferred behind accepted first-day mainline implementation and the Day 2-7 Director handoff. Creating new narrative production now would outrun 01/07 and risk content churn.
+- Reason: `NPC-CONTENT-013 — Relationship Episode Pack A` is intentionally deferred behind accepted first-day mainline implementation and a corrected DIRECTOR-CONTENT-003 handoff. Creating new narrative production now would outrun 01/07 and risk content churn.
 
 ### NPC-CONTENT-013 — Relationship Episode Pack A
 - Owner: npc-content
@@ -136,7 +138,7 @@ GAME-CONTENT-012, NPC-CONTENT-012, ART-PROD-002, AUDIO-CONTENT-002, DIRECTOR-CON
 
 ### Lane 04 scheduling hold
 - No new web READY is created this heartbeat.
-- Reason: current source-bearing producers 01/05/07 are still active and QA-002 cannot freeze yet. Another report-only audit would be duplicate busywork.
+- Reason: current source/design producers 01/05/07 are still active and QA-002 cannot freeze yet. Another report-only audit would be duplicate busywork.
 
 ### QA-002 — Single frozen Codex/Local runtime package
 - Owner: qa-build (Codex/local)
@@ -224,16 +226,25 @@ GAME-CONTENT-012, NPC-CONTENT-012, ART-PROD-002, AUDIO-CONTENT-002, DIRECTOR-CON
 ### DIRECTOR-CONTENT-003 — Day 2-7 retention loop implementation map
 - Owner: game-director
 - Branch: `agent/director-content-003-day2-7-retention`
-- Status: READY
+- Status: IN_PROGRESS
 - Priority: MEDIUM
 - Player-visible/direct-unblock: YES.
-- Writable: `docs/design/DAY_2_7_RETENTION_LOOP.md`, `agent-reports/game-director.md` only.
-- Define cafe side-gig visibility/reason, Pack A candidate eligibility only after GAME-CONTENT-014, repeat reasons to revisit Old Zhang/Chenjie, map/NPC purpose, one weekly-scale motivation, HUD transition to “本周目标 + 当前行动”, and exact 01/02/03 handoffs.
-- No new gameplay systems, deferred canon decision, or production source/data/UI/art/audio edits.
-- Current observed branch tip remains accepted DIRECTOR-CONTENT-002 baseline `cebc2c868a52fcd719bbe3b5d6bd39917a17b82f`; no DIRECTOR-CONTENT-003 task-specific handoff is reviewable yet.
+- Latest reviewed worker tip: `dc6bb2f2419cb501ddb18c4a3a0d17a8b1ee55fd`.
+- Review disposition: **minimal correction required; not DONE yet**.
+- Scope compliance passed: compared from accepted DIRECTOR-CONTENT-002 baseline `cebc2c868a52fcd719bbe3b5d6bd39917a17b82f`, task delta is limited to `docs/design/DAY_2_7_RETENTION_LOOP.md` and `agent-reports/game-director.md`.
+- Product direction passed: Week-1 motivation derives from existing relation state (`laozhang >= 20 OR chenjie >= 20`), uses existing +4/day anti-spam relation semantics, keeps Pack A behind GAME-CONTENT-014, avoids new save systems/canon decisions, and keeps HUD hierarchy centered on `当前行动 + 本周目标`.
+- **Correction blocker:** the final report narrows Pack A Week-1 eligibility after schedule/time continuity review, but the design document still contains broader recommendations that conflict with that final rule. Examples: the design doc presents `park_free_class` / `park_lost_wallet` as ordinary early candidates without requiring Lao Zhou's actual presence, and describes `hospital_kiosk` as a usable hospital event even though its prose physically places Chenjie in hospital while her accepted schedule keeps her at the store. A handoff where the report “overrides” contradictory design text is not a single implementation source of truth.
+- Minimal correction, same branch/files only:
+  1. synchronize `DAY_2_7_RETENTION_LOOP.md` Pack A sections to the final A/B/C eligibility from the report;
+  2. explicitly require schedule-aware presence for Lao-Zhou park events or keep them suppressed;
+  3. suppress cafe-interview / hospital-kiosk / hospital-late-queue in Week 1 until their spatial/time continuity is corrected;
+  4. retain age gates, cross-day remembered-choice pacing, max-one ordinary event/day recommendation and GAME-CONTENT-014 blocker;
+  5. remove/replace any broader examples elsewhere in the document that contradict those rules;
+  6. refresh the report and return `NEEDS_REVIEW` with one authoritative Week-1 event eligibility table.
+- No production source/data/UI/art/audio edits. No Godot/runtime claim.
 
 ## Active ratio after this heartbeat
-Active web lanes with READY tasks: 01, 05, 07 = 3. All three are player-visible/direct-unblock work = **100%**. Lanes 02, 03 and 04 are intentionally paused pending upstream producer/director movement; Lane 06 is intentionally BLOCKED / LOCAL. CONTENT-WAVE-01 remains above the 60% minimum without duplicate audits or speculative work.
+Active web lanes: 01 IN_PROGRESS, 05 READY, 07 IN_PROGRESS = 3. All three are player-visible/direct-unblock work = **100%**. Lanes 02, 03 and 04 are intentionally held pending upstream producer/director movement; Lane 06 is intentionally BLOCKED / LOCAL. CONTENT-WAVE-01 remains above the 60% minimum without duplicate audits or speculative work.
 
 ## Deferred product decisions
 - Xiaoyu canon: roommate / romance possibility / close friend only.
