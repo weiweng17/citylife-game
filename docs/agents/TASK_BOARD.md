@@ -37,20 +37,28 @@ ART-AUDIT-001, AUDIO-AUDIT-001, DIRECTOR-001,
 - Player-visible/direct-unblock: YES.
 - Base requirement: start from accepted GAME-CONTENT-012 exact tip `14ca63ac569680008f9f4b20cb01514672d75caa`; do not reimplement its settlement values.
 - Writable:
-  - `scripts/Game.gd` only for narrow onboarding state/objective/event/quest/encounter suppression and first-night completion;
+  - `scripts/Game.gd` only for narrow onboarding state/objective/event/quest/encounter suppression, meal-before-leave gate and first-night completion;
   - `scripts/systems/CafeActivities.gd` only for onboarding/Day-1 visibility of `side_gig`;
   - `tools/verify_first30_flow.gd`;
   - `agent-reports/gameplay.md`.
-- Objective from accepted DIRECTOR-CONTENT-002:
-  1. one deterministic Day-1 onboarding state using existing `game_state.flags`/day/visited/daily state, with no new save schema;
-  2. first 30 minutes suppress ordinary EventSystem annual/random takeover, encounters/dark takeover and q1–q3 foreground progression/reward noise without deleting those systems;
-  3. first-night completion sets `flags["onboarding_complete"] = true` (or an equivalent existing-state implementation only if clearly justified);
-  4. expose a single current onboarding objective state for later UI consumption, but do not redesign HUD here;
-  5. office overtime remains optional after ordinary work and taken/skipped both rejoin the store objective;
-  6. cafe side gig hidden during onboarding/Day 1, available after onboarding/Day 2+;
-  7. preserve GAME-FIX-001..009 terminal ordering and GAME-CONTENT-012 values.
+- Objective from accepted DIRECTOR-CONTENT-002 final tip:
+  1. deterministic Day-1 spine state: home meal -> subway -> office -> **Old Zhang contact before ordinary work** -> work -> optional overtime -> store -> home first night;
+  2. meal-before-leave is the first authored gate; use existing `game_state.flags`/day/visited/daily state, no new save schema;
+  3. first 30 minutes suppress ordinary EventSystem/legacy annual takeover, Pack A, encounters/dark takeover and q1–q3 foreground evaluation/notify/reward noise without deleting those systems;
+  4. first-night successful full-night sleep sets `flags["onboarding_complete"] = true`; accidental day rollover must not substitute for completion;
+  5. expose exactly one current onboarding objective state for later UI consumption, but do not redesign HUD here;
+  6. office overtime remains optional after ordinary work and taken/skipped both rejoin the store objective;
+  7. cafe side gig hidden during onboarding/Day 1, available after onboarding/Day 2+;
+  8. preserve GAME-FIX-001..009 terminal ordering and GAME-CONTENT-012 values.
 - Forbidden: HUD/EventUI/DialogUI redesign, events/quests data edits, NPC copy, LocationManager, new save schema, unrelated Game refactor, `main`, coordination files.
 - Prepare `verify_first30_flow.gd`; do not claim Godot PASS without QA-002 execution.
+
+### GAME-CONTENT-014 — Ordinary city-event minute-scale path
+- Owner: gameplay
+- Status: **BACKLOG / NEXT AFTER GAME-CONTENT-013 REVIEW**
+- Priority: HIGH blocker for making accepted Pack A actually playable after onboarding.
+- Repository finding from final DIRECTOR-CONTENT-002: current ordinary `EventSystem` event close still flows into `_year_pass()`. Therefore accepted Pack A must **remain suppressed** even after Day 1 until Gameplay introduces a validated non-year-advancing ordinary-city-event completion path (or another narrowly equivalent fix).
+- Future task must preserve legacy annual-event year progression and terminal ordering; do not solve this by globally deleting `_year_pass()` semantics. Exact writable scope will be granted after GAME-CONTENT-013 review.
 
 ### GAME-AUDIT-011
 - Owner: gameplay
@@ -73,7 +81,8 @@ ART-AUDIT-001, AUDIO-AUDIT-001, DIRECTOR-001,
 - Player-visible/direct-unblock: YES.
 - Current task branch has no task-specific production/report delta yet; inherited report remains stale.
 - Writable: `scripts/ui/EventUI.gd`, `tools/verify_event_choice_readability.gd`, `agent-reports/scene-ui.md` only.
-- Objective: keep Pack A 2–3 choice events readable and operable at 1280×720 and 960×540 when title/body/result/choice copy is longer than legacy content. Event content must remain bounded; wrapped choice text must not overlap/disappear; all choices and continue flow remain reachable.
+- Objective: keep accepted Pack A 2–3 choice content readable and operable at 1280×720 and 960×540 when title/body/result/choice copy is longer than legacy content. Event content must remain bounded; wrapped choice text must not overlap/disappear; all choices and continue flow remain reachable.
+- This is presentation readiness only: Pack A runtime eligibility remains blocked by GAME-CONTENT-014 after onboarding.
 - Preserve EventUI public signals/lifecycle and exactly-once option/continue behavior. Do not touch `DialogUI.gd`, HUD, Game, event data, LocationManager, or coordination files.
 - Prepare a narrow static verifier; rendered PASS remains QA-002 exact-SHA work.
 
@@ -86,7 +95,7 @@ ART-AUDIT-001, AUDIO-AUDIT-001, DIRECTOR-001,
 - Accepted content commit/delta: `fe1625c7a302ac6fc0c902f55145772fa5521580`.
 - Review: exactly 20 new `e_cw01_*` ordinary-life events, 4 each for park/cafe/hospital/alley/rooftop, 3 choices each, five remembered-choice chains, more than six natural existing-NPC references, supported existing condition/effect keys only, and deferred family/roommate/Xiaoyu-romance canon untouched.
 - **Critical integration rule:** accept the **20-event append delta**, not the worker branch's whole stale `data/events.json` snapshot. The final integration must start from the accepted pre-Pack-A content baseline through NPC-CONTENT-010, preserve every existing accepted event object, then append these 20 objects. Blind whole-file replacement is forbidden.
-- Parser/Godot/runtime acceptance remains QA-002/frozen integration work.
+- Content/source acceptance does not mean runtime eligibility: Pack A remains suppressed until GAME-CONTENT-014 supplies a non-year-advancing ordinary-city-event path and QA validates it.
 
 ### NPC-CONTENT-015 — First-day NPC recognition micro-pass
 - Owner: npc-content
@@ -98,7 +107,7 @@ ART-AUDIT-001, AUDIO-AUDIT-001, DIRECTOR-001,
   - `scripts/Data.gd` **only inside `const NPCS` young-dialogue lines for `laozhang` and `chenjie`**;
   - `agent-reports/npc-content.md`.
 - Objective from accepted DIRECTOR-CONTENT-002:
-  - 老张 first-day young dialogue must clearly communicate “工作上的事以后可以来问我 / 他知道怎么在这里混”；
+  - 老张 first-day young dialogue must clearly communicate “工作上的事以后可以来问我 / 他知道怎么在这里混”，supporting his **pre-work** first-day contact;
   - 陈姐 first-day young dialogue must clearly communicate “她知道附近怎么生活 / 这里是补给锚点”；
   - preserve relationship mechanics and all dark/mid/old lines;
   - do not surface relationship threshold numbers;
@@ -123,7 +132,7 @@ ART-AUDIT-001, AUDIO-AUDIT-001, DIRECTOR-001,
 - Branch: `agent/qa-content-014-content-pack-acceptance`
 - Status: **DONE**
 - Latest accepted report tip: `7391aac43a602bb04490e20144a4354a76b45b3a`.
-- The post-`de16911e...` delta is report-only. Accepted gate now explicitly records final producer review tips, the Pack A stale-baseline hazard, the deterministic “all baseline events unchanged + exactly 20 appended” rule, livelihood static/runtime checks and the single frozen QA-002 package. No parser/Godot/render/Web/browser PASS is inferred.
+- The post-`de16911e...` delta is report-only. Accepted gate explicitly records final producer review tips, the Pack A stale-baseline hazard, deterministic “all baseline events unchanged + exactly 20 appended” rule, livelihood static/runtime checks and the single frozen QA-002 package. No parser/Godot/render/Web/browser PASS is inferred.
 
 ### QA-CONTENT-015 — Accepted producer consolidation manifest
 - Owner: qa-build
@@ -131,12 +140,13 @@ ART-AUDIT-001, AUDIO-AUDIT-001, DIRECTOR-001,
 - Status: **READY**
 - Priority: MEDIUM
 - Writable: `agent-reports/qa-build.md` only.
-- Inputs now accepted by 00:
+- Inputs accepted by 00:
   - GAME-CONTENT-012 tip `14ca63ac569680008f9f4b20cb01514672d75caa`;
   - NPC-CONTENT-012 worker tip `a86c953d475c6f6eb18d99a02ef87b2d6932e4b2`, but integration must consume content delta `fe1625c7...` semantically on top of accepted NPC-CONTENT-010;
   - UI-FIX-007 repository tip `fe2e527616e18868df0900c3b6b8b1f2db9599d4`;
-  - ART/AUDIO/DIRECTOR outputs are specifications/source candidates only unless a later integration task ingests assets/source.
-- Objective: produce the deterministic exact-input integration manifest, stale-SHA stop rules and minimum local/Codex execution order. Do not merge/cherry-pick production source in the web task and do not claim runtime PASS.
+  - DIRECTOR-CONTENT-002 final tip `cebc2c868a52fcd719bbe3b5d6bd39917a17b82f`;
+  - ART/AUDIO outputs are specifications/source candidates only unless later integration tasks ingest assets/source.
+- Objective: produce deterministic exact-input integration manifest, stale-SHA stop rules and minimum local/Codex execution order. Record **GAME-CONTENT-014 as a blocker for Pack A runtime triggering after onboarding**. Do not merge/cherry-pick production source in the web task and do not claim runtime PASS.
 - If UI-CONTENT-008 or GAME-CONTENT-013 moves before freeze, record it as pending rather than silently changing frozen inputs.
 
 ### QA-002 — Single frozen Codex/Local runtime package
@@ -148,11 +158,12 @@ ART-AUDIT-001, AUDIO-AUDIT-001, DIRECTOR-001,
   - `verify_dialog_panel_overflow.gd` + rendered 1280×720 / 960×540 for UI-FIX-007;
   - UI-CONTENT-008 verifier/render checks if accepted before freeze;
   - livelihood verifier + overtime/side-gig once/day/day-rollover/save-load/reachability;
-  - Pack A deterministic baseline-preservation/count/schema gate + one accepted Pack A event triggered from each target location;
+  - Pack A deterministic baseline-preservation/count/schema gate;
+  - **after GAME-CONTENT-014 acceptance**, verify ordinary Pack A completion does not advance a year, then trigger at least one accepted Pack A event from each target location;
   - `verify_first30_flow.gd` once GAME-CONTENT-013 is accepted;
   - all earlier terminal/UI exact-SHA regressions;
   - art contact/loop checks only after a task explicitly ingests chat assets into repository/Godot;
-  - audio source acquisition/license snapshot/trim/mix/playback/Web checks only after the accepted AUDIO-CONTENT-002 manifest is consumed by an authorized local asset task;
+  - audio source acquisition/license snapshot/trim/mix/playback/Web checks only after accepted AUDIO-CONTENT-002 manifest is consumed by an authorized local asset task;
   - Web export + real browser smoke/runtime evidence on the same frozen SHA.
 - Any candidate SHA movement invalidates affected runtime/render/browser/audio evidence.
 
@@ -182,7 +193,7 @@ ART-AUDIT-001, AUDIO-AUDIT-001, DIRECTOR-001,
 - Priority: HIGH
 - Player-visible/direct-unblock: YES.
 - Writable repository scope: `agent-reports/art-animation.md` only; actual image-generation outputs remain chat deliverables until a later explicit ingestion task.
-- Objective: consume ART-PROD-002 instead of starting another audit. Prioritize accepted director order:
+- Objective: consume ART-PROD-002 instead of starting another audit. Prioritize final Director Day-1 order:
   1. home cooking/stirring;
   2. office typing;
   3. study is deferred for this task.
@@ -202,7 +213,7 @@ ART-AUDIT-001, AUDIO-AUDIT-001, DIRECTOR-001,
 - Status: **DONE**
 - Accepted exact tip: `67033f8c0bf8323d5600c7bccf47f42a0baa1042`.
 - Review: authorized delta is only `assets/audio/licenses/CONTENT_WAVE_01_SOURCES.md` + Audio report. It supplies home music, office/subway/indoor-rain ambience, 10 high-frequency SFX candidates and an optional subway-arrival layer, with source/creator/license/preparation/loop/hook metadata and explicit NOT DOWNLOADED/NOT INTEGRATED/NOT PLAYBACK-VERIFIED boundaries.
-- External spot-check this heartbeat confirmed CC0 on the OpenGameArt music page and multiple Freesound candidates including office, rain-window, dialogue click, footsteps, keyboard, page, cooking, purchase, success and subway-arrival sources. **Every actual download must still re-open the exact source page and capture a license snapshot; inaccessible/cache-missed pages are not exempt.**
+- External spot-check this heartbeat confirmed CC0 on the OpenGameArt music page and multiple Freesound candidates. **Every actual download must still re-open the exact source page and capture a license snapshot; inaccessible/cache-missed pages are not exempt.**
 
 ### AUDIO-CONTENT-003 — Approved-source acquisition + first playback pack
 - Owner: audio-music / Codex-local
@@ -223,9 +234,12 @@ ART-AUDIT-001, AUDIO-AUDIT-001, DIRECTOR-001,
 - Owner: game-director
 - Branch: `agent/director-content-002-first-30m-map`
 - Status: **DONE**
-- Accepted exact tip: `d9c49ddb326bc5517779a7055119a577e916d1bc`.
-- Review: scope-clean design/report delta. Accepted spine is `home 做饭 → subway 通勤 → office 第一班工作 → 老张 → 可选 overtime → store/陈姐 → home 第一晚 → Day 2`; one L1 objective at a time; Pack A/legacy annual/random encounters/q1–q3 foreground noise suppressed during onboarding; overtime optional, cafe side gig Day 2+; no Xiaoyu/family/rent/supernatural canon decision.
-- A stale producer-status sentence in the worker report is treated as snapshot text only; the implementation contract itself is accepted and current task board state is authoritative.
+- Accepted final exact tip: `cebc2c868a52fcd719bbe3b5d6bd39917a17b82f`.
+- Late worker self-review was consumed by this heartbeat. Final corrected spine is `home 做饭 -> subway 通勤 -> office **先找老张** -> 第一班工作 -> 可选 overtime -> store/可选陈姐 -> home 第一晚 -> Day 2`.
+- Reason for correction: arrival is ~08:55 while 老张 is already present 08:00–12:00; putting him after the four-hour shift landed around 12:55 inside his schedule gap. Pre-work contact is deterministic and requires no schedule rewrite.
+- One L1 objective at a time; Pack A/legacy annual/encounters/dark/q1–q3 foreground noise suppressed during onboarding; `onboarding_complete` is an explicit first-night flag; overtime optional; cafe side gig after onboarding.
+- Final design also records a new implementation blocker: accepted Pack A must remain suppressed after onboarding until GAME-CONTENT-014 separates ordinary city-event completion from `_year_pass()`.
+- No Xiaoyu/family/rent/supernatural canon decision; no runtime PASS claimed.
 
 ### DIRECTOR-CONTENT-003 — Day 2–7 retention loop implementation map
 - Owner: game-director
@@ -233,10 +247,11 @@ ART-AUDIT-001, AUDIO-AUDIT-001, DIRECTOR-001,
 - Status: **READY**
 - Priority: MEDIUM
 - Player-visible/direct-unblock: YES.
+- Branch baseline was corrected to final accepted DIRECTOR-CONTENT-002 tip `cebc2c868a52fcd719bbe3b5d6bd39917a17b82f` before worker execution.
 - Writable: `docs/design/DAY_2_7_RETENTION_LOOP.md`, `agent-reports/game-director.md` only.
-- Objective: extend the accepted first-day spine into a deterministic but non-railroaded Day 2–7 loop using already accepted systems/content only:
+- Objective: extend the accepted first-day spine into a deterministic but non-railroaded Day 2–7 loop using accepted systems/content only:
   - when cafe side gig first becomes visible and why;
-  - which accepted Pack A events may become eligible on Day 2–7 by location, without forcing all 20;
+  - which accepted Pack A events would be good Day 2–7 candidates **once GAME-CONTENT-014 removes the year-advance blocker**; do not treat them as currently runtime-eligible;
   - first repeat reasons to revisit 老张/陈姐 and when other NPCs/maps gain purpose;
   - one weekly-scale motivation that does not revive the old 22–60-year objective wall;
   - HUD hierarchy transition from onboarding L1 to a small “本周目标 + 当前行动” pair;
