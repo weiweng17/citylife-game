@@ -21,7 +21,7 @@ func _define_spots() -> Dictionary:
 		"work": {"position": Vector2(700, 470), "facing": Vector2(0, -1), "label": "工位 · 上班", "detail": "4小时 · 健康−6 心情−4"},
 		"overtime": {
 			"position": Vector2(820, 470), "facing": Vector2(0, -1),
-			"label": "工位 · 再加会儿班", "detail": "2小时 · 额外工资 健康−4 心情−8",
+			"label": "工位 · 再加会儿班", "detail": "2小时 · 额外工资 健康−4 心情−8 · 每天一次",
 		},
 		"negotiate": {
 			"position": Vector2(920, 500), "facing": Vector2(0, -1),
@@ -66,7 +66,7 @@ func _detail_of(id: String) -> String:
 		"overtime":
 			if bool(context.get("overtime_today", false)):
 				return "一天一次 · 明天再来"
-			return "2小时 · 加班费+%d 健康−4 心情−8" % int(context.get("overtime_pay", 0))
+			return "2小时 · 加班费+%d 健康−4 心情−8 · 每天一次" % int(context.get("overtime_pay", 0))
 		"negotiate":
 			if bool(context.get("raised_today", false)):
 				return "一天一次 · 明天再来"
