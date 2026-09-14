@@ -17,7 +17,7 @@ Authorized writable paths:
 No Game, DialogUI, HUD, event data, NPC/content, LocationManager, coordination files, or `main` edits were made.
 
 ## Baseline handling
-The assigned branch had no task-specific commits but was 5 commits behind the latest coordination branch. It was fast-forwarded without force to coordination baseline `58aea211ac66a27e6ff921f8a20d103d2c5f4f75` before implementation.
+The assigned branch had no task-specific commits but was behind the latest coordination branch. It was fast-forwarded to the current coordination baseline before implementation, then all task work remained isolated to the three authorized paths.
 
 ## Summary
 Prepared EventUI for longer Pack A-style title/body/result/choice copy at 1280×720 and 960×540.
@@ -97,11 +97,12 @@ Prepared coverage:
 11. Stress content creates a real vertical scroll range.
 12. Final wrapped choice can be scrolled fully into view at 960×540.
 13. One choice activation emits `option_selected` once and preserves a non-sequential supplied index.
-14. Choice -> result removes old choices from layout immediately and resets scroll to top.
-15. Long result copy scrolls while `ContinueButton` remains fixed outside the scroll owner.
-16. Result header/tooltip resets to `结果`.
-17. One Continue activation emits `continue_requested` once.
-18. `close_event()` leaves busy=false and fabricates no signals.
+14. Choice enabled/disabled state remains presentation-faithful; a disabled Pack A-style choice stays disabled and does not become an accidental active action.
+15. Choice -> result removes old choices from layout immediately and resets scroll to top.
+16. Long result copy scrolls while `ContinueButton` remains fixed outside the scroll owner.
+17. Result header/tooltip resets to `结果`.
+18. One Continue activation emits `continue_requested` once.
+19. `close_event()` leaves busy=false and fabricates no signals.
 
 ## Validation
 ### Repository/static checks performed
@@ -111,7 +112,8 @@ Prepared coverage:
 - Read current coordination `EventUI.gd` and previous UI-FIX-004 EventUI/verifier as read-only reference.
 - Read accepted Pack A append diff for real content shape.
 - Read current Game EventUI integration contract without modifying Game.
-- Confirmed branch production/test diff stayed within authorized `EventUI.gd` + dedicated verifier before report update.
+- Confirmed final branch diff remains exactly the authorized `EventUI.gd`, dedicated verifier and Scene/UI report.
+- Confirmed branch is ahead of and not behind the latest coordination baseline at final review.
 
 ### Prepared but NOT run
 Godot/headless command:
@@ -132,11 +134,12 @@ Required rendered acceptance on the exact frozen integration SHA:
 - No screenshots were captured.
 - No runtime/rendered PASS is claimed or inferred.
 
-## Task commits before report update
+## Task commits before final report refresh
 - `df2ba2a29eb34cd9696c22f43ccd11341d409a29` — `ui: keep long event choices readable`
 - `5377c826521462796ab7fe7ac378fdaee528c6d3` — `test: add Pack A event choice readability verifier`
 - `286bc7aba89b66015ead1f16e7c7c441239985ed` — `ui: wrap long event headers`
 - `0c0acb728ad724eb730248925dfc845329a515ac` — `test: cover long event header readability`
+- `214b62ff0cfdf3a5499ad238522821c77ee24ad0` — `test: preserve disabled Pack A choice state`
 
 ## Known risks / review notes
 - Actual text wrapping, scrollbar geometry and visual density depend on real Godot font/layout metrics; QA-002 must validate the exact frozen SHA.
