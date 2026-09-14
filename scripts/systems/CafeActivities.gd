@@ -17,7 +17,7 @@ func _define_spots() -> Dictionary:
 	return {
 		"coffee": {"position": Vector2(640, 485), "facing": Vector2(0, -1), "label": "靠窗吧台 · 点杯咖啡", "detail": "15元 · 30分钟 · 精力+15 心情+6"},
 		"idle": {"position": Vector2(480, 520), "facing": Vector2(0, -1), "label": "圆桌 · 发会儿呆", "detail": "免费 · 20分钟 · 心情+8"},
-		"side_gig": {"position": Vector2(760, 485), "facing": Vector2(0, -1), "label": "吧台后 · 临时帮工", "detail": "90分钟 · +55元 健康−2 心情−4"},
+		"side_gig": {"position": Vector2(760, 520), "facing": Vector2(0, -1), "label": "吧台后 · 临时帮工", "detail": "90分钟 · +55元 健康−2 心情−4 · 每天一次"},
 	}
 
 func _location_id() -> String:
@@ -40,7 +40,7 @@ func _detail_of(id: String) -> String:
 	if id == "side_gig":
 		if bool(context.get("gig_today", false)):
 			return "一天一次 · 明天再来"
-		return "90分钟 · 工钱+%d 健康−2 心情−4" % int(context.get("gig_pay", 55))
+		return "90分钟 · 工钱+%d 健康−2 心情−4 · 每天一次" % int(context.get("gig_pay", 55))
 	return str(SPOTS[id]["detail"])
 
 
