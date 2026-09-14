@@ -45,11 +45,12 @@ Exact layout evidence:
 ### Real Game integration contract
 Read-only inspection of `scripts/Game.gd` confirms:
 - Game creates one `DialogUIScript` instance.
-- Game connects only `dialog_ui.dialog_finished` into `_on_dialog_finished()`.
+- Game connects `dialog_ui.dialog_finished` into `_on_dialog_finished()`.
 - `_show_dialog(speaker, lines)` forwards the speaker and line array directly to `dialog_ui.show_dialog(...)`.
 - `_on_dialog_finished()` performs the existing NPC/clue completion work and then pops the next queued dialogue, if any.
+- `dialog_ui.is_busy()` is also a broad gameplay/UI gate, not an incidental helper. Game uses it to suppress the world interact button, block quit/save/load while a dialog is open, ignore world-click movement, keep `LocationManager` and activity systems input-blocked, and reject multiple activity entry points while dialogue is active.
 
-Therefore a presentation-only body overflow repair does not require any Game callsite change as long as `show_dialog()`, `close_dialog()`, `is_busy()`, button progression, and one final `dialog_finished` emission remain unchanged.
+Therefore a presentation-only body overflow repair does not require any Game callsite change as long as `show_dialog()`, `close_dialog()`, button progression, and one final `dialog_finished` emission remain unchanged **and** the current busy-state semantics remain exact: `is_busy()` must stay true for the full visible dialogue, including body scrolling and intermediate line transitions, and become false only when the dialog actually closes/final completion occurs.
 
 ### Current content pressure
 Read-only inspection of `scripts/Data.gd` confirms dialogue is already content-driven and includes multiple sources:
@@ -99,9 +100,10 @@ Keep the existing bottom dialog panel bounded while allowing only the wrapped di
 6. A deliberately long wrapped line exposes a usable vertical body scroll path rather than increasing the whole dialog beyond its bounded panel.
 7. Moving to the next dialogue line resets body scroll to the top so a previous long line does not leak its offset into the next line.
 8. Closing and reopening a dialogue also starts the body at the top.
-9. Exactly one final activation emits `dialog_finished`; intermediate next presses do not emit it.
-10. No Game queue, NPC/content, clue, relationship, save, navigation, or held-UI semantics change.
-11. Rendered PASS still requires actual Godot evidence on the exact review/integration SHA.
+9. `is_busy()` remains true throughout body scrolling and all intermediate line transitions, and becomes false only after `close_dialog()` or final-line completion actually hides the dialog.
+10. Exactly one final activation emits `dialog_finished`; intermediate next presses do not emit it.
+11. No Game queue, NPC/content, clue, relationship, save, navigation, or held-UI semantics change.
+12. Rendered PASS still requires actual Godot evidence on the exact review/integration SHA.
 
 ### Suggested verifier boundary
 A future narrow verifier can instantiate `GameDialogUI` directly and exercise:
@@ -111,9 +113,12 @@ A future narrow verifier can instantiate `GameDialogUI` directly and exercise:
 - speaker/action containment while body scrolls;
 - long-line scroll -> next-line reset;
 - close/reopen reset;
+- `is_busy()` staying true while visible/transitioning and false only after real close/final completion;
 - `继续` / `结束` copy and exactly-once `dialog_finished` behavior.
 
-It should not boot Game or mutate any dialogue/content source.
+Current coordination-branch `tools/` inventory contains no dedicated `verify_dialog*` regression, so a future explicitly authorized `tools/verify_dialog_panel_overflow.gd` would not duplicate an existing DialogUI-specific verifier.
+
+The verifier should not boot Game or mutate any dialogue/content source.
 
 ## Files inspected
 - `docs/agents/TASK_BOARD.md`
@@ -121,18 +126,22 @@ It should not boot Game or mutate any dialogue/content source.
 - `docs/agents/WEB_AGENT_LAUNCHPAD.md`
 - `scripts/ui/DialogUI.gd`
 - `scripts/ui/EndingUI.gd`
-- `scripts/Game.gd` (read-only integration evidence)
+- `scripts/Game.gd` (read-only integration and busy-gate evidence)
 - `scripts/Data.gd` (read-only dialogue-content evidence)
 - `data/rules.json` (read-only ending-content comparison)
+- `tools/` inventory (read-only verifier-overlap check)
 
 ## Validation
 ### Repository checks performed
 - Confirmed UI-AUDIT-007 is `READY`, owned by `scene-ui`, and report-only.
-- Confirmed the assigned branch started identical to the latest coordination baseline `96a202796d5b454f730bf84c566367e8564db7f4` (ahead 0 / behind 0).
+- Confirmed the assigned branch started identical to coordination baseline `96a202796d5b454f730bf84c566367e8564db7f4` (ahead 0 / behind 0).
+- On continuation, confirmed the branch remained ahead only by its report commit and behind 0, with no orchestrator rework feedback.
 - Confirmed UI-FIX-001..006 are runtime/rendered holds and excluded from write scope.
 - Re-read the remaining clean helpers from the latest coordination branch rather than relying on the prior audit ranking.
-- Confirmed DialogUI progression/finished semantics are presentation-local and Game consumes only the final `dialog_finished` notification.
+- Confirmed DialogUI progression/finished semantics are presentation-local while Game consumes the final `dialog_finished` notification.
+- Confirmed `is_busy()` is part of a broader Game input/action gating contract and must remain stable across any body-scroll implementation.
 - Confirmed EndingUI currently has more viewport height and lower present prose pressure, making it the later candidate.
+- Confirmed no dedicated `verify_dialog*` regression currently exists in the coordination-branch tools inventory.
 
 ### Not performed
 - Godot was not launched.
@@ -146,6 +155,7 @@ It should not boot Game or mutate any dialogue/content source.
 - The repository-visible defect is the lack of a bounded text-overflow owner inside a fixed-height generic dialog helper.
 - Future implementation should scroll only the text body. Making the entire dialog scroll would make the speaker/action path less stable and would be broader than necessary.
 - Future implementation must reset body scroll whenever `_render()` advances to a new line, not only when `show_dialog()` first opens.
+- Because Game uses `is_busy()` as a widespread interaction/input guard, no body-scroll implementation should alter visibility or busy state during intermediate line transitions merely to force layout refresh.
 
 ## Handoff
 UI-AUDIT-007 is complete at repository-audit level and requests orchestrator review. The recommended next isolated Scene/UI repair is **UI-FIX-007 — Dialog body overflow containment** in `scripts/ui/DialogUI.gd`. Runtime/rendered acceptance remains deferred to real Godot execution.
