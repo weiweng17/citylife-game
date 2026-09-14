@@ -1339,12 +1339,34 @@ func _on_day_changed(day: int) -> void:
 
 
 func _on_location_travel(location_id: String) -> void:
-	# LocationManager 先落地点/解锁再发 travel_requested。首餐前若直接点 footer 的 subway，
-	# 必须把这次尝试完整回滚到新档 home 状态，不能偷留 office 解锁。
-	if _onboarding_active() and _onboarding_objective_id() == ONBOARDING_MEAL and location_id != "home":
-		location_sys.reset_new_game()
-		_show_toast("先垫点东西。第一天没必要饿着去。\n" + _onboarding_hint())
-		return
+	# LocationManager 保留技术 unlock，但 Day-1 只允许当前 objective 对应的旅行目标。
+	# travel_requested 在 LocationManager 已切换地点后才发出，因此拒绝时要把展示地点退回 authored route；
+	# 首餐阶段额外 reset，避免一次失败的 subway 点击偷偷留下 office unlock。
+	if _onboarding_active():
+		var objective_id := _onboarding_objective_id()
+		var allowed_destination: String = str({
+			ONBOARDING_SUBWAY: "subway",
+			ONBOARDING_OFFICE: "office",
+			ONBOARDING_STORE: "store",
+			ONBOARDING_HOME: "home",
+		}.get(objective_id, ""))
+		if location_id != allowed_destination:
+			if objective_id == ONBOARDING_MEAL:
+				location_sys.reset_new_game()
+			else:
+				var fallback_location: String = str({
+					ONBOARDING_SUBWAY: "home",
+					ONBOARDING_OFFICE: "subway",
+					ONBOARDING_LAOZHANG: "office",
+					ONBOARDING_WORK: "office",
+					ONBOARDING_STORE: "store" if bool(location_sys.visited.get("store", false)) else "office",
+					ONBOARDING_HOME: "store",
+					ONBOARDING_SLEEP: "home",
+				}.get(objective_id, location_sys.current_location))
+				location_sys.current_location = fallback_location
+				location_sys._refresh()
+			_show_toast(_onboarding_hint())
+			return
 	if time_sys:
 		time_sys.advance_minutes(20 if location_id == "subway" else 35)
 	if daily_routine and location_id == "office":
