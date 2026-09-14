@@ -246,6 +246,7 @@ func _reset_list_scroll() -> void:
 
 func _add_empty_note(text: String) -> void:
 	var label := Label.new()
+	label.name = "ShopEmptyNote"
 	label.text = text
 	label.custom_minimum_size = Vector2(0, 120)
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
