@@ -78,10 +78,10 @@ ART-AUDIT-001, AUDIO-AUDIT-001, DIRECTOR-001,
 ### UI-CONTENT-008 — Pack A event-choice readability pass
 - Owner: scene-ui
 - Branch: `agent/ui-content-008-event-choice-readability`
-- Status: READY
+- Status: IN_PROGRESS
 - Priority: HIGH
 - Player-visible/direct-unblock: YES.
-- Current task branch has no task-specific production/report delta yet; inherited report remains stale.
+- Latest observed task tip: `df2ba2a29eb34cd9696c22f43ccd11341d409a29`; task-specific `EventUI.gd` + verifier work exists, but the branch report is still the inherited `UI-001 / READY` template, so the task is **not yet review-submitted**.
 - Writable: `scripts/ui/EventUI.gd`, `tools/verify_event_choice_readability.gd`, `agent-reports/scene-ui.md` only.
 - Objective: keep accepted Pack A 2–3 choice content readable and operable at 1280×720 and 960×540 when title/body/result/choice copy is longer than legacy content. Event content must remain bounded; wrapped choice text must not overlap/disappear; all choices and continue flow remain reachable.
 - This is presentation readiness only: Pack A runtime eligibility remains blocked by GAME-CONTENT-014 after onboarding.
@@ -102,9 +102,10 @@ ART-AUDIT-001, AUDIO-AUDIT-001, DIRECTOR-001,
 ### NPC-CONTENT-015 — First-day NPC recognition micro-pass
 - Owner: npc-content
 - Branch: `agent/npc-content-015-first-day-recognition`
-- Status: READY
+- Status: IN_PROGRESS
 - Priority: HIGH
 - Player-visible/direct-unblock: YES.
+- Latest observed task tip: `6941e0a2f66e5eabf9ad6b18563158170e67312a`; the tip changes only the authorized Lao Zhang / Chenjie `young` dialogue lines in `scripts/Data.gd`. The branch report is still the inherited `NPC-001 / READY` template, so this work is **not yet review-submitted**.
 - Writable:
   - `scripts/Data.gd` **only inside `const NPCS` young-dialogue lines for `laozhang` and `chenjie`**;
   - `agent-reports/npc-content.md`.
@@ -261,7 +262,7 @@ ART-AUDIT-001, AUDIO-AUDIT-001, DIRECTOR-001,
 - Do not add new gameplay systems, decide Xiaoyu/family/rent canon, or modify production source/data/UI/art/audio.
 
 ## Active ratio after this heartbeat
-Active web lanes with READY tasks: 01, 02, 03, 04, 05, 07 = 6. Player-visible/direct-unblock lanes: 01, 02, 03, 05, 07 = 5/6 = **83.3%**. Lane 04 is the integration gate. Lane 06 is intentionally blocked on local binary/audio execution. This remains above the CONTENT-WAVE-01 minimum.
+Active web lanes with READY/IN_PROGRESS tasks: 01, 02, 03, 04, 05, 07 = 6. Player-visible/direct-unblock lanes: 01, 02, 03, 05, 07 = 5/6 = **83.3%**. Lanes 02 and 03 are IN_PROGRESS from observed task-branch deltas; lanes 01, 04, 05 and 07 remain READY. Lane 04 is the integration gate. Lane 06 is intentionally blocked on local binary/audio execution. This remains above the CONTENT-WAVE-01 minimum.
 
 ## Deferred product decisions
 - Xiaoyu canon: roommate / romance possibility / close friend only.
