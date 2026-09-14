@@ -34,6 +34,7 @@ class InventoryStub:
 
 var ui
 var inventory
+var empty_inventory
 var phase := 0
 var frames := 0
 var failures: Array[String] = []
@@ -47,7 +48,8 @@ var narrow_overflow_seen := false
 
 func _init() -> void:
 	_set_logical_viewport(DEFAULT_VIEWPORT)
-	inventory = InventoryStub.new(Array(InventoryScript.DISPLAY_ORDER))
+	inventory = InventoryStub.new(InventoryScript.DISPLAY_ORDER.duplicate())
+	empty_inventory = InventoryStub.new([])
 	ui = ShopUIScript.new()
 	ui.buy_requested.connect(_on_buy_requested)
 	ui.use_requested.connect(_on_use_requested)
@@ -99,7 +101,7 @@ func _process(_delta: float) -> bool:
 			return false
 		5:
 			_check_layout("960x540 bag", NARROW_VIEWPORT, "bag")
-			_check_scroll_reset("buy -> bag rebuild")
+			_check_scroll_reset("buy -> full bag rebuild")
 			_scroll_list_to_bottom()
 			phase = 6
 			frames = 0
@@ -107,21 +109,29 @@ func _process(_delta: float) -> bool:
 		6:
 			_check_last_row_reachable("960x540 bag")
 			_trigger_last_action("bag")
+			# Historical regression target: after a tall shelf/full bag, a sparse or empty bag
+			# must not inherit the previous scroll range/height.
 			_scroll_list_to_bottom()
-			ui.open_buy(9998, inventory)
+			ui.open_bag(9998, empty_inventory)
 			phase = 7
 			frames = 0
 			return false
 		7:
-			_check_layout("960x540 buy reopen", NARROW_VIEWPORT, "buy")
-			_check_scroll_reset("bag -> buy rebuild")
-			_check_signal_contract()
-			var close_button: Button = ui.get_node("ShopCenter/ShopPanel/ShopContent/ShopFooter/ShopClose") as Button
-			close_button.pressed.emit()
+			_check_empty_bag_layout()
+			ui.open_buy(9998, inventory)
 			phase = 8
 			frames = 0
 			return false
 		8:
+			_check_layout("960x540 buy reopen", NARROW_VIEWPORT, "buy")
+			_check_scroll_reset("empty bag -> buy rebuild")
+			_check_signal_contract()
+			var close_button: Button = ui.get_node("ShopCenter/ShopPanel/ShopContent/ShopFooter/ShopClose") as Button
+			close_button.pressed.emit()
+			phase = 9
+			frames = 0
+			return false
+		9:
 			_expect(not ui.is_open(), "close button must keep closing ShopUI")
 			_expect(closed_signal_count == 1, "closed must emit exactly once for one close activation")
 			_expect(narrow_overflow_seen, "960x540 six-row catalog must exercise a real ShopList vertical overflow range")
@@ -177,6 +187,28 @@ func _check_layout(label: String, expected_viewport: Vector2i, expected_mode: St
 		vbar.max_value,
 		vbar.page,
 	])
+
+
+func _check_empty_bag_layout() -> void:
+	_check_logical_viewport("960x540 empty bag", NARROW_VIEWPORT)
+	var panel: PanelContainer = ui.get_node("ShopCenter/ShopPanel") as PanelContainer
+	var content: VBoxContainer = panel.get_node("ShopContent") as VBoxContainer
+	var scroll: ScrollContainer = content.get_node("ShopListScroll") as ScrollContainer
+	var list: VBoxContainer = scroll.get_node("ShopList") as VBoxContainer
+	var status: Label = content.get_node("ShopStatus") as Label
+	var close_button: Button = content.get_node("ShopFooter/ShopClose") as Button
+	var empty_note: Label = list.get_node("ShopEmptyNote") as Label
+	var vbar := scroll.get_v_scroll_bar()
+
+	_expect(ui.is_open() and ui.mode == "bag", "960x540 empty bag: bag mode must stay open")
+	_expect(_rect_inside_viewport(panel.get_global_rect(), NARROW_VIEWPORT), "960x540 empty bag: panel must stay inside viewport")
+	_expect(list.get_child_count() == 1, "960x540 empty bag: rebuilt list must contain only the empty-state note")
+	_expect(empty_note.text.begins_with("背包是空的"), "960x540 empty bag: empty-state copy must remain present")
+	_expect(scroll.scroll_vertical == 0, "full bag -> empty bag must reset previous scroll offset")
+	_expect(vbar.max_value <= vbar.page + 0.5, "full bag -> empty bag must not retain a stale overflow range")
+	_expect(_rect_inside_rect(empty_note.get_global_rect(), scroll.get_global_rect()), "960x540 empty bag: empty-state note must fit inside list viewport")
+	_expect(_rect_inside_rect(status.get_global_rect(), panel.get_global_rect()), "960x540 empty bag: fixed status region must stay inside panel")
+	_expect(_rect_inside_rect(close_button.get_global_rect(), panel.get_global_rect()), "960x540 empty bag: close action must stay reachable")
 
 
 func _scroll_list_to_bottom() -> void:
