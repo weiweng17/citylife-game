@@ -7,6 +7,7 @@ const DEFAULT_VIEWPORT := Vector2i(1280, 720)
 const NARROW_VIEWPORT := Vector2i(960, 540)
 const CHOICE_INDICES := [3, 7, 11]
 const EXPECTED_OPTIONS := 3
+const DISABLED_OPTION_SLOT := 1
 
 var ui
 var phase := 0
@@ -56,7 +57,7 @@ func _process(_delta: float) -> bool:
 			frames = 0
 			return false
 		4:
-			_expect(selected_indices.size() == 1, "one choice activation must emit option_selected exactly once")
+			_expect(selected_indices.size() == 1, "one enabled choice activation must emit option_selected exactly once")
 			if selected_indices.size() == 1:
 				_expect(selected_indices[0] == CHOICE_INDICES[2], "option_selected must preserve the supplied option index")
 			ui.show_result(_long_result())
@@ -92,7 +93,7 @@ func _show_pack_a_stress_event() -> void:
 	for index in range(EXPECTED_OPTIONS):
 		options.append({
 			"index": CHOICE_INDICES[index],
-			"enabled": true,
+			"enabled": index != DISABLED_OPTION_SLOT,
 			"text": _long_choice(index),
 		})
 	ui.show_event(
@@ -177,7 +178,8 @@ func _check_choice_layout(label: String, expected_viewport: Vector2i) -> void:
 		_expect(button != null, "%s: option %d must remain a Button" % [label, option_index])
 		if button == null:
 			continue
-		_expect(not button.disabled, "%s: stress option %d must remain operable" % [label, option_index])
+		var should_be_disabled := option_index == DISABLED_OPTION_SLOT
+		_expect(button.disabled == should_be_disabled, "%s: option %d enabled/disabled state must be preserved" % [label, option_index])
 		_expect(button.text == _long_choice(option_index), "%s: option %d must preserve full choice copy" % [label, option_index])
 		_expect(button.autowrap_mode != TextServer.AUTOWRAP_OFF, "%s: option %d must wrap instead of clipping long copy" % [label, option_index])
 		_expect(button.alignment == HORIZONTAL_ALIGNMENT_LEFT, "%s: option %d must remain left-aligned for multi-line scanning" % [label, option_index])
@@ -211,6 +213,7 @@ func _check_last_choice_reachable(label: String) -> void:
 	var button: Button = options.get_node("OptionButton%d" % CHOICE_INDICES[2]) as Button
 	var vbar := scroll.get_v_scroll_bar()
 	var usable_end := maxf(0.0, vbar.max_value - vbar.page)
+	_expect(not button.disabled, "%s: final choice used for reachability must remain enabled" % label)
 	_expect(scroll.scroll_vertical > 0, "%s: overflow path must support non-zero scrolling" % label)
 	_expect(absf(float(scroll.scroll_vertical) - usable_end) <= 2.0, "%s: choices must be scrollable to the usable bottom" % label)
 	_expect(_rect_inside_rect(button.get_global_rect(), scroll.get_global_rect()), "%s: final wrapped choice must become fully visible/reachable" % label)
@@ -218,7 +221,7 @@ func _check_last_choice_reachable(label: String) -> void:
 
 func _press_last_choice() -> void:
 	var button: Button = ui.get_node("EventPanel/EventContent/EventScroll/EventScrollContent/EventOptions/OptionButton%d" % CHOICE_INDICES[2]) as Button
-	if button != null:
+	if button != null and not button.disabled:
 		button.pressed.emit()
 
 
