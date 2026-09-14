@@ -1,16 +1,17 @@
 extends "res://scripts/systems/SpotActivities.gd"
 ## 公司工作互动。骨架在基类 SpotActivities；本层的定制是**展示**：
 ##  - `work`：工位上班。时薪随技能档位走，标签上的数字由 Game 每帧喂进来。
+##  - `overtime`：当天完成普通班次后开放；一天一次，收益更高但状态代价更重。
 ##  - `negotiate`：大堂找主管谈薪。技能不到「熟练」直接不显示，避免玩家点了个
 ##    必然被拒的按钮。门槛的**判定**仍然在 Game（数值结算只在 Game）。
 ##
 ## 站位按当前公司背景（写字楼入口雨夜）粗略标定，尚未逐帧对照美术校正。
 
-## 由 Game 每帧喂进来的展示上下文：技能、时薪、档位名、能不能谈薪、今天谈过没、有没有人帮腔。
+## 由 Game 每帧喂进来的展示上下文：技能、时薪、档位名、谈薪状态、普通班次/加班状态。
 var context: Dictionary = {}
 
 
-## Game 每个 `_refresh_ui()` 喂一次。缺字段时按"最保守"取值，宁可显示旧数字也不崩。
+## Game 每个 `_refresh_ui()` 喂一次。缺字段时按"最保守"取值，宁可少显示也不误导。
 func sync_context(info: Dictionary) -> void:
 	context = info
 
@@ -18,6 +19,10 @@ func sync_context(info: Dictionary) -> void:
 func _define_spots() -> Dictionary:
 	return {
 		"work": {"position": Vector2(700, 470), "facing": Vector2(0, -1), "label": "工位 · 上班", "detail": "4小时 · 健康−6 心情−4"},
+		"overtime": {
+			"position": Vector2(820, 470), "facing": Vector2(0, -1),
+			"label": "工位 · 再加会儿班", "detail": "2小时 · 额外工资 健康−4 心情−8",
+		},
 		"negotiate": {
 			"position": Vector2(920, 500), "facing": Vector2(0, -1),
 			"label": "大堂 · 谈薪", "detail": "30分钟 · 看手艺，也看人",
@@ -35,8 +40,10 @@ func _idle_prompt() -> String:
 	return "走近工位，按 E 或点击标签开始工作"
 
 
-## 技能不够的互动点直接不显示；显示出来的都点得动。
+## 技能不够的谈薪不显示；加班必须先完成当天普通班次才显示。
 func _spot_available(id: String) -> bool:
+	if id == "overtime":
+		return bool(context.get("worked_today", false))
 	var spot: Dictionary = SPOTS[id]
 	if not spot.has("requires_skill"):
 		return true
@@ -44,6 +51,8 @@ func _spot_available(id: String) -> bool:
 
 
 func _label_of(id: String) -> String:
+	if id == "overtime" and bool(context.get("overtime_today", false)):
+		return "工位 · 今天已经加过班"
 	if id == "negotiate" and bool(context.get("raised_today", false)):
 		return "大堂 · 今天谈过了"
 	return str(SPOTS[id]["label"])
@@ -54,6 +63,10 @@ func _detail_of(id: String) -> String:
 	match id:
 		"work":
 			return "4小时 · 工资+%d 健康−6 心情−4" % int(context.get("wage", 0))
+		"overtime":
+			if bool(context.get("overtime_today", false)):
+				return "一天一次 · 明天再来"
+			return "2小时 · 加班费+%d 健康−4 心情−8" % int(context.get("overtime_pay", 0))
 		"negotiate":
 			if bool(context.get("raised_today", false)):
 				return "一天一次 · 明天再来"
