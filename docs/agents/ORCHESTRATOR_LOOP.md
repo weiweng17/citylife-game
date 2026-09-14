@@ -32,6 +32,23 @@ Preferred default flow:
 
 `READY queue -> 00 selects one -> IN_PROGRESS -> worker produces GitHub delta -> NEEDS_REVIEW -> 00 reviews -> DONE/correction -> 00 selects next`
 
+## Fresh-control barrier and dispatch lease
+The CLI does not know the game's development sequence by itself. It reads GitHub state and executes decisions written by 00.
+
+Therefore every dispatcher startup/resume must begin with a **fresh 00 control heartbeat before any worker message is sent**, even if `TASK_BOARD.md` already contains an old `IN_PROGRESS` task.
+
+Rules:
+- On startup/resume, freeze 01-07 and wake 00 first.
+- The worker freeze remains in place until 00 finishes the heartbeat and writes a fresh result to either `TASK_BOARD.md` or `agent-reports/orchestrator.md`.
+- After the fresh 00 write, the dispatcher re-reads GitHub on a new polling cycle. It must not dispatch from the stale pre-heartbeat board snapshot.
+- Any new `NEEDS_REVIEW`, multiple-`IN_PROGRESS` contradiction, missing branch, or other control-plane anomaly re-engages the same barrier: 00 first, workers frozen until a fresh control write.
+- Worker branch commits alone do not authorize another chat prompt.
+- One `IN_PROGRESS` task gets one automatic worker prompt per dispatch lease. Repeated worker prompts are not generated merely because the branch SHA changes.
+- If 00 intentionally wants to re-dispatch the same task, add or increment `Dispatch-Revision: N` inside that task entry. A new revision creates a new dispatch lease.
+- A stalled worker is escalated to 00 for a decision; the CLI must not autonomously keep telling the worker to continue.
+
+This prevents an old `IN_PROGRESS` marker from bypassing the control plane after a restart and prevents message volume from being mistaken for development progress.
+
 ## Orchestrator heartbeat
 On every orchestrator wake/run, execute this loop in order:
 
@@ -43,7 +60,7 @@ On every orchestrator wake/run, execute this loop in order:
    - accepted -> `DONE`
    - incomplete/incorrect -> create a narrow correction task or return it to worker
    - execution-context blocked -> `BLOCKED` with exact blocker
-6. Maintain useful future work as `READY`, but do not wake READY workers. After reviews/dependency reconciliation, choose the single highest-value executable task and promote only that task to `IN_PROGRESS`.
+6. Maintain useful future work as `READY`, but do not wake READY workers. After reviews/dependency reconciliation, choose the single highest-value executable task and promote only that task to `IN_PROGRESS`. Add/increment `Dispatch-Revision` only when a fresh worker prompt is actually intended.
 7. If more than one ordinary web task is `IN_PROGRESS` and no explicit `Parallel dispatch: YES` exists, reconcile immediately back to one active execution lane.
 8. Keep scopes non-overlapping and respect `FILE_OWNERSHIP.md`.
 9. When a task needs real Godot, terminal, browser, Web export, screenshots, audio audition, or exact-SHA runtime evidence, package a single narrow Codex/Local QA task instead of asking web workers to fake runtime proof.
@@ -71,7 +88,7 @@ When development is explicitly paused, preserve queued READY tasks but do not pr
 2. Resolve coordination contradictions / stale task state.
 3. If multiple ordinary web tasks are IN_PROGRESS without explicit parallel authorization, choose the critical-path winner and return the others to READY.
 4. Apply Game Director product priorities to task ordering without allowing 07 to edit coordination files directly.
-5. Select **one** next executable web task from the READY queue and mark it IN_PROGRESS.
+5. Select **one** next executable web task from the READY queue and mark it IN_PROGRESS. Increment its `Dispatch-Revision` only if a new worker prompt is intended.
 6. Refresh QA integration/runtime manifest only when it adds new integration value; do not generate report-only busywork.
 7. Escalate only the minimum required exact-SHA package to Codex/local execution.
 8. After runtime evidence, form one deterministic integration candidate and review before touching `main`.
@@ -83,11 +100,14 @@ Preferred low-cost mode is the local CityLife Dispatcher. A scheduled ChatGPT au
 
 Dispatcher contract:
 - keep 00 available as the control plane;
-- lazily open/wake only the worker whose task is currently `IN_PROGRESS`;
+- on every startup/resume, send the first automatic message to 00 and block all workers until a fresh 00 GitHub write is observed;
+- lazily open/wake only the worker whose task is currently `IN_PROGRESS` after that fresh-control barrier clears;
 - do not auto-open all 01-07 chats at startup;
 - do not dispatch READY tasks;
+- send at most one worker prompt per `Dispatch-Revision`;
 - worker GitHub/report progress, not chat-message count, is the progress signal;
-- every wake is idempotent: unchanged worker/report/branch state must not create duplicate prompts or duplicate edits.
+- when a worker reaches `NEEDS_REVIEW`, re-engage the 00 barrier before any next worker is dispatched;
+- every wake is idempotent: unchanged worker/report/branch/control state must not create duplicate prompts or duplicate edits.
 
 ## Required orchestrator output per heartbeat
 Update `agent-reports/orchestrator.md` with:
@@ -97,6 +117,7 @@ Update `agent-reports/orchestrator.md` with:
 - task-board changes made
 - queued READY tasks
 - the single currently selected IN_PROGRESS worker/task (or explicit reason none is selected)
+- current `Dispatch-Revision` for the selected worker when a new dispatch is intended
 - Codex/runtime escalations waiting
 - art/audio asset-production blockers
 - user/product decisions waiting
