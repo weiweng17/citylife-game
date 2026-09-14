@@ -3029,5 +3029,725 @@
         "result": "你谢绝了。想证明自己不靠老本也能行，过程更苦，但你心里踏实。"
       }
     ]
+  },
+  {
+    "id": "e_cw01_park_free_class",
+    "scene": "park",
+    "speaker": "老周",
+    "title": "免费的早操课",
+    "text": "老周把棋盒往长椅下一塞，指了指草坪边新贴的牌子：「社区公益课，不收钱。你这肩膀，再不动就锈了。」",
+    "age": [22, 60],
+    "weight": 2,
+    "cond": null,
+    "options": [
+      {
+        "text": "跟着练四十分钟",
+        "cond": null,
+        "effects": {"health": 5, "mood": 3, "network": 2},
+        "flags": {"cw01_joined_park_class": true},
+        "job": null,
+        "result": "动作没跟上几个，汗倒是出了不少。老周在旁边笑，说你至少肯动。"
+      },
+      {
+        "text": "帮忙搬音箱再走",
+        "cond": null,
+        "effects": {"network": 4, "health": -2, "mood": 2},
+        "flags": null,
+        "job": null,
+        "result": "你搬了两趟器材，没上课，却认识了三个每天都来的人。"
+      },
+      {
+        "text": "今天算了，继续刷手机",
+        "cond": null,
+        "effects": {"mood": -3, "skill": 1},
+        "flags": null,
+        "job": null,
+        "result": "十分钟后你还坐在原地，短视频已经刷到不记得第一条是什么。"
+      }
+    ]
+  },
+  {
+    "id": "e_cw01_cafe_charger",
+    "scene": "cafe",
+    "speaker": "旁桌客人",
+    "title": "还剩百分之二",
+    "text": "旁桌的人举着快关机的手机问你能不能借一下充电线。小雨正好发来一句：「别又把自己的电也耗光。」",
+    "age": [22, 55],
+    "weight": 2,
+    "cond": null,
+    "options": [
+      {
+        "text": "借给她，自己改用纸笔",
+        "cond": null,
+        "effects": {"network": 4, "skill": 2, "mood": -1},
+        "flags": {"cw01_lent_cafe_charger": true},
+        "job": null,
+        "result": "她连声道谢。你的电脑没电前，倒真写完了半页思路。"
+      },
+      {
+        "text": "只借十分钟，我也要用",
+        "cond": null,
+        "effects": {"network": 2, "mood": 1, "skill": -1},
+        "flags": {"cw01_lent_cafe_charger": true},
+        "job": null,
+        "result": "十分钟后她准时还了线，你们互相点了点头，各忙各的。"
+      },
+      {
+        "text": "不好意思，我自己也没电",
+        "cond": null,
+        "effects": {"mood": -2, "skill": 1},
+        "flags": null,
+        "job": null,
+        "result": "她说没关系，转身去问下一桌。你低头看了眼自己还有六成的电。"
+      }
+    ]
+  },
+  {
+    "id": "e_cw01_hospital_kiosk",
+    "scene": "hospital",
+    "speaker": "陈姐",
+    "title": "自助机前",
+    "text": "陈姐站在挂号机前点了半天，回头看见你：「这机器又改版了，你帮我看看，我眼都花了。」",
+    "age": [22, 60],
+    "weight": 2,
+    "cond": null,
+    "options": [
+      {
+        "text": "帮她把流程走完",
+        "cond": null,
+        "effects": {"network": 5, "mood": 2, "skill": 1},
+        "flags": {"cw01_helped_hospital_kiosk": true},
+        "job": null,
+        "result": "你替她选好科室、缴完费。陈姐把号码纸折得整整齐齐，塞进口袋。"
+      },
+      {
+        "text": "先教一遍，让她自己点",
+        "cond": null,
+        "effects": {"network": 4, "skill": 2, "mood": -1},
+        "flags": {"cw01_helped_hospital_kiosk": true},
+        "job": null,
+        "result": "她点错了一次，第二次就会了，还嫌你讲得太慢。"
+      },
+      {
+        "text": "我也赶号，先去排自己的",
+        "cond": null,
+        "effects": {"health": 1, "network": -2, "mood": -2},
+        "flags": null,
+        "job": null,
+        "result": "你回头时，陈姐已经叫住了一个志愿者。她冲你摆摆手，没说什么。"
+      }
+    ]
+  },
+  {
+    "id": "e_cw01_alley_rider_shelter",
+    "scene": "alley",
+    "speaker": "外卖骑手",
+    "title": "屋檐下一小块",
+    "text": "雨突然压下来，巷口的骑手抱着保温箱冲到屋檐下。远处传来阿哲收摊前的最后一段歌。",
+    "age": [22, 60],
+    "weight": 2,
+    "cond": null,
+    "options": [
+      {
+        "text": "往里挪一点，让他一起躲",
+        "cond": null,
+        "effects": {"network": 4, "mood": 2, "health": -1},
+        "flags": {"cw01_shared_rider_shelter": true},
+        "job": null,
+        "result": "两个人肩膀都淋湿了一点，但箱子保住了。骑手说这单超时也认了。"
+      },
+      {
+        "text": "去小卖部买瓶热水给他",
+        "cond": null,
+        "effects": {"money": -6, "network": 5, "mood": 3},
+        "flags": {"cw01_shared_rider_shelter": true},
+        "job": null,
+        "result": "他一口喝掉半瓶，说今天跑到现在还没吃饭。"
+      },
+      {
+        "text": "雨不算大，自己先走",
+        "cond": null,
+        "effects": {"health": -2, "mood": -2},
+        "flags": null,
+        "job": null,
+        "result": "走出两百米鞋就湿透了。你开始怀疑刚才那句「不算大」。"
+      }
+    ]
+  },
+  {
+    "id": "e_cw01_rooftop_bedding",
+    "scene": "rooftop",
+    "speaker": "楼上邻居",
+    "title": "被风卷起来的床单",
+    "text": "一阵横风把晾衣绳吹得直响，楼上邻居的床单已经挂到栏杆外半截。他一手拽绳，一手够夹子。",
+    "age": [22, 60],
+    "weight": 2,
+    "cond": null,
+    "options": [
+      {
+        "text": "过去帮他把床单抢回来",
+        "cond": null,
+        "effects": {"network": 5, "mood": 2, "health": -2},
+        "flags": {"cw01_helped_rooftop_bedding": true},
+        "job": null,
+        "result": "你们按住被角时都笑了。床单没掉，鞋倒是被积水弄湿了。"
+      },
+      {
+        "text": "把自己多余的夹子给他",
+        "cond": null,
+        "effects": {"network": 3, "money": -5, "mood": 2},
+        "flags": {"cw01_helped_rooftop_bedding": true},
+        "job": null,
+        "result": "六个旧夹子全用上了。邻居说改天一定还你新的。"
+      },
+      {
+        "text": "提醒一句风大，然后下楼",
+        "cond": null,
+        "effects": {"network": 1, "mood": -1},
+        "flags": null,
+        "job": null,
+        "result": "门关上前，你听见他在后面喊：「知道了，谢谢啊。」"
+      }
+    ]
+  },
+  {
+    "id": "e_cw01_park_lost_wallet",
+    "scene": "park",
+    "speaker": "长椅边",
+    "title": "一只旧钱包",
+    "text": "长椅下面躺着一只磨旧的钱包。老周看了一眼：「先别翻人家东西，管理处就在那边。」",
+    "age": [22, 60],
+    "weight": 2,
+    "cond": null,
+    "options": [
+      {
+        "text": "送去管理处登记",
+        "cond": null,
+        "effects": {"network": 4, "mood": 3, "money": -5},
+        "flags": null,
+        "job": null,
+        "result": "你填了张登记表。管理员说这种钱包一天能捡到三四个，能找回一半。"
+      },
+      {
+        "text": "原地等一会儿失主",
+        "cond": null,
+        "effects": {"network": 6, "mood": 4, "health": -2},
+        "flags": null,
+        "job": null,
+        "result": "二十分钟后一个满头汗的人跑回来，第一句话是问身份证还在不在。"
+      },
+      {
+        "text": "拿走现金，把钱包放回去",
+        "cond": null,
+        "effects": {"money": 300, "mood": -8, "network": -4},
+        "flags": null,
+        "job": null,
+        "result": "三百块塞进口袋后突然很沉。你后来绕开了那张长椅。"
+      }
+    ]
+  },
+  {
+    "id": "e_cw01_cafe_interview_prep",
+    "scene": "cafe",
+    "speaker": "老张",
+    "title": "模拟一遍",
+    "text": "老张把你的简历推回来：「别背答案。来，我当面试官，你把最难那段经历说给我听。」",
+    "age": [22, 45],
+    "weight": 2,
+    "cond": null,
+    "options": [
+      {
+        "text": "请他认真挑毛病",
+        "cond": null,
+        "effects": {"skill": 5, "network": 3, "mood": -2, "money": -35},
+        "flags": null,
+        "job": null,
+        "result": "一杯咖啡凉透了，你被打断七次。第八次，你终于把话说顺。"
+      },
+      {
+        "text": "只练开场和薪资问题",
+        "cond": null,
+        "effects": {"skill": 3, "mood": 2, "money": -28},
+        "flags": null,
+        "job": null,
+        "result": "老张说至少别一开口就先把自己价格砍了。"
+      },
+      {
+        "text": "算了，回去继续投简历",
+        "cond": null,
+        "effects": {"skill": -2, "mood": -2, "money": 60},
+        "flags": null,
+        "job": null,
+        "result": "你省下了咖啡钱，也省下了一次被当面指出问题的机会。"
+      }
+    ]
+  },
+  {
+    "id": "e_cw01_hospital_report",
+    "scene": "hospital",
+    "speaker": "体检窗口",
+    "title": "箭头朝上的几项",
+    "text": "报告单上有三项箭头朝上。你盯着它们看了半天，想起老张前两天那句：「别学我，硬撑不算本事。」",
+    "age": [25, 55],
+    "weight": 2,
+    "cond": null,
+    "options": [
+      {
+        "text": "加做复查，问清楚再走",
+        "cond": null,
+        "effects": {"money": -180, "health": 5, "mood": -2},
+        "flags": null,
+        "job": null,
+        "result": "医生说问题不大，但确实该少熬夜。你把报告拍进了手机备忘录。"
+      },
+      {
+        "text": "先改一个月作息再复查",
+        "cond": null,
+        "effects": {"health": 3, "mood": 2, "skill": -1},
+        "flags": null,
+        "job": null,
+        "result": "你把闹钟往前调了四十分钟。能坚持多久，你自己也不知道。"
+      },
+      {
+        "text": "收起来，等忙完这阵",
+        "cond": null,
+        "effects": {"health": -4, "mood": -3, "money": 100},
+        "flags": null,
+        "job": null,
+        "result": "报告被塞进包底。一个月后你找充电线时才又看见它。"
+      }
+    ]
+  },
+  {
+    "id": "e_cw01_alley_secondhand",
+    "scene": "alley",
+    "speaker": "二手群消息",
+    "title": "八十块的旧书桌",
+    "text": "小雨转来一张二手群截图：旧书桌八十，自提，就在旧巷另一头。卖家说今晚不拿就扔。",
+    "age": [22, 50],
+    "weight": 2,
+    "cond": null,
+    "options": [
+      {
+        "text": "八十块买下，自己扛回去",
+        "cond": null,
+        "effects": {"money": -80, "skill": 3, "mood": 2},
+        "flags": null,
+        "job": null,
+        "result": "桌角磕掉一块，但比你原来趴着工作的纸箱强多了。"
+      },
+      {
+        "text": "帮卖家搬下楼，再便宜点",
+        "cond": null,
+        "effects": {"money": -50, "network": 4, "health": -2},
+        "flags": null,
+        "job": null,
+        "result": "你搬了四层楼，省三十块，顺便知道了附近哪家搬运最便宜。"
+      },
+      {
+        "text": "算了，东西够用就行",
+        "cond": null,
+        "effects": {"mood": -2, "skill": 1},
+        "flags": null,
+        "job": null,
+        "result": "截图很快显示「已出」。你关掉群，继续用原来的凳子垫电脑。"
+      }
+    ]
+  },
+  {
+    "id": "e_cw01_rooftop_bad_review",
+    "scene": "rooftop",
+    "speaker": "客户电话",
+    "title": "一星评价",
+    "text": "你刚上天台透口气，客户电话就追了上来：「我给了一星，你们这个方案根本没法用。」风把对方的声音吹得断断续续。",
+    "age": [22, 55],
+    "weight": 2,
+    "cond": null,
+    "options": [
+      {
+        "text": "先道歉，今晚重新改",
+        "cond": null,
+        "effects": {"skill": 4, "network": 2, "mood": -5, "health": -2},
+        "flags": null,
+        "job": null,
+        "result": "电话挂掉后你没下楼，先在备忘录里列了七条修改项。"
+      },
+      {
+        "text": "把需求记录一条条对给他",
+        "cond": null,
+        "effects": {"skill": 3, "mood": 2, "network": -3},
+        "flags": null,
+        "job": null,
+        "result": "最后谁也没说服谁，但对方把语气放缓了。"
+      },
+      {
+        "text": "先挂了，明天工作时间再谈",
+        "cond": null,
+        "effects": {"health": 3, "mood": 4, "network": -5},
+        "flags": null,
+        "job": null,
+        "result": "世界安静了十分钟。代价是工作群里多了六条@你。"
+      }
+    ]
+  },
+  {
+    "id": "e_cw01_park_rain_aunties",
+    "scene": "park",
+    "speaker": "凉亭里的阿姨们",
+    "title": "雨一下就大了",
+    "text": "你冲进凉亭时，上次一起上公益操课的阿姨认出了你：「小伙子，今天不练了，坐这儿等雨小点。」",
+    "age": [22, 60],
+    "weight": 2,
+    "cond": {"flags": ["cw01_joined_park_class"]},
+    "options": [
+      {
+        "text": "坐下来聊一会儿",
+        "cond": null,
+        "effects": {"network": 5, "mood": 3, "health": -1},
+        "flags": null,
+        "job": null,
+        "result": "你听了半小时菜价、血压和孩子找工作的故事，雨也刚好小了。"
+      },
+      {
+        "text": "请大家喝几杯热豆浆",
+        "cond": null,
+        "effects": {"money": -24, "network": 6, "mood": 4},
+        "flags": null,
+        "job": null,
+        "result": "塑料杯一圈传过去，最爱说话的阿姨硬塞给你两个橘子。"
+      },
+      {
+        "text": "冒雨跑去地铁站",
+        "cond": null,
+        "effects": {"health": -3, "mood": -2, "skill": 1},
+        "flags": null,
+        "job": null,
+        "result": "裤脚湿到膝盖。你在地铁空调里打了三个喷嚏。"
+      }
+    ]
+  },
+  {
+    "id": "e_cw01_cafe_unpaid_trial",
+    "scene": "cafe",
+    "speaker": "旁桌年轻人",
+    "title": "免费的试稿",
+    "text": "上次借你充电线的年轻人又坐在旁桌，电脑上开着一份「两小时试稿，不保证录用」的要求。她问你这正常吗。",
+    "age": [22, 45],
+    "weight": 2,
+    "cond": {"flags": ["cw01_lent_cafe_charger"]},
+    "options": [
+      {
+        "text": "提醒她先问清是否付费",
+        "cond": null,
+        "effects": {"network": 4, "skill": 2, "mood": -1},
+        "flags": null,
+        "job": null,
+        "result": "她发完消息，对面半小时没回。她把文件关了，说至少知道答案了。"
+      },
+      {
+        "text": "帮她把试稿框架理一遍",
+        "cond": null,
+        "effects": {"skill": 4, "network": 3, "health": -2, "money": -30},
+        "flags": null,
+        "job": null,
+        "result": "你们讨论到咖啡凉了。她最后只交了一页，但那一页是她自己的。"
+      },
+      {
+        "text": "别掺和，继续自己的事",
+        "cond": null,
+        "effects": {"mood": -2, "skill": 1},
+        "flags": null,
+        "job": null,
+        "result": "她戴上耳机继续敲字。你偶尔抬头，看到进度条一点点往前。"
+      }
+    ]
+  },
+  {
+    "id": "e_cw01_hospital_late_queue",
+    "scene": "hospital",
+    "speaker": "夜间候诊区",
+    "title": "凌晨一点的队伍",
+    "text": "夜间门诊还排着二十多人。上次你帮陈姐弄自助机时遇到的那位老人也在，他看见你，先点了点头。",
+    "age": [22, 60],
+    "weight": 2,
+    "cond": {"flags": ["cw01_helped_hospital_kiosk"]},
+    "options": [
+      {
+        "text": "把靠背椅让给他",
+        "cond": null,
+        "effects": {"network": 4, "mood": 3, "health": -2},
+        "flags": null,
+        "job": null,
+        "result": "你站了四十分钟。他临走前拍了拍椅背，说现在年轻人也挺不容易。"
+      },
+      {
+        "text": "去自动机买两瓶水",
+        "cond": null,
+        "effects": {"money": -8, "network": 3, "mood": 2},
+        "flags": null,
+        "job": null,
+        "result": "瓶盖拧开后谁都没多说话。候诊区的电视还在循环播健康宣传片。"
+      },
+      {
+        "text": "戴耳机等自己的号",
+        "cond": null,
+        "effects": {"health": 1, "mood": -2, "network": -1},
+        "flags": null,
+        "job": null,
+        "result": "耳机里放了三首歌，你一首都没听进去。"
+      }
+    ]
+  },
+  {
+    "id": "e_cw01_alley_rain_stall",
+    "scene": "alley",
+    "speaker": "夜宵摊老板",
+    "title": "雨夜摊位",
+    "text": "雨棚被风吹得啪啪响。上次和你挤过屋檐的骑手冲你抬了下手，老板笑着说：「认识啊？那坐一桌。」",
+    "age": [22, 60],
+    "weight": 2,
+    "cond": {"flags": ["cw01_shared_rider_shelter"]},
+    "options": [
+      {
+        "text": "坐下吃碗热面",
+        "cond": null,
+        "effects": {"money": -18, "health": 2, "mood": 5, "network": 2},
+        "flags": null,
+        "job": null,
+        "result": "面很咸，但热气顶上来时，你突然觉得这条巷子没那么冷。"
+      },
+      {
+        "text": "帮老板把雨棚再拉紧一点",
+        "cond": null,
+        "effects": {"network": 5, "mood": 2, "health": -2},
+        "flags": null,
+        "job": null,
+        "result": "你踩着塑料凳系绳，骑手在下面扶着。三个人折腾了十分钟。"
+      },
+      {
+        "text": "打个招呼，继续赶路",
+        "cond": null,
+        "effects": {"health": -1, "mood": -2},
+        "flags": null,
+        "job": null,
+        "result": "走到巷口时，你闻到身后飘来的葱花味，肚子很不争气地叫了一声。"
+      }
+    ]
+  },
+  {
+    "id": "e_cw01_rooftop_fireworks",
+    "scene": "rooftop",
+    "speaker": "楼上邻居",
+    "title": "远处的烟花",
+    "text": "上次你帮忙抢回床单的邻居也在天台。他递来一只保温杯：「不知道哪儿放烟花，反正这边看得见。」",
+    "age": [22, 60],
+    "weight": 2,
+    "cond": {"flags": ["cw01_helped_rooftop_bedding"]},
+    "options": [
+      {
+        "text": "站十分钟，看完这一轮",
+        "cond": null,
+        "effects": {"mood": 6, "network": 3, "health": -1},
+        "flags": null,
+        "job": null,
+        "result": "烟花离得很远，声音晚了几秒才传过来。你们谁也没拍照。"
+      },
+      {
+        "text": "下楼买两罐汽水再上来",
+        "cond": null,
+        "effects": {"money": -10, "mood": 5, "network": 4},
+        "flags": null,
+        "job": null,
+        "result": "等你回来，最大的那轮已经放完。邻居说没事，下一轮也一样好看。"
+      },
+      {
+        "text": "明天还上班，先下楼",
+        "cond": null,
+        "effects": {"skill": 2, "mood": -2, "health": 1},
+        "flags": null,
+        "job": null,
+        "result": "楼道门合上时，身后正好传来一阵欢呼。"
+      }
+    ]
+  },
+  {
+    "id": "e_cw01_park_recruiter_call",
+    "scene": "park",
+    "speaker": "猎头电话",
+    "title": "长椅上的报价",
+    "text": "你刚走过老周的棋桌，陌生号码打进来：「方便聊五分钟吗？有个岗位预算比你现在高两成。」",
+    "age": [23, 48],
+    "weight": 2,
+    "cond": null,
+    "options": [
+      {
+        "text": "如实聊经验和期望",
+        "cond": null,
+        "effects": {"network": 3, "skill": 2, "mood": -2},
+        "flags": null,
+        "job": null,
+        "result": "五分钟聊成了十五分钟。没有立刻的机会，但对方把你标成了「可再联系」。"
+      },
+      {
+        "text": "把期望薪资往上报一点",
+        "cond": null,
+        "effects": {"network": 4, "mood": -3, "skill": -1},
+        "flags": null,
+        "job": null,
+        "result": "对面停了两秒，说会回去确认预算。你挂电话后心跳比刚才快。"
+      },
+      {
+        "text": "现在不考虑，礼貌结束",
+        "cond": null,
+        "effects": {"health": 1, "mood": 2, "network": -3},
+        "flags": null,
+        "job": null,
+        "result": "电话只用了四十秒。老周抬头问你：「又有人挖你？」"
+      }
+    ]
+  },
+  {
+    "id": "e_cw01_cafe_gossip",
+    "scene": "cafe",
+    "speaker": "同事",
+    "title": "隔壁组的消息",
+    "text": "同事把咖啡杯往你这边推了推，压低声音：「隔壁组可能要裁人，你别说是我讲的。」",
+    "age": [22, 50],
+    "weight": 2,
+    "cond": null,
+    "options": [
+      {
+        "text": "听完就算，不往外传",
+        "cond": null,
+        "effects": {"network": 2, "skill": 1, "mood": -2},
+        "flags": null,
+        "job": null,
+        "result": "你知道了一点信息，也多背了一点不该背的东西。"
+      },
+      {
+        "text": "交换一条自己知道的消息",
+        "cond": null,
+        "effects": {"network": 5, "mood": 2, "skill": -2},
+        "flags": null,
+        "job": null,
+        "result": "两杯咖啡喝完，你们都知道得更多，也都更不安。"
+      },
+      {
+        "text": "把话题拉回工作",
+        "cond": null,
+        "effects": {"mood": 3, "health": 1, "network": -2},
+        "flags": null,
+        "job": null,
+        "result": "同事耸耸肩，打开电脑。你们真的把方案改完了。"
+      }
+    ]
+  },
+  {
+    "id": "e_cw01_hospital_medicine",
+    "scene": "hospital",
+    "speaker": "药房窗口",
+    "title": "同一个成分",
+    "text": "窗口里摆着两盒同成分的药，一盒四十五，一盒一百二。陈姐发来消息：「按医生开的来，别自己乱加量。」",
+    "age": [22, 60],
+    "weight": 2,
+    "cond": null,
+    "options": [
+      {
+        "text": "买便宜的通用药",
+        "cond": null,
+        "effects": {"money": -45, "health": 5, "mood": 1},
+        "flags": null,
+        "job": null,
+        "result": "药师又核对了一遍成分和剂量。你把省下的钱留在了钱包里。"
+      },
+      {
+        "text": "买熟悉的品牌",
+        "cond": null,
+        "effects": {"money": -120, "health": 5, "mood": -1},
+        "flags": null,
+        "job": null,
+        "result": "你知道成分一样，最后还是买了那个看着熟悉的盒子。"
+      },
+      {
+        "text": "先不买，回去再看看",
+        "cond": null,
+        "effects": {"health": -3, "mood": -2},
+        "flags": null,
+        "job": null,
+        "result": "窗口号跳到下一位。你把处方折好，塞进口袋。"
+      }
+    ]
+  },
+  {
+    "id": "e_cw01_alley_landlord_repair",
+    "scene": "alley",
+    "speaker": "房东电话",
+    "title": "漏水谁出钱",
+    "text": "你在旧巷等维修师傅，房东电话里说：「小问题你先垫一下，回头再算。」师傅在旁边报了六百。",
+    "age": [22, 50],
+    "weight": 2,
+    "cond": null,
+    "options": [
+      {
+        "text": "先出一半，尽快修好",
+        "cond": null,
+        "effects": {"money": -300, "mood": -3, "network": 2},
+        "flags": null,
+        "job": null,
+        "result": "水当天止住了。至于另外三百，房东说下个月房租里再谈。"
+      },
+      {
+        "text": "坚持让房东全付",
+        "cond": null,
+        "effects": {"skill": 2, "mood": -4, "network": -3},
+        "flags": null,
+        "job": null,
+        "result": "你把合同翻出来念了两条。房东沉默很久，最后说让师傅把电话给他。"
+      },
+      {
+        "text": "先买材料自己临时补",
+        "cond": null,
+        "effects": {"money": -60, "skill": 3, "health": -2},
+        "flags": null,
+        "job": null,
+        "result": "补丁很丑，但今晚不用再拿脸盆接水。"
+      }
+    ]
+  },
+  {
+    "id": "e_cw01_rooftop_afterhours",
+    "scene": "rooftop",
+    "speaker": "工作群",
+    "title": "晚上十点四十七",
+    "text": "22:47，工作群亮了。老张先私聊你一句：「醒着没？他们又要今晚改。」随后群里@了所有人。",
+    "age": [22, 55],
+    "weight": 2,
+    "cond": null,
+    "options": [
+      {
+        "text": "下楼开电脑，把活做完",
+        "cond": null,
+        "effects": {"money": 80, "skill": 4, "health": -4, "mood": -5},
+        "flags": null,
+        "job": null,
+        "result": "零点过后文件发了出去。红包八十块，正好够两顿外卖。"
+      },
+      {
+        "text": "回复明早处理，然后静音",
+        "cond": null,
+        "effects": {"health": 3, "mood": 4, "network": -4},
+        "flags": null,
+        "job": null,
+        "result": "手机安静下来。你第一次发现城市夜里的风其实没什么声音。"
+      },
+      {
+        "text": "先问清楚到底急在哪",
+        "cond": null,
+        "effects": {"skill": 2, "network": 2, "mood": -2},
+        "flags": null,
+        "job": null,
+        "result": "问到第三句，大家才发现真正需要今晚改的只有一页。"
+      }
+    ]
   }
 ]
