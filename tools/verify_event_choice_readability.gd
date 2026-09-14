@@ -96,10 +96,17 @@ func _show_pack_a_stress_event() -> void:
 			"text": _long_choice(index),
 		})
 	ui.show_event(
-		"雨夜里的一件小事",
+		_long_header(),
 		_long_body(),
 		options,
 		null
+	)
+
+
+func _long_header() -> String:
+	return (
+		"陈姐 · 雨夜里的一件小事：原本只是顺路停两分钟，却碰上了一个需要马上做决定的生活麻烦"
+		+ "——标题故意继续拉长，用来验证人物名与事件名组合增长后仍能完整换行显示"
 	)
 
 
@@ -147,7 +154,9 @@ func _check_choice_layout(label: String, expected_viewport: Vector2i) -> void:
 	_expect(ui.is_busy(), "%s: visible event must report busy=true" % label)
 	_expect(_rect_inside_viewport(panel.get_global_rect(), expected_viewport), "%s: EventPanel must stay inside viewport" % label)
 	_expect(panel.size.y <= 340.5, "%s: EventPanel must remain within bounded maximum height" % label)
-	_expect(header.text == "雨夜里的一件小事", "%s: event title must be preserved" % label)
+	_expect(header.text == _long_header(), "%s: long event title must be preserved" % label)
+	_expect(header.autowrap_mode != TextServer.AUTOWRAP_OFF, "%s: long event title must wrap instead of clipping" % label)
+	_expect(header.tooltip_text == header.text, "%s: title tooltip must preserve the full header" % label)
 	_expect(header.get_global_rect().end.y <= scroll.get_global_rect().position.y + 0.5, "%s: title must remain outside/above EventScroll" % label)
 	_expect(body.text == _long_body(), "%s: long body copy must be preserved exactly" % label)
 	_expect(body.autowrap_mode != TextServer.AUTOWRAP_OFF, "%s: body copy must wrap" % label)
@@ -161,7 +170,7 @@ func _check_choice_layout(label: String, expected_viewport: Vector2i) -> void:
 	_expect(scroll.scroll_vertical == 0, "%s: show/resize before reading must remain at top" % label)
 
 	var scroll_rect := scroll.get_global_rect()
-	var previous_bottom := -INF
+	var previous_bottom := -1.0e20
 	for option_index in range(EXPECTED_OPTIONS):
 		var expected_index: int = CHOICE_INDICES[option_index]
 		var button: Button = options.get_node("OptionButton%d" % expected_index) as Button
@@ -217,6 +226,7 @@ func _check_result_layout(label: String, expected_viewport: Vector2i) -> void:
 	_check_logical_viewport(label, expected_viewport)
 	var panel: PanelContainer = ui.get_node("EventPanel") as PanelContainer
 	var content: VBoxContainer = panel.get_node("EventContent") as VBoxContainer
+	var header: Label = content.get_node("EventHeader") as Label
 	var scroll: ScrollContainer = content.get_node("EventScroll") as ScrollContainer
 	var scroll_content: VBoxContainer = scroll.get_node("EventScrollContent") as VBoxContainer
 	var body: Label = scroll_content.get_node("EventBody") as Label
@@ -226,6 +236,8 @@ func _check_result_layout(label: String, expected_viewport: Vector2i) -> void:
 
 	_expect(ui.is_busy(), "%s: result presentation must keep EventUI busy=true" % label)
 	_expect(_rect_inside_viewport(panel.get_global_rect(), expected_viewport), "%s: result panel must stay inside viewport" % label)
+	_expect(header.text == "结果", "%s: result header must remain 结果" % label)
+	_expect(header.tooltip_text == "结果", "%s: result header tooltip must reset with the header" % label)
 	_expect(options.get_child_count() == 0, "%s: old choices must leave layout immediately in result state" % label)
 	_expect(body.text == _long_result(), "%s: result copy must be preserved" % label)
 	_expect(continue_button.visible, "%s: Continue must be visible in result state" % label)
