@@ -42,6 +42,15 @@ This file defines default ownership boundaries. A task may temporarily override 
 - May inspect `scenes/**`, `scripts/world/**`, `scripts/systems/*Activities.gd` and UI code to derive asset requirements, but does not own gameplay integration code by default.
 - Any edit to scene composition or script integration must be explicitly co-assigned by 00 to avoid conflict with Scene/UI or Gameplay.
 
+#### Current explicit production grant — ART-INGEST-004
+User-approved on 2026-09-15 for the current generated-art ingestion wave. While `ART-INGEST-004` is active, `art-animation` may create, replace, rename, organize and delete production asset files only under these exact paths:
+- `assets/art/production/player/actions/**`
+- `assets/art/production/npc/**`
+- `assets/art/production/foreground/**`
+- `assets/art/production/fx/**`
+
+This grant includes binary image ingestion, sprite sheets, separated actor/prop parts, foreground/occlusion layers, VFX frames and per-folder manifests needed to identify today’s generated assets. It does **not** grant edits to `scenes/**`, `scripts/**`, `project.godot`, gameplay data, UI integration, or `main`.
+
 ### Audio/Music agent
 - `agent-reports/audio-music.md`
 - Audio assets under `assets/audio/**` when explicitly assigned.
