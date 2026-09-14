@@ -21,7 +21,7 @@ NPC-CONTENT-002..008, NPC-AUDIT-009, NPC-CONTENT-010,
 QA-003..012, QA-CONTENT-014,
 ART-AUDIT-001, AUDIO-AUDIT-001, DIRECTOR-001,
 GAME-CONTENT-012, NPC-CONTENT-012, ART-PROD-002, AUDIO-CONTENT-002, DIRECTOR-CONTENT-002,
-**NPC-CONTENT-015, QA-CONTENT-015** are DONE at repository/source/report level. Runtime/render/playback evidence remains separate where stated below.
+**UI-CONTENT-008, NPC-CONTENT-015, QA-CONTENT-015** are DONE at repository/source/report level. Runtime/render/playback evidence remains separate where stated below.
 
 ## Lane 01 — Gameplay
 ### GAME-CONTENT-012 — Daily-life economy hooks v1
@@ -74,15 +74,14 @@ GAME-CONTENT-012, NPC-CONTENT-012, ART-PROD-002, AUDIO-CONTENT-002, DIRECTOR-CON
 ### UI-CONTENT-008 — Pack A event-choice readability pass
 - Owner: scene-ui
 - Branch: `agent/ui-content-008-event-choice-readability`
-- Status: IN_PROGRESS
-- Priority: HIGH
-- Player-visible/direct-unblock: YES.
-- Latest observed tip: `286bc7aba89b66015ead1f16e7c7c441239985ed`.
-- Task-specific `EventUI.gd` + `tools/verify_event_choice_readability.gd` work exists on branch; the latest observed source commit remains within authorized UI scope.
-- Current branch report is still inherited `UI-001 / READY`, so this task is **not yet review-submitted** and is not accepted.
-- Writable: `scripts/ui/EventUI.gd`, `tools/verify_event_choice_readability.gd`, `agent-reports/scene-ui.md` only.
-- Objective: bounded readable long title/body/result/2-3 wrapped choices at 1280x720 and 960x540, all choices and continue flow reachable, no exactly-once lifecycle regression.
-- Rendered PASS remains QA-002 work. Pack A runtime eligibility remains separately blocked by GAME-CONTENT-014.
+- Status: DONE
+- Accepted exact tip: `f4684143a314e6d9c14e02b6d77cbe7cd665c113`.
+- Review: final branch delta is limited to the authorized `scripts/ui/EventUI.gd`, `tools/verify_event_choice_readability.gd` and Scene/UI report. Event title stays outside the bounded scroll region; long body + 2–3 choices share vertical overflow; long choices wrap and left-align while preserving supplied indices and enabled state; result Continue stays outside the scroll region; stale choice layout is removed immediately; scroll resets on choice/result rebuild. Public EventUI signals/methods/busy semantics remain unchanged.
+- Runtime boundary: verifier is prepared but **NOT RUN**. Final Godot typography/scrollbar/render acceptance at 1280x720 and 960x540 belongs to QA-002. This does not make Pack A runtime-triggerable before GAME-CONTENT-014.
+
+### Lane 02 scheduling hold
+- No new web READY is created this heartbeat.
+- Reason: the next first-day HUD/objective presentation task depends on GAME-CONTENT-013 exposing the accepted single-current-objective state. Starting it now would guess an API and create rework. UI-FIX-007 remains separately runtime-blocked.
 
 ## Lane 03 — NPC/Content
 ### NPC-CONTENT-012 — City Event Pack A
@@ -133,11 +132,11 @@ GAME-CONTENT-012, NPC-CONTENT-012, ART-PROD-002, AUDIO-CONTENT-002, DIRECTOR-CON
 - Status: DONE
 - Accepted exact tip: `470e8abee0f250b7f2b8105613679de73db8db7e`.
 - Review: delta against task baseline is report-only, exactly as authorized. The report records accepted GAME-CONTENT-012, UI-FIX-007, NPC-CONTENT-012 semantic-append inputs and DIRECTOR-CONTENT-002 control requirements; excludes moving/unaccepted successor tips; records stale-SHA stop rules and deterministic local/Codex execution order; claims no parser/Godot/render/Web/browser/audio PASS.
-- The manifest is a snapshot, not a frozen candidate. Because NPC-CONTENT-015 is accepted this heartbeat and UI-CONTENT-008/other producers are still moving, final integration inputs must be regenerated/updated before freeze rather than silently absorbing branch heads.
+- The manifest is a snapshot, not a frozen candidate. NPC-CONTENT-015 and UI-CONTENT-008 were accepted after that snapshot, so final integration inputs must explicitly include their accepted exact tips rather than silently absorbing moving branch heads.
 
 ### Lane 04 scheduling hold
 - No new web READY is created this heartbeat.
-- Reason: current source-bearing producers 01/02/05/07 are still active and QA-002 cannot freeze yet. Another report-only audit would be duplicate busywork.
+- Reason: current source-bearing producers 01/05/07 are still active and QA-002 cannot freeze yet. Another report-only audit would be duplicate busywork.
 
 ### QA-002 — Single frozen Codex/Local runtime package
 - Owner: qa-build (Codex/local)
@@ -146,7 +145,7 @@ GAME-CONTENT-012, NPC-CONTENT-012, ART-PROD-002, AUDIO-CONTENT-002, DIRECTOR-CON
 - Blocked by: one frozen post-review semantic integration SHA plus real Godot 4.7.2/browser/audio execution context.
 - Eventual CONTENT-WAVE-01 package must include:
   - UI-FIX-007 verifier + rendered 1280x720 / 960x540;
-  - UI-CONTENT-008 verifier/render if accepted before freeze;
+  - accepted UI-CONTENT-008 verifier + rendered long-title/body/choice/result checks;
   - livelihood overtime/side-gig once/day/day-rollover/save-load/reachability;
   - Pack A baseline-preservation/count/schema gate;
   - after GAME-CONTENT-014, prove ordinary Pack A completion does not advance a year and trigger one accepted Pack A event per target location;
@@ -234,7 +233,7 @@ GAME-CONTENT-012, NPC-CONTENT-012, ART-PROD-002, AUDIO-CONTENT-002, DIRECTOR-CON
 - Current observed branch tip remains accepted DIRECTOR-CONTENT-002 baseline `cebc2c868a52fcd719bbe3b5d6bd39917a17b82f`; no DIRECTOR-CONTENT-003 task-specific handoff is reviewable yet.
 
 ## Active ratio after this heartbeat
-Active web lanes with READY/IN_PROGRESS tasks: 01, 02, 05, 07 = 4. All four are player-visible/direct-unblock work = **100%**. Lane 03 and Lane 04 are intentionally paused pending upstream producer/director movement; Lane 06 is intentionally BLOCKED / LOCAL. CONTENT-WAVE-01 therefore remains above the 60% minimum without creating duplicate audits or speculative work.
+Active web lanes with READY tasks: 01, 05, 07 = 3. All three are player-visible/direct-unblock work = **100%**. Lanes 02, 03 and 04 are intentionally paused pending upstream producer/director movement; Lane 06 is intentionally BLOCKED / LOCAL. CONTENT-WAVE-01 remains above the 60% minimum without duplicate audits or speculative work.
 
 ## Deferred product decisions
 - Xiaoyu canon: roommate / romance possibility / close friend only.
