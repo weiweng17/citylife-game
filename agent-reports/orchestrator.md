@@ -4,160 +4,199 @@
 - Agent: `00-Orchestrator`
 - Branch: `orchestrator/multi-agent-bootstrap`
 - Status: **ACTIVE — CONTENT-WAVE-01 / 00-07 ENABLED**
-- Heartbeat: `2026-09-14 FULL-DISPATCH-HEARTBEAT-04`
-- Rule source: `docs/agents/ORCHESTRATOR_LOOP.md`
-- Planning source: `planning/content-expansion-wave-01` exact planning tip `5ca3e0140d440bf1e07597b115ed04c2bc1d17c3`.
-- Coordination tip observed before this write: `58aea211ac66a27e6ff921f8a20d103d2c5f4f75`.
+- Heartbeat: `2026-09-14 FULL-DISPATCH-HEARTBEAT-04-RECONCILED`
+- Local time: `2026-09-14 16:55 +08:00`.
+- Rule source: `docs/agents/ORCHESTRATOR_LOOP.md`.
+- Planning source: `planning/content-expansion-wave-01` exact tip `5ca3e0140d440bf1e07597b115ed04c2bc1d17c3`.
+- Coordination tip at initial read: `58aea211ac66a27e6ff921f8a20d103d2c5f4f75`.
+- Task-board reconciliation commit created this heartbeat: `3fd1e7ae9a1b209d7e77efee32b8fe17fc187d9e`.
+- A concurrent orchestrator-report write advanced the coordination branch after that commit; this report re-read and reconciles the final GitHub state rather than force-overwriting stale content.
+- `main` was not modified.
 
 ## Trigger consumed
-Dispatcher reported only:
+Dispatcher observed:
 - `06-Audio-Music has no READY/IN_PROGRESS task`.
 
-This heartbeat re-read `TASK_BOARD.md`, `FILE_OWNERSHIP.md`, `WEB_AGENT_LAUNCHPAD.md`, `ORCHESTRATOR_LOOP.md`, the orchestrator report, all 01-07 reports, and the current task branches / exact tips.
+That observation is intentional. Lane 06 has finished its current web/source work; its next task is explicitly `BLOCKED / LOCAL` because it requires binary acquisition, provenance snapshots, audio editing and listening. No speculative web-audio task is created simply to make the lane appear busy.
 
-The 06 observation is **intentional**, not a scheduling hole: `AUDIO-CONTENT-003` is already `BLOCKED` on binary acquisition/edit/listening/local execution. Creating another speculative web-audio READY task would duplicate work and violate the existing task-board boundary.
-
-No `main` write was performed or authorized.
-
-## Reviews completed this heartbeat
-No new **current-task** `NEEDS_REVIEW` handoff exists.
-
-Several successor branches still inherit old reports whose status text says `NEEDS_REVIEW` or `READY`, but those reports belong to already-consumed predecessor tasks. They are not re-reviewed:
-- 01 report still describes accepted `GAME-CONTENT-012`;
-- 05 report still describes accepted `ART-PROD-002`;
-- 06 report still describes accepted `AUDIO-CONTENT-002`;
-- 07 report still describes accepted `DIRECTOR-CONTENT-002`;
-- 02/03/04 successor reports are still inherited/stale templates rather than current-task handoffs.
-
-Idempotency rule applied: predecessor status text does not create a second DONE transition or a duplicate next task.
+## Sources re-read this heartbeat
+- `docs/agents/ORCHESTRATOR_LOOP.md`;
+- `docs/agents/TASK_BOARD.md`;
+- `docs/agents/FILE_OWNERSHIP.md`;
+- `docs/agents/WEB_AGENT_LAUNCHPAD.md`;
+- prior `agent-reports/orchestrator.md`;
+- all 01–07 worker reports;
+- all currently assigned task branches and exact tips.
 
 ## Worker state / exact branch tips
 
 ### 01 Gameplay
-- Board task: `GAME-CONTENT-013 — First-day onboarding gate & objective state`.
+- Task: `GAME-CONTENT-013 — First-day onboarding gate & objective state`.
 - Board state: `READY`.
 - Branch: `agent/game-content-013-first-day-onboarding-gate`.
-- Exact observed tip: `14ca63ac569680008f9f4b20cb01514672d75caa`.
-- Current branch has not moved beyond the accepted GAME-CONTENT-012 baseline yet.
-- Current report is stale predecessor handoff (`GAME-CONTENT-012 / NEEDS_REVIEW`) and is already consumed.
-- Action this heartbeat: keep the single existing READY; do not create a duplicate.
+- Exact tip: `14ca63ac569680008f9f4b20cb01514672d75caa`.
+- Branch has not moved beyond accepted GAME-CONTENT-012 baseline.
+- Report still shows accepted predecessor `GAME-CONTENT-012 / NEEDS_REVIEW`; stale inheritance only.
+- Disposition: keep one READY; no duplicate task.
 
 ### 02 Scene/UI
-- Board task: `UI-CONTENT-008 — Pack A event-choice readability pass`.
-- Board state: `READY`.
+- Task: `UI-CONTENT-008 — Pack A event-choice readability pass`.
+- Board state: `IN_PROGRESS`.
 - Branch: `agent/ui-content-008-event-choice-readability`.
-- Exact observed tip: `df2ba2a29eb34cd9696c22f43ccd11341d409a29` (`ui: keep long event choices readable`).
-- New production activity is real: current commit changes only `scripts/ui/EventUI.gd`, within task authorization. It introduces bounded vertical scrolling for event body/choices, wrapped option buttons, viewport-relative panel height and scroll-reset behavior.
-- Missing handoff: `tools/verify_event_choice_readability.gd` and the current-task Scene/UI report are not yet present; report still says `UI-001 / READY`.
-- Disposition: task is active but **not reviewable/accepted** until 02 submits its current-task report and verifier. No rendered PASS is inferred.
+- Exact tip: `df2ba2a29eb34cd9696c22f43ccd11341d409a29`.
+- Task-specific work exists in authorized scope: `scripts/ui/EventUI.gd` and `tools/verify_event_choice_readability.gd`.
+- Current branch report still contains inherited `UI-001 / READY`, so UI-CONTENT-008 has not been formally submitted for review.
+- Disposition: keep IN_PROGRESS; do not accept prematurely. Rendered/runtime evidence remains QA-002 work.
 
 ### 03 NPC/Content
-- Board task: `NPC-CONTENT-015 — First-day NPC recognition micro-pass`.
-- Board state: `READY`.
+- Task: `NPC-CONTENT-015 — First-day NPC recognition micro-pass`.
+- Board state: `IN_PROGRESS`.
 - Branch: `agent/npc-content-015-first-day-recognition`.
-- Exact observed tip: `6941e0a2f66e5eabf9ad6b18563158170e67312a` (`NPC-CONTENT-015 sharpen first-day NPC recognition`).
-- New production activity is scope-clean: only the `young` dialogue lines for Chenjie and Lao Zhang in `scripts/Data.gd` changed. Chenjie is now clearly the nearby-life/supplies anchor; Lao Zhang is clearly the workplace/process mentor.
-- Mid/old/dark relationship mechanics and event data are untouched in the observed commit.
-- Missing handoff: current-task NPC report has not been written; the branch still inherits `NPC-001 / READY`.
-- Disposition: task is not reviewable/accepted until 03 submits `NPC-CONTENT-015 / NEEDS_REVIEW`. Do not create another NPC task.
+- Exact tip: `6941e0a2f66e5eabf9ad6b18563158170e67312a`.
+- Tip changes only authorized `young` dialogue lines for 陈姐 / 老张 in `scripts/Data.gd`; no event/quest/schedule/Xiaoyu-canon edits observed.
+- Current branch report is still inherited `NPC-001 / READY`, so this is not yet a review submission.
+- Disposition: keep IN_PROGRESS; no duplicate content task.
 
 ### 04 QA/Build
-- Board task: `QA-CONTENT-015 — Accepted producer consolidation manifest`.
+- Task: `QA-CONTENT-015 — Accepted producer consolidation manifest`.
 - Board state: `READY`.
 - Branch: `agent/qa-content-015-producer-consolidation`.
-- Exact observed tip: `2781fd0705c2401ed9e0698db1990dc87eefb333`.
-- No current-task delta yet; report remains inherited `QA-001 / READY`.
-- Action: keep the single existing READY; QA-002 remains the only runtime package.
+- Exact tip: `2781fd0705c2401ed9e0698db1990dc87eefb333`.
+- No task-specific report delta yet; inherited QA-001 template remains.
+- `QA-002` remains the single frozen exact-SHA runtime/render/Web/audio package and stays blocked until a reviewed semantic integration candidate exists.
+- Disposition: keep one READY plus historical/runtime BLOCKED QA-002.
 
 ### 05 Art/Animation
-- Board task: `ART-PROD-003 — First-day action cleanup candidates: cooking + typing`.
+- Task: `ART-PROD-003 — First-day action cleanup candidates: cooking + typing`.
 - Board state: `READY`.
 - Branch: `agent/art-prod-003-first-day-action-cleanup`.
-- Exact observed tip: `9fbeb0628eda40f93a72f96150508113e2c8fbcc`.
-- No repository delta beyond accepted ART-PROD-002; report is the already-consumed ART-PROD-002 handoff.
-- Action: keep the single existing READY. Chat-generated art cannot be treated as integrated until an explicit asset-ingestion task exists.
+- Exact tip: `9fbeb0628eda40f93a72f96150508113e2c8fbcc`.
+- Tip is still the accepted ART-PROD-002 baseline; current report is the already-consumed ART-PROD-002 handoff.
+- Disposition: keep one READY. Chat-generated candidate art is not repository/Godot integration.
 
 ### 06 Audio/Music
-- Latest accepted web task: `AUDIO-CONTENT-002` @ `67033f8c0bf8323d5600c7bccf47f42a0baa1042`.
+- Latest accepted web task: `AUDIO-CONTENT-002`.
+- Branch: `agent/audio-content-002-first-hour-sound-pack`.
+- Exact accepted/current tip: `67033f8c0bf8323d5600c7bccf47f42a0baa1042`.
+- Report still says `AUDIO-CONTENT-002 / NEEDS_REVIEW`; already consumed predecessor report.
 - Next task: `AUDIO-CONTENT-003 — Approved-source acquisition + first playback pack`.
 - Board state: `BLOCKED / LOCAL`.
-- Reason: actual source download, license snapshots, trim/conversion, listening/audition and playback require local/Codex binary/audio context.
-- Dispatcher showing no READY/IN_PROGRESS is therefore correct.
-- **No replacement web-audio READY task is created.**
-
-#### Minimum local audio package
-Input authority:
-- accepted source manifest from AUDIO-CONTENT-002 exact tip `67033f8c0bf8323d5600c7bccf47f42a0baa1042`;
-- `assets/audio/licenses/CONTENT_WAVE_01_SOURCES.md`.
-
-Local/Codex execution must:
-1. re-open each exact selected source page at download time and preserve a dated license/source snapshot;
-2. download only sources already approved by the manifest unless a source fails rights/content audition;
-3. preserve upstream filename + creator + source URL in provenance notes;
-4. derive game-ready `.ogg`/`.wav` files only under task-authorized `assets/audio/**` paths;
-5. record trim, loop, gain, EQ and conversion decisions;
-6. audition for intelligible speech, real-city announcements, copyrighted background music, clipping and tone mismatch;
-7. reject/replace any source that fails audition rather than forcing it into the build;
-8. do **not** claim Godot/Web playback PASS until a frozen integration SHA and explicit runtime hook task exist.
-
-Playback/render/Web evidence remains in `QA-002`; AUDIO-CONTENT-003 acquisition itself is not a reason to fragment QA into another competing runtime package.
+- Blocker: source-page re-verification at download time, binary download, dated provenance/license snapshots, trim/loop/gain/EQ/conversion, human listening/audition, and later Godot/Web playback.
+- Disposition: **no web READY task created**. Existing local package is the smallest non-duplicative next step.
 
 ### 07 Game Director
-- Board task: `DIRECTOR-CONTENT-003 — Day 2–7 retention loop implementation map`.
+- Task: `DIRECTOR-CONTENT-003 — Day 2–7 retention loop implementation map`.
 - Board state: `READY`.
 - Branch: `agent/director-content-003-day2-7-retention`.
-- Exact observed tip: `cebc2c868a52fcd719bbe3b5d6bd39917a17b82f`.
-- No current-task delta yet; report remains the already-consumed DIRECTOR-CONTENT-002 handoff.
-- Action: keep the single existing READY; no duplicate design task.
+- Exact tip: `cebc2c868a52fcd719bbe3b5d6bd39917a17b82f`.
+- No current-task delta; report remains the already-consumed DIRECTOR-CONTENT-002 handoff.
+- Disposition: keep one READY; no duplicate design task.
 
-## Task-board disposition this run
-No task-board rewrite is required this heartbeat.
+## NEEDS_REVIEW audit completed
+No **new current-task** `NEEDS_REVIEW` exists.
 
-Reason:
-- 01/02/03/04/05/07 already each have exactly one non-overlapping `READY` task with machine-readable plain status tokens;
-- 06 is intentionally `BLOCKED / LOCAL`, not accidentally idle;
-- 02 and 03 show source activity but have not submitted current-task reports, so this heartbeat does not prematurely accept them;
-- no new current-task `NEEDS_REVIEW` exists;
-- creating replacement tasks would violate idempotency and/or duplicate active scope.
+Visible predecessor markers are stale and already consumed:
+- 01: GAME-CONTENT-012;
+- 05: ART-PROD-002;
+- 06: AUDIO-CONTENT-002;
+- 07: DIRECTOR-CONTENT-002.
+
+02 and 03 have genuine current-task production deltas but have not updated their own reports to the current task / `NEEDS_REVIEW`, so they are not yet reviewable.
+04 has no current-task delta yet.
+
+Therefore this heartbeat makes:
+- new DONE transitions: **0**;
+- correction tasks: **0**;
+- duplicate/stale re-acceptances: **0**.
+
+## Task-board changes made this run
+The branch state changed since the previous heartbeat, so two non-duplicative status corrections were required:
+1. `UI-CONTENT-008`: `READY -> IN_PROGRESS`; observed tip `df2ba2a29eb34cd9696c22f43ccd11341d409a29`.
+2. `NPC-CONTENT-015`: `READY -> IN_PROGRESS`; observed tip `6941e0a2f66e5eabf9ad6b18563158170e67312a`.
+
+No new task IDs were created. No unchanged task was duplicated.
+
+## Next task per worker
+- 01 Gameplay: `GAME-CONTENT-013` — READY.
+- 02 Scene/UI: finish + report `UI-CONTENT-008` — IN_PROGRESS.
+- 03 NPC/Content: finish + report `NPC-CONTENT-015` — IN_PROGRESS.
+- 04 QA/Build: `QA-CONTENT-015` — READY.
+- 05 Art/Animation: `ART-PROD-003` — READY.
+- 06 Audio/Music: `AUDIO-CONTENT-003` — BLOCKED / Codex-local.
+- 07 Game Director: `DIRECTOR-CONTENT-003` — READY.
+
+Every lane has at most one non-blocked active task.
 
 ## Ownership / overlap check
-Current scheduled scopes remain non-overlapping:
-- 01: narrow onboarding Game/Cafe/verifier/report surface;
-- 02: EventUI + its narrow verifier/report;
-- 03: only Lao Zhang/Chenjie young dialogue + report;
-- 04: QA report only;
-- 05: Art report/chat candidate generation only;
-- 06: no web write while local-blocked;
-- 07: Day2–7 design doc + report.
+Current scopes remain non-overlapping:
+- 01: narrow onboarding `Game.gd` / Cafe visibility / verifier / report;
+- 02: `EventUI.gd` / event-choice verifier / report;
+- 03: only 老张/陈姐 `young` dialogue lines / report;
+- 04: QA consolidation report only;
+- 05: chat visual cleanup candidates + report only;
+- 06: no web write while locally blocked;
+- 07: Day 2–7 design doc + report only.
 
-No worker has permission to edit `main`.
+No active task grants a write to `main`.
 
-## Codex / local runtime consolidation
-`QA-002 — Single frozen Codex/Local runtime package` remains authoritative for real execution.
+## Codex / Local QA consolidation
+`QA-002 — Single frozen Codex/Local runtime package` remains the only final runtime/render/browser/Web evidence package. Do **not** freeze it yet.
 
-Do not freeze yet. Candidate inputs are still moving because:
-- GAME-CONTENT-013 has not produced its implementation handoff;
-- UI-CONTENT-008 has source movement but no verifier/report handoff;
-- NPC-CONTENT-015 has source movement but no report handoff;
-- GAME-CONTENT-014 still blocks normal Pack A minute-scale runtime eligibility;
-- art has no repository asset ingestion yet;
-- audio binaries are not acquired/auditioned/integrated yet.
+Eventual minimum exact-SHA package:
+1. deterministic semantic integration candidate from accepted producer deltas;
+2. UI-FIX-007 verifier + rendered 1280×720 / 960×540;
+3. UI-CONTENT-008 verifier/render if accepted before freeze;
+4. livelihood overtime + cafe-gig reachability, once/day, day rollover and save/load;
+5. Pack A baseline-preservation/count/schema checks;
+6. `verify_first30_flow.gd` after GAME-CONTENT-013 acceptance, including meal gate, 老张-before-work, overtime rejoin, event/quest suppression and explicit first-night completion;
+7. after GAME-CONTENT-014 acceptance, prove ordinary Pack A completion is minute-scale and does not trigger legacy `_year_pass()`, then trigger at least one Pack A event from each target location;
+8. all accepted terminal/UI regressions;
+9. art contact/loop/render checks only after an explicit repository asset-ingestion task exists;
+10. audio acquisition/provenance/edit/audition first, then actual Godot/Web playback on the same frozen candidate after integration hooks exist;
+11. Web export + real browser smoke on the same SHA.
 
-When frozen, QA-002 must keep Godot/headless, 1280×720 + 960×540 rendering, Day-1 Golden Path, livelihood save/day-rollover, Pack A non-year-advance semantics, accepted event triggering, animation contact loops, audio playback/mix, Web export and browser smoke tied to the same exact SHA.
+Any affected candidate SHA movement invalidates corresponding runtime evidence.
+
+## Audio local execution package
+Input authority:
+- accepted `AUDIO-CONTENT-002` tip `67033f8c0bf8323d5600c7bccf47f42a0baa1042`;
+- `assets/audio/licenses/CONTENT_WAVE_01_SOURCES.md`.
+
+Local/Codex must:
+- re-open exact source pages at download time;
+- capture dated license/provenance snapshots;
+- download only approved candidates unless rejected on rights/content audition;
+- preserve upstream filenames/creator/source metadata;
+- derive game-ready files only under explicitly authorized future `assets/audio/**` paths;
+- document trims, loops, gain/EQ/conversion;
+- audition ambience for intelligible speech, real-city announcements, copyrighted background music, clipping and tone mismatch;
+- reject/replace failed sources rather than forcing them into the build;
+- leave runtime AudioStreamPlayer/bus hook edits to a separately authorized integration task;
+- leave actual playback/Web PASS to QA-002.
+
+## Art/audio blockers
+- Art: ART-PROD-003 has not yet produced a new task-specific GitHub/report handoff. Existing candidate art is not canonical protagonist identity and is not integrated. Office typing still requires a workstation-capable scene composition for final rendered contact acceptance.
+- Audio: source manifest is accepted; binaries are not acquired/auditioned. This is a legitimate local blocker, not an empty-lane scheduling error.
 
 ## Product decisions waiting
-No unresolved user/product decision blocks the current web tasks. Continue to defer:
+No current web task is blocked by a user decision. Continue to defer:
 - Xiaoyu romance/housing canon;
-- spouse/child/family semantics;
+- spouse/child/family-state semantics;
 - recurring rent/fixed-expense canon;
-- public Alpha realistic-life vs supernatural emphasis;
+- public Alpha realistic-life vs supernatural marketing emphasis;
 - irreversible V1.0 first-month narrowing decision.
 
-## Integration readiness
+## Integration readiness / blockers
+- 02 and 03 are actively moving but still need current-task reports before review.
+- 01, 04, 05 and 07 remain scheduled READY tasks with no current-task branch delta yet.
+- 06 remains intentionally local-blocked.
+- Pack A must remain suppressed until `GAME-CONTENT-014` supplies a non-year-advancing ordinary-city-event path.
+- QA-002 cannot freeze until active first-day producer tasks are reviewed and one deterministic integration candidate exists.
 - `main` remains untouched.
-- Not ready to freeze an Alpha candidate yet.
-- The closest production movement this heartbeat is 02 EventUI and 03 first-day dialogue, but both still need their worker handoff reports.
-- 06's lack of READY/IN_PROGRESS is deliberate and should not wake 00 repeatedly as a missing-work error; Dispatcher/status-panel logic should treat a lane with a current `BLOCKED` task as intentionally occupied.
 
-## Idempotency marker
-This heartbeat created no duplicate tasks, re-consumed no accepted predecessor report, invented no runtime evidence, and did not create web busywork for the audio lane merely to hide a legitimate local blocker.
+## Active ratio / idempotency
+Active web lanes with `READY/IN_PROGRESS`: 01, 02, 03, 04, 05, 07 = 6.
+Player-visible/direct-unblock lanes: 01, 02, 03, 05, 07 = 5/6 = **83.3%**, above the 60% CONTENT-WAVE-01 requirement.
+Lane 06 is intentionally local-blocked.
+
+This heartbeat created no duplicate task, no false DONE transition, no stale-report re-review and no fabricated runtime evidence. The only task-board state changes were the two observed READY→IN_PROGRESS reconciliations above.
