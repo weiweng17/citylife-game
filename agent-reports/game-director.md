@@ -11,117 +11,111 @@
 ## Summary
 Completed and self-reviewed the implementation-ready Day 2–7 retention-loop map for CONTENT-WAVE-01.
 
-The accepted Day-1 spine remains unchanged. Day 2–7 now answers:
+The accepted Day-1 spine remains unchanged. Day 2–7 answers:
 
-> **“明天为什么还值得再过一天？”**
+> **“这座城市有没有开始出现一点属于我的规律？”**
 
-Week 1 is deliberately not another six-day tutorial. It rotates three already-supported retention sources instead of adding a WeekSystem:
-
-1. work becomes visibly more valuable through existing skill / JobGrowth progress;
-2. people begin to remember the player through existing once-per-day relations and the `认识` milestone;
-3. after-work time becomes a real tradeoff between recovery, ordinary work, overtime, store/home life and the accepted cafe side gig.
-
-The authored beats are:
-
-- **Day 2:** complete the ordinary loop without tutorial hand-holding; park gains its first explicit purpose as free recovery;
-- **Day 3:** compare “sell more time / recover / see someone”; cafe side gig may already be discovered Day 2+ inside cafe, while Day 3 is only the first proactive hint;
-- **Day 4:** deliberately revisit a person rather than collect NPCs;
-- **Day 5:** surface skill/job-growth meaning and give home study a clear reason;
-- **Day 6:** leave part of the day outside the company and let existing life maps carry choice;
-- **Day 7:** summarize current life state without a pass/fail exam or new reward currency.
-
-### Weekly-scale motivation
-The single visible week framing is:
+The single weekly motivation is:
 
 > **本周：把“新来的”过成“能留下的人”。**
 
-This is not a hard checklist and has no failure state. The most visible existing proof is relation continuity: one meaningful talk per NPC/day gives +4 and `20 = 认识`. A player who keeps returning to Lao Zhang after the Day-1 contact can naturally see the existing “he remembers your face” milestone around midweek. Work progress, useful-place knowledge and state management are equally part of “留下来”; they are not converted into a new persisted week score.
+It is expressed through three derived, non-failing anchors rather than a new WeeklySystem:
 
-## Final self-review corrections
+1. **work** — repeat an ordinary post-onboarding work day;
+2. **person** — any ordinary-life NPC reaches the existing `认识` tier (`relation >= 20`);
+3. **place** — after onboarding, actually use `park` or `cafe` as a non-work destination.
 
-### q1–q3 remain suppressed through Day 7
-The concurrent draft briefly allowed q1–q3 to resume backend evaluation on Day 2. Final review rejected that.
+All three use existing quest/day/relations/visited state. No new save schema is proposed. Missing anchors on Day 7 only change the summary/recommendation; they do not fail or lock the player.
 
-Current q1 is origin-asymmetric and month-worded: `work_shift -> skill>=55 -> meal -> money>=3000`, then closes with “这个月”. A high-skill/high-money origin can cross several steps almost immediately after onboarding. Therefore the final Week-1 contract keeps q1–q3 `evaluate / notify / reward / closing` suppressed through Day 7 so the old month-scale chain cannot hijack the first-week pacing.
-
-This task intentionally does **not** decide how Day 8+ should reintroduce or rewrite q1–q3; that belongs to a later quest-pacing/content task.
-
-### Cafe side gig remains Day-2+ cafe-local eligibility
-The concurrent draft also proposed a new hard `day>=3 && park visited` reveal gate. Final review aligns with the already-dispatched Day-1 Gameplay contract instead:
-
-- runtime eligibility stays `onboarding_complete + Day 2+ + cafe reachable`;
-- a curious player may discover the side gig inside cafe on Day 2;
-- no Day-2 global banner advertises it;
-- Day 3 is only the first proactive generic spotlight that the city has more than one way to sell time.
-
-No GAME-CONTENT-012 settlement value is changed.
+## Day 2–7 authored rhythm
+- **Day 2:** complete an ordinary day without tutorial hand-holding; park gains its first authored purpose as free recovery. Old Zhou is not a gate because his 11:30–15:00 schedule gap and storm hiding make a post-work encounter non-deterministic.
+- **Day 3:** cafe becomes the first spotlight for a different money/time choice once it is reachable through the existing `park -> cafe` chain. The accepted cafe side gig does **not** gain a new Day-3 unlock; an exploring player may discover it earlier after onboarding. Day 3 is only the first proactive hint.
+- **Day 4:** deliberately revisit a person rather than collect NPCs. Lao Zhang / Chenjie are the main repeat anchors; Lao Zhou / Azhe remain optional city texture.
+- **Day 5:** surface existing JobGrowth meaning and give home study a strategic reason: spend an hour becoming more valuable instead of earning or recovering.
+- **Day 6:** reserve part of the day outside the company; park/cafe/home/store/work remain legal choices.
+- **Day 7:** translate the three anchors into a short non-failing week summary and a second-week hook around work value / eventual salary negotiation.
 
 ## HUD transition
-After onboarding the first-week hierarchy is:
+After first-night `onboarding_complete`, the hierarchy becomes:
 
-1. **当前行动** — one immediate reason to act;
-2. **本周目标** — stable “把新来的过成能留下的人” framing;
-3. DailyRoutine — weak daily recap/status;
-4. money/health/mood/fullness/energy/time/skill — instrumentation;
-5. q1–q3, 22–60-year stage goals and dark-line counters remain outside the Week-1 primary HUD.
+1. **当前：...** — exactly one immediate action;
+2. **本周：把“新来的”过成“能留下的人”。** — weak persistent direction, optionally showing the three derived anchors;
+3. DailyRoutine — weak daily recap, not four simultaneous commands;
+4. money/health/mood/fullness/energy/time/weather/skill — instruments;
+5. 22–60-year stages and dark-line targets remain outside the Week-1 primary HUD.
 
-UI should prefer qualitative relationship feedback (`陌生人 / 认识`, existing milestone copy) over turning Week 1 into a permanent “还差 N 次聊天” grind counter.
+## q1 / q2 / q3 — final contract correction
+A concurrent draft had proposed keeping q1–q3 suppressed through Day 7. That would silently contradict accepted DIRECTOR-CONTENT-002 / `GAME-CONTENT-013`, whose suppression applies **during onboarding** and whose first successful full-night sleep releases onboarding.
+
+Final contract:
+
+- **q1 resumes normally on Day 2** using existing QuestSystem behavior, but stays secondary to `本周 + 当前`; Day 7 does not require q1 completion.
+- q1 closing currently says “这个月”; fast origins may finish during the first week, so the follow-up content task should make that copy week-neutral without changing mechanics/reward.
+- **q2 may arise naturally** for fast progress, but salary negotiation is not a Week-1 hard goal. Relation 20 is useful as a human milestone; real negotiation still depends on skill/network and Lao Zhang only gives mechanical help at relation 45.
+- **q3 is not a Week-1 director objective.** If an extreme path activates it early, it must not replace the Week-1 HUD or be used to decide new Xiaoyu roommate/romance/housing canon.
 
 ## Map-purpose decisions
-- `home`: food / sleep / recovery; study gets its first explicit growth purpose around Day 5;
-- `subway`: ordinary commute and optional Azhe continuity;
-- `office`: normal income / skill / Lao Zhang / optional overtime;
-- `store`: concrete life spending and Chenjie continuity;
-- `park`: first new Week-1 map purpose, free recovery after work;
-- `cafe`: rest/social/side-gig map; discoverable Day 2+ once reachable, first proactively explained on Day 3;
-- `hospital`: only gets a prompt when health reaches the existing HUD warning region (`<=55`) or another concrete reason exists;
-- `alley` / `rooftop`: not actively opened merely to consume Week-1 content.
+- `home`: food / sleep / study and daily grounding.
+- `subway`: commute; Azhe can recur as ambient life.
+- `office`: income, skill growth, Lao Zhang, optional overtime.
+- `store`: food/backpack, Chenjie.
+- `park`: first non-work destination; free recovery; Old Zhou only when schedule/weather permits.
+- `cafe`: coffee/idle/accepted side gig; Azhe may appear 12:00–14:00.
+- `hospital`: only spotlight from a real health reason; recommended when health enters warning (`<=55`).
+- `alley` / `rooftop`: **not Week-1 destinations**; existing story unlocks remain intact and are not broken to consume Pack A inventory.
 
-## Pack A positioning
-Accepted `NPC-CONTENT-012` remains accepted source/content only, **not current runtime eligibility**.
+## Cafe side-gig placement
+Accepted GAME-CONTENT-012 values remain unchanged.
 
-All Pack A stays suppressed until `GAME-CONTENT-014` supplies and validates a minute-scale ordinary-city-event path that does not use legacy `_year_pass()`.
+Final director rule:
+- hidden during onboarding / Day 1 per Day-1 implementation;
+- after `onboarding_complete`, if cafe is reachable through existing map logic, the interaction may be discovered normally;
+- **no new `day >= 3` eligibility gate**;
+- Day 3 is the first authored global hint because the player now understands ordinary work/overtime and can interpret side gig as an alternative rather than a second tutorial job button.
 
-A continuity self-review also cross-checked Pack A prose against accepted NPC schedules/time semantics. After GAME-CONTENT-014, the safe Week-1 pool should be deliberately narrower than “all age-22 events”:
+## Pack A — final Week-1 eligibility curation
+Accepted `NPC-CONTENT-012` remains accepted source/content only. **All 20 Pack A events remain runtime-suppressed until `GAME-CONTENT-014` separates ordinary city-event minute-scale completion from legacy `_year_pass()` and the path is later QA-validated.**
 
-### A — safe early candidates after GAME-CONTENT-014
-- `e_cw01_cafe_charger` — age 22, no physically scheduled named NPC required;
-- `e_cw01_cafe_gossip` — age 22, generic coworker, appropriate after several work days;
-- `e_cw01_hospital_medicine` — age 22; Chenjie is a message reference only; use only when the player already has a real hospital reason.
+After that blocker clears:
 
-### B — conditional candidates
-- `e_cw01_park_free_class` and `e_cw01_park_lost_wallet` physically place Lao Zhou in the event prose. They are eligible only if the eventual ordinary-event path can confirm Lao Zhou is actually present under his schedule/weather rules; otherwise keep them suppressed.
-- `e_cw01_cafe_unpaid_trial` is a useful remembered-choice follow-up only after `cw01_lent_cafe_charger` and should not dump in the same in-game day as its seed.
-- `e_cw01_park_rain_aunties` is useful only after a safely triggered `cw01_joined_park_class` seed and should not become an immediate same-day chain dump.
+### A — safe default Week-1 candidates
+- `e_cw01_cafe_charger` — age 22, small ordinary-life scale, no physically scheduled named NPC required.
+- `e_cw01_cafe_gossip` — age 22, generic coworker, appropriate after several work days.
 
-### C — suppress in Week 1 unless separately corrected
-- `e_cw01_cafe_interview_prep`: prose physically places Lao Zhang in cafe, but his accepted schedule has no cafe slot;
-- `e_cw01_hospital_kiosk`: prose physically places Chenjie in hospital while her accepted schedule keeps her at the convenience store;
-- `e_cw01_hospital_late_queue`: depends on kiosk and explicitly says 01:00 while current event data has no time-of-day condition;
-- `e_cw01_park_recruiter_call`: age min 23;
-- `e_cw01_hospital_report`: age min 25;
-- all alley/rooftop Pack A: deferred because those maps still lack a stronger Week-1 life reason.
+### B — good candidates only if existing context can be proven
+- `e_cw01_park_free_class`
+- `e_cw01_park_lost_wallet`
 
-Recommended pacing after GAME-CONTENT-014 is at most one ordinary Pack A spotlight per in-game day during Week 1. If a narrow implementation cannot guarantee that without scope growth, expose fewer events rather than adding another broad event director.
+Both physically place Lao Zhou in the prose. They are safe only if the routing layer can confirm Lao Zhou is currently present at park under existing schedule/weather state. Otherwise keep them suppressed.
+
+- `e_cw01_park_rain_aunties` — only after its parent flag and on a later day; without safe cross-day pacing, defer.
+- `e_cw01_cafe_unpaid_trial` — only after `cw01_lent_cafe_charger` and on a later day; without safe cross-day pacing, defer.
+
+### C — suppress in Week 1
+- `e_cw01_park_recruiter_call` — age min 23; default first week remains age 22.
+- `e_cw01_cafe_interview_prep` — puts Lao Zhang physically in cafe although his accepted schedule has no cafe slot; also premature next-job framing.
+- `e_cw01_hospital_kiosk` — puts Chenjie physically in hospital while her accepted 07:00–23:00 schedule keeps her in store.
+- `e_cw01_hospital_report` — age min 25.
+- `e_cw01_hospital_late_queue` — depends on kiosk and explicitly assumes 01:00 while ordinary event data has no hour gate.
+- `e_cw01_hospital_medicine` — Chenjie is only a message reference, but the event assumes an existing prescription and current clinic activity persists no such qualification; do not random-trigger it in Week 1.
+- all alley Pack A — map remains story/night/clue gated.
+- all rooftop Pack A — map remains age/dark gated.
+
+The curation intentionally prefers fewer coherent events over opening more accepted content at the cost of spatial/time continuity.
 
 ## Files changed
 - `docs/design/DAY_2_7_RETENTION_LOOP.md`
 - `agent-reports/game-director.md`
 
-Task-specific changes are limited to these two authorized paths. No production Game/data/UI/art/audio files, `main`, `TASK_BOARD.md`, or other coordination files were modified.
+No Game/data/UI/art/audio production file, `main`, `TASK_BOARD.md`, or other coordination file was modified by DIRECTOR-CONTENT-003.
 
 ## Repository/static validation performed
-- Read latest `orchestrator/multi-agent-bootstrap` TASK_BOARD, FILE_OWNERSHIP, WEB_AGENT_LAUNCHPAD, MASTER_PLAN and AGENT_RULES plus HANDOFF context.
-- Confirmed the task branch initially matched accepted DIRECTOR-CONTENT-002 tip `cebc2c868a52fcd719bbe3b5d6bd39917a17b82f` exactly (`ahead 0 / behind 0`).
-- Re-read current q1–q3 data and QuestSystem semantics.
-- Re-read `NpcRelations`: +4/day first valid talk, tiers 0/20/45/70, same-day anti-spam and existing `认识` milestone.
-- Re-read JobGrowth skill tiers / negotiation coupling.
-- Re-read DailyRoutine and current HUD hierarchy/health warning threshold.
-- Re-read NPC schedules for Lao Zhang, Chenjie, Lao Zhou, Azhe, Xiaoyu and Daoshi.
-- Re-read accepted Pack A producer report/source objects, including age gates, remembered-choice chains and physical named-NPC references.
-- Preserved accepted GAME-CONTENT-012 livelihood values.
-- Kept GAME-CONTENT-014 as an explicit runtime blocker.
-- Reconciled concurrent same-branch work instead of blindly overwriting it and corrected the q1/side-gig inconsistencies before handoff.
+- Read latest `orchestrator/multi-agent-bootstrap` TASK_BOARD, FILE_OWNERSHIP and WEB_AGENT_LAUNCHPAD.
+- Confirmed authorization is exactly the two files above.
+- Confirmed task branch baseline is accepted DIRECTOR-CONTENT-002 exact tip `cebc2c868a52fcd719bbe3b5d6bd39917a17b82f`.
+- Re-read current `DailyRoutine`, q1–q3 data, QuestSystem contract, `NpcRelations`, `JobGrowth`, NPC schedules, LocationManager visit/story unlocks, Game ordinary-event closure, and existing park/cafe/hospital activities.
+- Re-read accepted Pack A source events and cross-checked age, physical named-NPC premises, schedule/time continuity and remembered-choice dependencies.
+- Reconciled concurrent same-branch draft work instead of discarding it, then corrected q1 release, cafe side-gig eligibility and Pack-A continuity inconsistencies before handoff.
 
 ## Godot / Web / browser / rendered validation
 - Godot: **NOT RUN**.
@@ -130,66 +124,66 @@ Task-specific changes are limited to these two authorized paths. No production G
 - Animation/audio playback: **NOT RUN**.
 - No runtime/build/render/browser/audio PASS is claimed.
 
-DIRECTOR-CONTENT-003 has no `tools/**` write authorization, so it defines a future validation package but does not create or execute the verifier.
+003 has no `tools/**` authorization, so no executable verifier was added.
 
 ## Prepared future validation package
-Suggested future `tools/verify_week1_retention.gd` / frozen-SHA QA coverage:
+Suggested future `tools/verify_day2_7_retention.gd` / frozen-SHA QA coverage:
 
-1. Week-1 mode starts only after `onboarding_complete`;
-2. Day 2–7 has one current action plus one stable week framing, not stage/q1/dark competing commands;
-3. q1–q3 do not evaluate/notify/reward/close during Day 2–7;
-4. same-NPC second talk on the same day cannot grind relations;
-5. Day 1 plus Day 2–5 meaningful Lao Zhang talks can naturally reach relation 20;
-6. park/home/store/office form a complete fallback week even with Pack A disabled;
-7. side gig is hidden Day 1, discoverable Day 2+ inside reachable cafe, once/day, while Day 3 is only a spotlight rather than unlock;
-8. at least one later-day route may choose not to work/overtime and still continue normally;
-9. Day 7 -> Day 8 summary has no fail state and no duplicate reward system;
-10. save/load does not return Week-1 state to onboarding;
-11. before GAME-CONTENT-014, Pack A remains ineligible;
-12. after GAME-CONTENT-014, accepted ordinary events do not `_year_pass()` and remembered-choice flags survive save/load;
-13. schedule-dependent Pack A does not fire with the named NPC absent/hidden;
-14. spatial/time-conflicting Pack A remains suppressed until repaired;
-15. 1280×720 / 960×540 week/current/daily/resources layout is verified only on one frozen integration SHA.
+1. Week-1 mode begins only after successful first-night `onboarding_complete`;
+2. week anchors derive from existing state and survive save/load; no new save key;
+3. q1 resumes Day 2, but Day-1 onboarding work/meal do not chain-jump q1;
+4. q1/q2 backend progression cannot replace the Week-1 `本周/现在` hierarchy; q3 cannot become the Week-1 director objective;
+5. one valid NPC conversation/day remains +4; same-day repeats cannot grind; relation 20 still uses existing `认识` milestone;
+6. Day-2 park suggestion is advisory; park remains useful even when Lao Zhou is absent/storm-hidden;
+7. cafe unlock remains existing `park -> cafe`; side gig is discoverable after onboarding whenever cafe is reachable, with Day 3 only a spotlight;
+8. ordinary work/overtime/side-gig accepted values and once/day behavior remain unchanged;
+9. health warning can recommend hospital, but healthy players are not routed there as tourists;
+10. alley/rooftop are not opened for Week-1 content;
+11. before GAME-CONTENT-014, Pack A Week-1 runtime eligibility remains 0/20;
+12. after 014, A candidates complete without age/year advance and legacy annual semantics remain intact;
+13. B park candidates never fire while Lao Zhou is absent/hidden;
+14. remembered-choice follow-ups do not dump on the same day if later-day pacing is accepted;
+15. Day-7 0/1/2/3 anchor states all summarize without fail/terminal behavior;
+16. 1280×720 and 960×540 `本周 + 当前` hierarchy is readable;
+17. Web/browser/render evidence remains tied to one frozen integration SHA.
 
 ## Known issues / risks
-- `TASK_BOARD.md` remains status authority; this report only requests `NEEDS_REVIEW`.
-- Day-1 implementation tasks are still prerequisites for coherent Week-1 runtime behavior.
-- `GAME-CONTENT-014` remains a hard blocker for Pack A runtime use after onboarding.
-- Technical `VISIT_UNLOCKS` may expose destinations earlier than the authored week wants to emphasize. Prefer UI focus/derived hints over a broad LocationManager rewrite; any high-conflict edit requires explicit 00 authorization.
-- q1 remains origin-asymmetric and month-worded; final Week-1 design suppresses it rather than editing quest data in this task.
-- There is no true weekday/weekend calendar. “Day 2–7” means first seven game days, not Monday–Sunday.
-- Xiaoyu roommate/romance/housing canon remains unresolved and untouched.
+- `TASK_BOARD.md` remains status authority; this report requests `NEEDS_REVIEW` only.
+- Day-1 production implementation (`GAME-CONTENT-013` and corresponding UI/content work) is a prerequisite for a coherent runtime transition.
+- `GAME-CONTENT-014` remains a hard blocker for any Pack A runtime use.
+- Current technical map unlocks may expose destinations earlier than the authored week emphasizes; prefer UI/current-action focus over a broad LocationManager rewrite.
+- q1 is origin-asymmetric and its closing copy is month-worded; this task intentionally does not edit quest data.
+- There is no weekday/weekend calendar; “Day 2–7” means the first seven game days, not Monday–Sunday.
+- Xiaoyu / family / rent / supernatural marketing decisions remain deferred and untouched.
 
-## Exact handoff to 00
-After Day-1 implementation is reviewed, dispatch small independent tasks rather than one Week-1 rewrite:
+## Handoff to 00
+After Day-1 implementation is accepted, dispatch three small tasks:
 
 ### 01 Gameplay — `WEEK1-GAME-001`
-- derive `week_goal + current_action` from existing day/flags/relations/visited/daily/skill/state; no WeekSystem/save schema;
-- keep q1–q3 suppressed through Day 7;
-- side gig keeps accepted Day-2+ cafe-local eligibility; Day 3 is only the first authored spotlight;
-- Day-2 park / Day-3 choice prompts are advisory, never travel locks;
-- Day-7 summary has no fail path/reward currency;
-- do not change GAME-CONTENT-012 settlement values;
-- keep Pack A runtime work separate behind GAME-CONTENT-014 and use the narrowed A/B/C eligibility after that blocker clears.
+- derive work/person/place anchor state and exactly one `current_action` from existing state; no WeekSystem/save schema;
+- resume q1 on Day 2; keep q1/q2 secondary to Week-1 HUD and prevent q3 from replacing the director objective;
+- side gig adds no Day-3 eligibility gate; spotlight only;
+- health-warning hospital override;
+- Day-7 non-failing anchor summary;
+- keep Pack A fully suppressed behind GAME-CONTENT-014, then route only curated A/B candidates under their continuity rules;
+- preserve livelihood values, story map locks and terminal ordering.
 
 ### 02 Scene/UI — `WEEK1-UI-001`
-- transition from Day-1 L1 to `本周目标 + 当前行动`;
-- DailyRoutine stays secondary;
-- q1/stage/dark copy cannot reclaim the primary objective area during Week 1;
-- route emphasis: park Day 2, cafe discoverable Day 2+ / lightly explained Day 3, hospital only from real health need, no Week-1 alley/rooftop emphasis;
-- use a light Day-7 summary from current state rather than inventing new score panels.
+- transition after onboarding to `本周目标 + 当前行动`;
+- show three anchors as small state only, DailyRoutine as secondary recap;
+- q1 may be weak detail but not primary; stage/dark objective wall remains hidden;
+- highlight map reasons without changing unlock semantics;
+- light Day-7 summary; no new large weekly UI;
+- verify 1280×720 and 960×540 later on frozen SHA.
 
 ### 03 NPC/Content — `WEEK1-CONTENT-001`
-- follow `NPC-CONTENT-015` so the same Data.gd lines are not edited concurrently;
-- add minimal repeat-contact continuity for Lao Zhang and Chenjie;
-- give Lao Zhou a “slowing down is valid” ordinary-life line and Azhe an alternate-life perspective without making either a mandatory quest;
-- preserve relation mechanics and avoid numeric-threshold exposition;
-- no Xiaoyu canon decision;
-- curate/repair schedule-conflicting Pack A before Week-1 runtime rather than adding another event quota.
+- change q1 closing “这个月” to first-week-neutral wording only; do not change mechanics/reward;
+- make q2 relation copy life-like instead of exposing “好感20” as grind instruction;
+- minimal repeat-contact continuity for Lao Zhang/Chenjie after the first-day recognition micro-pass;
+- Lao Zhou/Azhe stay optional; no Xiaoyu canon decision;
+- do not add another event quota or rewrite accepted Pack A in this task.
 
 ## Handoff status
 `DIRECTOR-CONTENT-003` is complete within its two-file authorization and requests **NEEDS_REVIEW**.
 
-Design correction commit: `dc6bb2f2419cb501ddb18c4a3a0d17a8b1ee55fd`.
-
-Director recommendation: Week-1 success is not “how many maps were opened”. It is whether the player can name one place they use for a reason, one economic tradeoff they deliberately chose, one way work is making them more valuable, and one person who is beginning to recognize them.
+Director recommendation: implement this loop only after the Day-1 spine is stable. The product metric is not “how many maps opened by Day 7”; it is whether the player can name one place they use for a reason, one economic tradeoff they deliberately chose, and one person who now recognizes them.
