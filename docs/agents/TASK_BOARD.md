@@ -4,93 +4,101 @@ Only 00-Orchestrator edits this file. Workers update only their own reports.
 
 ## Completed
 ORCH-001, GAME-001, UI-001, NPC-001, QA-001,
-GAME-FIX-001..007, GAME-AUDIT-008,
+GAME-FIX-001..007, GAME-AUDIT-008, GAME-FIX-009,
 UI-AUDIT-004..006,
-NPC-CONTENT-002..008,
-QA-003..010 are DONE.
+NPC-CONTENT-002..008, NPC-AUDIT-009,
+QA-003..011 are DONE.
 
-### GAME-AUDIT-008 review
-- Accepted at `54edcdd2b3dbaf98ce1511d4acd7a9657c920903`.
-- Report-only scope was respected.
-- Accepted findings: quest rewards can mutate before terminal observation; persistent backpack use can allow post-settlement healing before terminal observation.
-
-## Gameplay — next task
+## Gameplay
 ### GAME-FIX-009 — Pre-terminal mutation ordering guard
 - Owner: gameplay
 - Branch: `agent/game-fix-009-terminal-mutation-order`
+- Status: DONE
+- Accepted exact tip: `8ff9a36e4f61f41aea943ea11ec6254ed7155b4d`.
+- Review: authorized scope only (`scripts/Game.gd`, `tools/verify_terminal_mutation_order.gd`, gameplay report). The worker correctly rebuilt from accepted GAME-FIX-007 semantic `Game.gd`, then moved settled-frame terminal evaluation before quest rewards and synchronously settled/evaluated shop-use elapsed time before another item use. No new terminal threshold/death authority was introduced. Runtime PASS is not inferred; verifier execution belongs to QA-002 on the frozen integration SHA.
+
+### GAME-AUDIT-010 — Post-009 terminal-sensitive mutation surface audit
+- Owner: gameplay
+- Branch: `agent/game-audit-010-terminal-mutation-surface`
 - Status: READY
-- Priority: HIGH
-- Writable: `scripts/Game.gd`, `tools/verify_terminal_mutation_order.gd`, `agent-reports/gameplay.md`.
-- Objective: use the existing `_evaluate_terminal_state()` before reward-bearing quest mutation on settled frames; synchronously settle/evaluate shop-use elapsed time before another item can revive a terminal state; reject further shop-use mutation after `game_over`.
-- Preserve: existing thresholds, item effects/time costs, quest rewards, save schema, GAME-FIX-001..007 semantics.
-- Forbidden: new death thresholds/consumers, UI/LocationManager/NPC edits, balance changes, main, coordination files.
-- Runtime evidence belongs to QA-002/Codex, not the web worker.
+- Priority: MEDIUM
+- Writable: `agent-reports/gameplay.md` only.
+- Objective: from the accepted GAME-FIX-009 semantic state, audit remaining callbacks/signals/systems that can mutate health, mood, money, fullness or energy while terminal observation is deferred; identify only concrete paths capable of reviving or masking a terminal state before the existing `_evaluate_terminal_state()` observes it.
+- Acceptance: report-only; exact functions/callsites and state ordering; distinguish harmless delayed presentation from real pre-observation mutation; propose at most one smallest follow-up if a concrete bypass remains; no source edits, thresholds, death paths or unrun runtime claims.
 
-## Scene/UI — held work
-- UI-FIX-001 — NEEDS_REVIEW — requires exact-SHA Godot rendered evidence.
-- UI-FIX-002 — NEEDS_REVIEW — requires exact-SHA Godot rendered evidence.
-- UI-FIX-003 — NEEDS_REVIEW — requires exact-SHA Godot rendered evidence.
-- UI-FIX-004 — NEEDS_REVIEW — requires verifier + rendered 1280x720 and 960x540 evidence.
-- UI-FIX-005 — NEEDS_REVIEW — repository scope accepted; requires exact-SHA verifier + rendered 1280x720 and 960x540 evidence.
+## Scene/UI — exact-SHA runtime holds
+The following repository implementations were already reviewed for scope/contract and are now normalized to `BLOCKED` because final acceptance explicitly requires real exact-SHA Godot/rendered evidence. Their branch tips are unchanged from the last manifest.
 
-### UI-AUDIT-006 review
-- Accepted at `9fac5a93af60cbeb00ef390bc5b3d877d319b619`.
-- Report-only scope was respected.
-- Accepted next repair: bounded vertical ShopUI list region.
+- UI-FIX-001 — BLOCKED — `07a4d159e073e9f810cf1c3007ba907a49299ae3`; needs exact-SHA Godot rendered evidence for active NPC grounding/scale/occlusion/click alignment.
+- UI-FIX-002 — BLOCKED — `b480befaedc3a3b0cbdaca1916e31dbba7283121`; needs exact-SHA rendered bed/duvet seam evidence.
+- UI-FIX-003 — BLOCKED — `51124e758877750d01f8b72429ead0075a73c596`; needs exact-SHA rendered HUD evidence at declared viewports.
+- UI-FIX-004 — BLOCKED — `4a2ce2473dd05691fc2e1368b381497a5768d3e6`; needs verifier plus rendered 1280x720 and 960x540 evidence.
+- UI-FIX-005 — BLOCKED — `a0402610cef12455dfc970641e4273c8b246d6d1`; repository scope accepted; needs exact-SHA verifier plus rendered 1280x720 and 960x540 evidence.
 
-## Scene/UI — next task
 ### UI-FIX-006 — Shop list vertical overflow containment
 - Owner: scene-ui
 - Branch: `agent/ui-fix-006-shop-list-overflow`
+- Status: BLOCKED
+- Repository-reviewed exact tip: `d328f227b8473297d4b74c058dfd1a7101a68074`.
+- Review: authorized scope only (`scripts/ui/ShopUI.gd`, `tools/verify_shop_panel_overflow.gd`, Scene/UI report). The list-only `ScrollContainer`, fixed header/status/footer/close regions, viewport-relative panel-height target, and rebuild scroll reset satisfy the repository/layout contract without touching gameplay/inventory semantics.
+- Blocked by: actual Godot execution of `verify_shop_panel_overflow.gd` and rendered 1280x720 + 960x540 evidence on the exact frozen integration SHA. Headless source inspection is not rendered PASS.
+
+### UI-AUDIT-007 — Next unlocked presentation hotspot after ShopUI
+- Owner: scene-ui
+- Branch: `agent/ui-audit-007-next-presentation-hotspot`
 - Status: READY
-- Priority: MEDIUM
-- Writable: `scripts/ui/ShopUI.gd`, `tools/verify_shop_panel_overflow.gd`, `agent-reports/scene-ui.md`.
-- Objective: only the item-list region scrolls; title/status/footer/close remain fixed/reachable at 1280x720 and 960x540.
-- Preserve all ShopUI public signals/methods and inventory/gameplay semantics.
-- Forbidden: `Game.gd`, `Inventory.gd`, item data/effects/prices/order, gameplay settlement, UI-FIX-001..005 files, sub-660px horizontal redesign, main, coordination files.
-- Final PASS requires real Godot evidence on the exact integration SHA.
+- Priority: LOW
+- Writable: `agent-reports/scene-ui.md` only.
+- Objective: while UI-FIX-001..006 wait on QA-002 runtime evidence, inspect only currently unlocked presentation helpers (for example DialogUI/EndingUI) and identify one smallest independent reachability/responsiveness defect that does not touch any held UI file, Gameplay, LocationManager, NPC/content or save semantics.
+- Acceptance: report-only; exact file/function/layout evidence; one narrow proposed writable boundary at most; no source edits and no rendered/runtime PASS claims.
 
 ## NPC/Content
-### NPC-CONTENT-008 review
-- Accepted at `a787d4ab237af9db2d85eac47b9c9db504786951`.
-- Diff is exactly two authorized relationship-neutral string substitutions in `data/events.json` plus report; no mechanics/schema changes.
-- Parser/runtime PASS is not inferred.
-
 ### NPC-AUDIT-009 — Remaining speaker/premise consistency triage
 - Owner: npc-content
 - Branch: `agent/npc-audit-009-speaker-premise-triage`
+- Status: DONE
+- Accepted exact tip: `a16920be7462436c1070e79e833cbadb7bdd0bd1`.
+- Review: report-only scope respected. Accepted classification: `e_parents_call` and `e_parent_sick` are safe copy-only; `e_parent_gone` is condition/state-schema dependent; `e_roommate` is product-policy dependent. No runtime/parser PASS inferred.
+
+### NPC-CONTENT-010 — Genericize safe parent-specific callers
+- Owner: npc-content
+- Branch: `agent/npc-content-010-generic-family-callers`
 - Status: READY
 - Priority: LOW
-- Writable: `agent-reports/npc-content.md` only.
-- Objective: inspect remaining non-family-policy speaker/premise assumptions, including `e_parents_call`, `e_parent_sick`, `e_parent_gone`, `e_roommate`; classify each as safe copy-only, condition/schema-dependent, or product-policy-dependent.
-- Acceptance: report-only, exact IDs/evidence, at most one smallest safe follow-up; no source/data edits and no runtime/parser claims.
+- Writable: `data/events.json`, `agent-reports/npc-content.md`.
+- Objective: apply only the three safe string-value edits accepted from NPC-AUDIT-009: genericize `e_parents_call.speaker`, genericize `e_parent_sick.speaker`, and neutralize the father-specific phrase in `e_parent_sick` first-option result while preserving the caregiving beat.
+- Acceptance: exactly three string-value edits only; no conditions, age/origin eligibility, effects, flags, jobs, counters, IDs, schema or flow changes; leave `e_parent_gone`, `e_roommate` and the four deferred spouse/child-policy events untouched; report exact old/new strings; no unrun parser/Godot claims.
 
 ## QA/Build
 ### QA-002 — Single frozen Codex/Local runtime package
 - Owner: qa-build (Codex/local)
 - Branch: `codex/qa-002-runtime-acceptance`
 - Status: BLOCKED
-- Blocked by: real Godot 4.7.2/browser context and a frozen post-review integration SHA.
-- All Godot, terminal, parser, Web export, browser, screenshot and rendered validation is consolidated here on one exact SHA.
-- Minimum package: SHA/worktree capture; JSON parse; all accepted Gameplay narrow regressions; all accepted UI task verifiers; shared headless gate (`verify_locations`, `verify_navigation`, `verify_day_cycle`, `verify_day_flow`, `verify_npc`, `verify_quests`); rendered UI acceptance; Web export/browser evidence.
-- Any SHA movement invalidates affected evidence.
-
-### QA-010 review
-- Accepted at `60bba20cbb9b159e583079a87cf59b1d61b36054`.
-- Report-only scope respected; single-SHA and stale-evidence rules remain authoritative.
+- Blocked by: a frozen post-review integration SHA plus real Godot 4.7.2/browser execution context.
+- All terminal/parser/Godot/headless/rendered/Web-export/browser/screenshot evidence is consolidated here on one exact SHA.
+- Minimum package now includes accepted GAME-FIX-009 verifier and repository-reviewed UI-FIX-006 verifier in addition to the previously accepted regression matrix. Any SHA movement invalidates affected evidence.
 
 ### QA-011 — Next-wave exact-SHA/Codex package delta
 - Owner: qa-build
 - Branch: `agent/qa-011-next-wave-codex-package`
+- Status: DONE
+- Accepted exact tip: `a7410aee34c8382d4d67870c01efe3e242ff883d`.
+- Review: report-only scope respected; accepted single-SHA/stale-evidence rules, deterministic Gameplay semantic integration warning, UI evidence coupling, and QA-002 handoff structure. Its captured READY tips are now stale and superseded by this heartbeat's reviewed tips.
+
+### QA-012 — Post-review integration manifest for 009/006/009
+- Owner: qa-build
+- Branch: `agent/qa-012-post-review-integration-manifest`
 - Status: READY
 - Priority: MEDIUM
 - Writable: `agent-reports/qa-build.md` only.
-- Objective: refresh exact tips, conflict hazards, deterministic integration order and the minimal QA-002 handoff after this heartbeat, including GAME-FIX-009, UI-FIX-006 and NPC-AUDIT-009 boundaries.
-- No merges, code/workflow edits, parser/Godot/Web/browser execution or inferred PASS.
+- Objective: refresh exact tips and deterministic integration/runtime handoff after repository review of GAME-FIX-009, UI-FIX-006 and NPC-AUDIT-009; incorporate the new GAME-AUDIT-010, UI-AUDIT-007 and NPC-CONTENT-010 boundaries; state precisely what source deltas belong in the next frozen candidate and what remains runtime-blocked.
+- Acceptance: report-only; no merges, source/workflow edits, parser/Godot/Web/browser execution or inferred PASS; retain the one-frozen-SHA rule and exact stale-evidence stop conditions.
 
 ## Deferred product decisions
 - `e_kid_school`, `e_second_child`, `e_downsize`, `e_empty_nest`: married-household-only vs co-parent-inclusive policy.
+- `e_roommate` / Xiaoyu housing canon: canonical roommate vs separate roommate vs explicit shared-rent state.
+- `e_parent_gone`: parent-existence/alive state contract before unconditional parent-death mechanics are changed.
 - Relationship-aware NPC dialogue/trust schema and ownership.
 
 ## Status values
-`READY` -> `IN_PROGRESS` -> `NEEDS_REVIEW` -> `DONE`; use `BLOCKED` for real execution/dependency blockers.
+`READY` -> `IN_PROGRESS` -> `NEEDS_REVIEW` -> `DONE`; use `BLOCKED` when real execution/dependency context prevents completion.
