@@ -47,10 +47,12 @@ func run() -> void:
 	var cafe = main.cafe_activities
 	var time_sys = main.time_sys
 
-	# 1) 加班在普通班次之前不可见；普通班次后开放。
+	# 1) 加班在普通班次之前不可见；新互动点从公司出生区域可正常寻路到达；普通班次后开放。
 	assert(not office._spot_available("overtime"), "overtime must stay hidden before ordinary work")
 	location.unlock("office")
 	location.travel_to("office")
+	assert(location.walk_to(office.SPOTS.overtime.position), "overtime spot must be reachable through normal office navigation")
+	location.stop_walking()
 	location.player_sprite.position = office.SPOTS.work.position
 	location.player_target = location.player_sprite.position
 	office.blocked = false
@@ -97,9 +99,11 @@ func run() -> void:
 	main.ending_ui.close()
 	main.set_process(false)
 
-	# 4) 咖啡馆帮工：55 元 < 最低普通班 90 元；90 分钟，健康−2，心情−4；同日一次。
+	# 4) 咖啡馆帮工点必须可正常寻路到达；55 元 < 最低普通班 90 元；90 分钟，健康−2，心情−4；同日一次。
 	location.unlock("cafe")
 	location.travel_to("cafe")
+	assert(location.walk_to(cafe.SPOTS.side_gig.position), "cafe side-gig spot must be reachable through normal cafe navigation")
+	location.stop_walking()
 	location.player_sprite.position = cafe.SPOTS.side_gig.position
 	location.player_target = location.player_sprite.position
 	cafe.blocked = false
@@ -135,7 +139,7 @@ func run() -> void:
 	await create_timer(1.5).timeout
 	assert(main.money == next_day_money + 55, "cafe gig must be repeatable on a later day")
 
-	print("GAME-CONTENT-012 PASS: overtime and cafe side gig are visible, costly and once-per-day")
+	print("GAME-CONTENT-012 PASS: overtime and cafe side gig are visible, reachable, costly and once-per-day")
 	quit(0)
 
 
