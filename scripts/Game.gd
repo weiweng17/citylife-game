@@ -645,7 +645,6 @@ func _poi_at_click(world_pos: Vector2) -> Dictionary:
 func _process(delta: float) -> void:
 	if not game_started:
 		return
-	_evaluate_quests()
 	if location_sys and location_sys.is_active():
 		near_target = {}
 	else:
@@ -669,6 +668,12 @@ func _process(delta: float) -> void:
 		time_sys.set_paused(ui_busy)
 		time_sys.tick(delta)
 	_sync_needs_to_time()
+	# GAME-FIX-009：先观察已经结算完的终止状态，再允许任务奖励修改生存数值。
+	# 忙碌界面下继续延迟终局展示，同时也延迟奖励结算，避免奖励先把终止值抬回来。
+	if not ui_busy:
+		if _evaluate_terminal_state():
+			return
+		_evaluate_quests()
 	if weather_sys:
 		weather_sys.update(time_sys)
 	if npc_schedule_sys:
@@ -755,6 +760,9 @@ func _on_home_activity(id: String) -> void:
 			if _is_sleep_hour():
 				feedback = _sleep_through_night()
 				slept_through = true
+				if game_over:
+					_end_activity()
+					return
 			else:
 				health = mini(100, health + 12)
 				mood = mini(100, mood + 8)
@@ -827,6 +835,10 @@ func _sleep_through_night() -> String:
 	# 睡觉本身也是"时间流过"：先把这一夜该掉的饱食掉掉，再回满精力。
 	# 醒来是"睡饱了但饿"，而不是睡完还累。
 	_sync_needs_to_time()
+	# GAME-FIX-007：过夜需求结算如果已经触发终局，必须先走统一 evaluator，
+	# 不能让随后同一流程的睡眠恢复把 0 健康/心情重新抬高。
+	if _evaluate_terminal_state():
+		return ""
 	health = mini(100, health + 12)
 	mood = mini(100, mood + 8)
 	energy = 100
@@ -1100,7 +1112,7 @@ func _on_shop_buy(item_id: String) -> void:
 
 
 func _on_shop_use(item_id: String) -> void:
-	if inventory == null or not InventoryScript.ITEMS.has(item_id) or not inventory.has(item_id):
+	if game_over or inventory == null or not InventoryScript.ITEMS.has(item_id) or not inventory.has(item_id):
 		return
 	var effects: Dictionary = InventoryScript.ITEMS[item_id].get("effects", {})
 	if not inventory.remove(item_id, 1):
@@ -1121,6 +1133,14 @@ func _on_shop_use(item_id: String) -> void:
 	var minutes: int = InventoryScript.minutes_of(item_id)
 	if time_sys:
 		time_sys.advance_minutes(minutes)
+	# GAME-FIX-009：物品耗时必须在同一次点击里完成需求结算与统一终止判定。
+	# 若这段时间已经跨过终止阈值，立即收起背包，不能让第二件恢复物品把状态抬回来。
+	_sync_needs_to_time()
+	if _evaluate_terminal_state():
+		if shop_ui and shop_ui.is_open():
+			shop_ui.close()
+		_refresh_ui()
+		return
 	# 能顶一顿的算吃饭；牛奶这种垫肚子的不算，免得每日目标被随手糊弄过去。
 	if daily_routine and int(effects.get("fullness", 0)) >= MEAL_FULLNESS:
 		daily_routine.complete("meal")
@@ -1153,10 +1173,10 @@ func _sync_needs_to_time() -> void:
 		need_fraction -= 1.0
 		fullness = maxi(0, fullness - FULLNESS_PER_HOUR)
 		energy = maxi(0, energy - ENERGY_PER_HOUR)
-	if fullness <= 0:
-		health = maxi(0, health - 2)
-	if energy <= 0:
-		mood = maxi(0, mood - 2)
+		if fullness <= 0:
+			health = maxi(0, health - 2)
+		if energy <= 0:
+			mood = maxi(0, mood - 2)
 	_warn_if_need_low()
 
 ## 告急时用角色的口气说一句话，而不是弹出“饱食度过低”这种数值提示。
@@ -1312,7 +1332,6 @@ func _enter_place(d: Dictionary) -> void:
 	var e = events_sys.pick(scene, _state())
 	if e == null:
 		_show_toast("这里今天没什么事。")
-		_year_pass()
 		return
 	_show_event(e)
 
@@ -1336,7 +1355,6 @@ func _interior_boss() -> void:
 	var e = events_sys.pick("office", _state())
 	if e == null:
 		_show_toast("今天没什么要汇报的，早点回家吧。")
-		_year_pass()
 		return
 	_show_event(e)
 
@@ -1478,7 +1496,8 @@ func _close_event() -> void:
 			time_sys.advance_minutes(time_cost)
 		_show_toast("这一段插曲过去了，城市时间继续向前。")
 		return
-	_year_pass()
+	# 普通日常事件到这里结束；年度推进只保留给显式调用 `_year_pass()` 的剧情路径。
+	return
 
 
 func _year_pass() -> void:
@@ -1486,9 +1505,7 @@ func _year_pass() -> void:
 	var res: Dictionary = rules_sys.year_tick(st)
 	_sync_from_state(st)
 
-	var reason: String = rules_sys.death_reason(st)
-	if reason != "":
-		_show_ending(reason, st)
+	if _evaluate_terminal_state():
 		return
 
 	var txt := "%d 岁  收入 %s / 支出 %s / 结余 %s" % [
@@ -1499,6 +1516,22 @@ func _year_pass() -> void:
 	if bool(res["ipo"]):
 		txt += "\n公司熬出头了，你成了老板。"
 	_show_toast(txt)
+
+
+## 所有健康/心情/破产/年龄终局统一从这里判定。
+## 调用方只决定“什么时候评估”，阈值与优先级仍完全由 Rules.death_reason() 决定。
+## game_over 是幂等护栏，避免刷新、重入或年度路径重复触发结局 UI。
+func _evaluate_terminal_state() -> bool:
+	if game_over:
+		return true
+	if rules_sys == null:
+		return false
+	var st: Dictionary = _state()
+	var reason: String = rules_sys.death_reason(st)
+	if reason.is_empty():
+		return false
+	_show_ending(reason, st)
+	return true
 
 
 func _fmt_money(v: int) -> String:
