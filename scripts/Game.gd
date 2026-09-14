@@ -51,6 +51,17 @@ const MURMURS := {
 # 能顶一顿的才算“吃饭”：牛奶这种垫垫肚子的不算，免得每日目标被随手糊弄过去。
 const MEAL_FULLNESS := 20
 
+# CONTENT-WAVE-01：短期谋生选择。当天标记复用现有持久化 flags，不扩 save schema。
+const OVERTIME_DAY_FLAG := "cw01_overtime_day"
+const CAFE_GIG_DAY_FLAG := "cw01_cafe_gig_day"
+const OVERTIME_MINUTES := 120
+const OVERTIME_HEALTH_COST := 4
+const OVERTIME_MOOD_COST := 8
+const CAFE_GIG_PAY := 55
+const CAFE_GIG_MINUTES := 90
+const CAFE_GIG_HEALTH_COST := 2
+const CAFE_GIG_MOOD_COST := 4
+
 # 地点（与 tools/gen_scene.py 的 BUILDINGS / POI 坐标一致；都落在建筑脚下的可走地面）
 const POI_DATA := [
 	{"id": "home", "pos": Vector2(310, 392), "name": "回家", "scene": "rent"},
@@ -404,9 +415,19 @@ func _refresh_ui() -> void:
 			"can_negotiate": JobGrowthScript.can_negotiate(skill),
 			"raised_today": int(game_state.raise_day) == today,
 			"friend": friend,
+			"worked_today": daily_routine != null and daily_routine.is_done("work"),
+			"overtime_today": _livelihood_done_today(OVERTIME_DAY_FLAG),
+			"overtime_pay": _overtime_pay(wage),
 		}
 		if office_activities.context != context:
 			office_activities.sync_context(context)
+	if cafe_activities:
+		var cafe_context: Dictionary = {
+			"gig_today": _livelihood_done_today(CAFE_GIG_DAY_FLAG),
+			"gig_pay": CAFE_GIG_PAY,
+		}
+		if cafe_activities.context != cafe_context:
+			cafe_activities.sync_context(cafe_context)
 	if hud:
 		hud.refresh_skill(skill, JobGrowthScript.title_of(skill))
 	# 人生阶段目标与主线任务共用同一行（HUD 高度被地点标题的偏移量盯死，不能再加行）。
@@ -848,6 +869,26 @@ func _sleep_through_night() -> String:
 		day_now, wake_text, yesterday, float(minutes) / 60.0,
 	]
 
+
+func _livelihood_done_today(flag_key: String) -> bool:
+	if time_sys == null:
+		return false
+	return int(flags.get(flag_key, -1)) == time_sys.day
+
+
+func _overtime_pay(wage: int) -> int:
+	return maxi(1, int(round(float(wage) * 0.60)))
+
+
+## 谋生型活动在同一次结算里推进时间、消耗需求并做 authoritative terminal observation。
+## 返回 true 代表已经进入终局，调用方只负责释放 activity lock，不再追加普通完成反馈。
+func _settle_livelihood_time(minutes: int) -> bool:
+	if time_sys:
+		time_sys.advance_minutes(minutes)
+	_sync_needs_to_time()
+	return _evaluate_terminal_state()
+
+
 func _on_office_activity(id: String) -> void:
 	if activity_running or not game_started or game_over or dialog_ui.is_busy() or event_ui.is_busy():
 		return
@@ -855,6 +896,9 @@ func _on_office_activity(id: String) -> void:
 		return
 	if id == "negotiate":
 		await _do_negotiate()
+		return
+	if id == "overtime":
+		await _do_overtime()
 		return
 	await _do_work_shift()
 
@@ -879,6 +923,29 @@ func _do_work_shift() -> void:
 	_show_toast("你把一整天交给了格子间。下班时雨还在下，手机里多了 %d 块。身体发沉，话也不想说。（工资+%d 健康−6 心情−4，耗时4小时）%s" % [wage, wage, _work_growth_line(growth)])
 
 
+## 当天普通班次结束后，可以再卖两个小时。一天一次，工资随当前岗位工资同比例增长。
+func _do_overtime() -> void:
+	var today: int = time_sys.day if time_sys else 0
+	if daily_routine == null or not daily_routine.is_done("work"):
+		_show_toast("先把今天正常的班上完，再谈加班。")
+		return
+	if _livelihood_done_today(OVERTIME_DAY_FLAG):
+		_show_toast("今天已经加过班了。再熬下去，赚到的钱也补不回来。")
+		return
+	var wage: int = JobGrowthScript.wage_of(skill, game_state.raise_steps)
+	var pay: int = _overtime_pay(wage)
+	await _begin_activity(office_activities.prompt, "屏幕上的表格还没关", "加班中", "overtime", office_activities.SPOTS["overtime"])
+	flags[OVERTIME_DAY_FLAG] = today
+	money += pay
+	health = maxi(0, health - OVERTIME_HEALTH_COST)
+	mood = maxi(0, mood - OVERTIME_MOOD_COST)
+	if _settle_livelihood_time(OVERTIME_MINUTES):
+		_end_activity()
+		return
+	_end_activity()
+	_show_toast("办公室只剩空调声。你又坐了两个小时，把明天的活提前做掉一截。（加班费+%d 健康−%d 心情−%d，耗时2小时）" % [pay, OVERTIME_HEALTH_COST, OVERTIME_MOOD_COST])
+
+
 ## 上班这一班的"手艺长进"。没长进时也给一句，免得玩家觉得白干。
 func _work_growth_line(growth: Dictionary) -> String:
 	if bool(growth.get("tier_up", false)):
@@ -886,7 +953,7 @@ func _work_growth_line(growth: Dictionary) -> String:
 			str(growth["tier_title"]), JobGrowthScript.wage_of(skill, game_state.raise_steps),
 		]
 	if bool(growth.get("leveled", false)):
-		return "活儿还是这些活儿，你做得比上个月快了。（技能 %d/%d）" % [skill, JobGrowthScript.MAX_SKILL]
+		return "活儿还是这些活儿，你今天少改了两遍。（技能 %d/%d）" % [skill, JobGrowthScript.MAX_SKILL]
 	return "同样的报表，你今天少改了两遍。"
 
 
@@ -978,6 +1045,9 @@ func _on_cafe_activity(id: String) -> void:
 	if id == "coffee" and money < 15:
 		_show_toast("一杯咖啡15元，当前余额不足。")
 		return
+	if id == "side_gig":
+		await _do_cafe_side_gig()
+		return
 	var feedback: String = ""
 	match id:
 		"coffee":
@@ -994,6 +1064,23 @@ func _on_cafe_activity(id: String) -> void:
 			feedback = "你对着一桌子的烛光坐了二十分钟，谁的消息也没回。有些累是闲下来的那一刻才追上你的。（心情+8，耗时20分钟）"
 	_end_activity()
 	_show_toast(feedback)
+
+
+func _do_cafe_side_gig() -> void:
+	var today: int = time_sys.day if time_sys else 0
+	if _livelihood_done_today(CAFE_GIG_DAY_FLAG):
+		_show_toast("老板娘摆摆手：今天够了，明天真缺人再叫你。")
+		return
+	await _begin_activity(cafe_activities.prompt, "杯子一只接一只地洗", "临时帮工", "side_gig", cafe_activities.SPOTS["side_gig"])
+	flags[CAFE_GIG_DAY_FLAG] = today
+	money += CAFE_GIG_PAY
+	health = maxi(0, health - CAFE_GIG_HEALTH_COST)
+	mood = maxi(0, mood - CAFE_GIG_MOOD_COST)
+	if _settle_livelihood_time(CAFE_GIG_MINUTES):
+		_end_activity()
+		return
+	_end_activity()
+	_show_toast("晚高峰缺了个人，你在吧台后顶了九十分钟。围裙不是你的，手上的咖啡味倒是真的。（工钱+%d 健康−%d 心情−%d，耗时90分钟）" % [CAFE_GIG_PAY, CAFE_GIG_HEALTH_COST, CAFE_GIG_MOOD_COST])
 
 
 func _on_hospital_activity(id: String) -> void:
