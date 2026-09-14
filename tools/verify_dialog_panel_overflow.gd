@@ -48,25 +48,34 @@ func _process(_delta: float) -> bool:
 		3:
 			_expect(not ui.is_busy(), "completed normal dialogue must leave busy=false")
 			_expect(finished_signal_count == 1, "one completed normal dialogue must emit dialog_finished exactly once")
-			_set_logical_viewport(NARROW_VIEWPORT)
-			ui._sync_viewport()
 			ui.show_dialog("陈姐", [_stress_line(), "短收尾。"])
 			phase = 4
 			frames = 0
 			return false
 		4:
-			_check_long_layout_before_scroll()
-			_scroll_body_to_bottom()
+			_check_long_layout_before_scroll("1280x720 long", DEFAULT_VIEWPORT)
+			_set_logical_viewport(NARROW_VIEWPORT)
+			ui._sync_viewport()
 			phase = 5
 			frames = 0
 			return false
 		5:
-			_check_long_layout_after_scroll()
-			_press_next()
+			_check_long_layout_before_scroll("960x540 long", NARROW_VIEWPORT)
+			var speaker: Label = ui.get_node("DialogContent/DialogSpeaker") as Label
+			var next_button: Button = ui.get_node("DialogContent/DialogNext") as Button
+			speaker_rect_before_scroll = speaker.get_global_rect()
+			next_rect_before_scroll = next_button.get_global_rect()
+			_scroll_body_to_bottom()
 			phase = 6
 			frames = 0
 			return false
 		6:
+			_check_long_layout_after_scroll()
+			_press_next()
+			phase = 7
+			frames = 0
+			return false
+		7:
 			_check_long_to_short_reset()
 			# A programmatic close must preserve the public lifecycle contract: it hides
 			# the dialog without pretending the queued dialogue completed.
@@ -74,22 +83,22 @@ func _process(_delta: float) -> bool:
 			_expect(not ui.is_busy(), "close_dialog() must leave busy=false")
 			_expect(finished_signal_count == 1, "close_dialog() must not emit dialog_finished")
 			ui.show_dialog("老张", [_stress_line()])
-			phase = 7
-			frames = 0
-			return false
-		7:
-			_check_reopen_reset()
-			_scroll_body_to_bottom()
 			phase = 8
 			frames = 0
 			return false
 		8:
-			_expect(ui.is_busy(), "scrolling a long body must keep Game-facing busy semantics true")
-			_press_next()
+			_check_reopen_reset()
+			_scroll_body_to_bottom()
 			phase = 9
 			frames = 0
 			return false
 		9:
+			_expect(ui.is_busy(), "scrolling a long body must keep Game-facing busy semantics true")
+			_press_next()
+			phase = 10
+			frames = 0
+			return false
+		10:
 			_expect(not ui.is_busy(), "final activation must close the reopened dialogue")
 			_expect(finished_signal_count == 2, "two completed dialogues must emit dialog_finished exactly once each")
 			_finish()
@@ -135,8 +144,8 @@ func _check_second_normal_line() -> void:
 	_expect(finished_signal_count == 0, "arriving at final line must not emit before final activation")
 
 
-func _check_long_layout_before_scroll() -> void:
-	_check_logical_viewport("960x540 long", NARROW_VIEWPORT)
+func _check_long_layout_before_scroll(label: String, viewport_size: Vector2i) -> void:
+	_check_logical_viewport(label, viewport_size)
 	var content: VBoxContainer = ui.get_node("DialogContent") as VBoxContainer
 	var speaker: Label = content.get_node("DialogSpeaker") as Label
 	var scroll: ScrollContainer = content.get_node("DialogBodyScroll") as ScrollContainer
@@ -144,24 +153,23 @@ func _check_long_layout_before_scroll() -> void:
 	var next_button: Button = content.get_node("DialogNext") as Button
 	var vbar := scroll.get_v_scroll_bar()
 
-	_expect(ui.is_busy(), "960x540 long: open dialogue must keep busy=true")
-	_expect(is_equal_approx(ui.size.y, 220.0), "960x540 long: panel must keep the existing 220px height")
-	_expect(_rect_inside_viewport(ui.get_global_rect(), NARROW_VIEWPORT), "960x540 long: dialog must stay inside logical viewport")
-	_expect(_rect_inside_rect(scroll.get_global_rect(), ui.get_global_rect()), "960x540 long: body scroll must stay inside panel")
-	_expect(_rect_inside_rect(next_button.get_global_rect(), ui.get_global_rect()), "960x540 long: continue action must stay reachable inside panel")
-	_expect(speaker.text == "陈姐", "960x540 long: speaker must remain visible/preserved")
-	_expect(text.text == _stress_line(), "960x540 long: long body text must be preserved without truncating source text")
-	_expect(next_button.text == "继续", "960x540 long: first of two lines must still show 继续")
-	_expect(text.get_combined_minimum_size().y > scroll.size.y + 0.5, "960x540 long: stress text must exceed bounded body viewport")
-	_expect(vbar.max_value > vbar.page + 0.5, "960x540 long: stress text must expose a usable vertical scroll range")
-	_expect(scroll.scroll_vertical == 0, "960x540 long: newly shown long line must start at top")
-	_expect(speaker.get_global_rect().end.y <= scroll.get_global_rect().position.y + 0.5, "960x540 long: speaker must remain outside/above body scroll")
-	_expect(next_button.get_global_rect().position.y >= scroll.get_global_rect().end.y - 0.5, "960x540 long: continue action must remain outside/below body scroll")
-	_expect(finished_signal_count == 1, "opening another dialogue must not emit dialog_finished")
+	_expect(ui.is_busy(), "%s: open dialogue must keep busy=true" % label)
+	_expect(is_equal_approx(ui.size.y, 220.0), "%s: panel must keep the existing 220px height" % label)
+	_expect(_rect_inside_viewport(ui.get_global_rect(), viewport_size), "%s: dialog must stay inside logical viewport" % label)
+	_expect(_rect_inside_rect(scroll.get_global_rect(), ui.get_global_rect()), "%s: body scroll must stay inside panel" % label)
+	_expect(_rect_inside_rect(next_button.get_global_rect(), ui.get_global_rect()), "%s: continue action must stay reachable inside panel" % label)
+	_expect(speaker.text == "陈姐", "%s: speaker must remain visible/preserved" % label)
+	_expect(text.text == _stress_line(), "%s: long body text must be preserved without truncating source text" % label)
+	_expect(next_button.text == "继续", "%s: first of two lines must still show 继续" % label)
+	_expect(text.get_combined_minimum_size().y > scroll.size.y + 0.5, "%s: stress text must exceed bounded body viewport" % label)
+	_expect(vbar.max_value > vbar.page + 0.5, "%s: stress text must expose a usable vertical scroll range" % label)
+	_expect(scroll.scroll_vertical == 0, "%s: newly shown/resized long line must start at top" % label)
+	_expect(speaker.get_global_rect().end.y <= scroll.get_global_rect().position.y + 0.5, "%s: speaker must remain outside/above body scroll" % label)
+	_expect(next_button.get_global_rect().position.y >= scroll.get_global_rect().end.y - 0.5, "%s: continue action must remain outside/below body scroll" % label)
+	_expect(finished_signal_count == 1, "%s: opening/resizing another dialogue must not emit dialog_finished" % label)
 
-	speaker_rect_before_scroll = speaker.get_global_rect()
-	next_rect_before_scroll = next_button.get_global_rect()
-	print("[960x540 long] panel=%s scroll=%s text_min=%s vbar(max=%s page=%s)" % [
+	print("[%s] panel=%s scroll=%s text_min=%s vbar(max=%s page=%s)" % [
+		label,
 		ui.get_global_rect(),
 		scroll.get_global_rect(),
 		text.get_combined_minimum_size(),
@@ -173,10 +181,15 @@ func _check_long_layout_before_scroll() -> void:
 func _check_long_layout_after_scroll() -> void:
 	var speaker: Label = ui.get_node("DialogContent/DialogSpeaker") as Label
 	var scroll: ScrollContainer = ui.get_node("DialogContent/DialogBodyScroll") as ScrollContainer
+	var text: Label = scroll.get_node("DialogText") as Label
 	var next_button: Button = ui.get_node("DialogContent/DialogNext") as Button
+	var vbar := scroll.get_v_scroll_bar()
+	var usable_end := maxf(0.0, vbar.max_value - vbar.page)
 	_expect(scroll.scroll_vertical > 0, "960x540 long bottom: body must support non-zero vertical scrolling")
+	_expect(absf(float(scroll.scroll_vertical) - usable_end) <= 2.0, "960x540 long bottom: body must be able to reach the bottom of its scroll range")
 	_expect(_rect_equal_approx(speaker.get_global_rect(), speaker_rect_before_scroll), "960x540 long bottom: scrolling body must not move speaker")
 	_expect(_rect_equal_approx(next_button.get_global_rect(), next_rect_before_scroll), "960x540 long bottom: scrolling body must not move continue action")
+	_expect(text.get_global_rect().position.y < scroll.get_global_rect().position.y, "960x540 long bottom: scrolling must move only the body content through its viewport")
 	_expect(ui.is_busy(), "960x540 long bottom: scrolling must not alter busy=true")
 	_expect(finished_signal_count == 1, "scrolling must not emit dialog_finished")
 
