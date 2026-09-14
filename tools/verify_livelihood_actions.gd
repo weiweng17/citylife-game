@@ -85,7 +85,8 @@ func run() -> void:
 	assert(_total_minutes(time_sys) == overtime_total_once, "same-day overtime must not consume time twice")
 
 	# 3) 日标记复用 GameState.flags，随现有 game_state payload 往返，不新增顶层 save 字段。
-	var payload: Dictionary = main.build_save_payload()
+	# build_save_payload() 在内存里保留嵌套字典引用；测试必须深拷贝，才能模拟真正写盘/读回后的独立 payload。
+	var payload: Dictionary = main.build_save_payload().duplicate(true)
 	assert(not payload.has("livelihood"), "livelihood must not add a save-schema section")
 	var overtime_day: int = int(main.flags.get(main.OVERTIME_DAY_FLAG, -1))
 	main.flags.erase(main.OVERTIME_DAY_FLAG)
