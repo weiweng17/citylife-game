@@ -7,214 +7,215 @@
 - Status: NEEDS_REVIEW
 
 ## Scope
-Report-only post-review integration manifest after repository review of:
-- GAME-FIX-009
-- UI-FIX-006
-- NPC-AUDIT-009
+Report-only post-review integration manifest for the repository-reviewed 009/006/009 wave, refreshed after the next worker lanes produced new outputs while the orchestrator task board still records those follow-ups as `READY`.
 
-Per the current task contract, the only writable path is `agent-reports/qa-build.md`.
+Per `docs/agents/TASK_BOARD.md`, the only writable path for QA-012 is this report.
 
-No merge, cherry-pick, rebase, source/data/UI/workflow edit, task-board edit, parser execution, Godot launch, verifier execution, Web export, browser run, screenshot capture, or rendered validation was performed or claimed in QA-012.
+No merge, cherry-pick, rebase, source/data/UI/workflow edit, task-board edit, parser execution, Godot launch, verifier execution, Web export, browser run, screenshot capture, or rendered validation was performed or claimed.
 
-This report refreshes and supersedes the conditional 009/006/009 portion of QA-011 while retaining the accepted one-frozen-SHA and stale-evidence rules from QA-010/QA-011.
+This continuation does not repeat or replace the already completed manifest logic. It refreshes only facts that changed after the previous QA-012 report commit.
 
-## Current coordination baseline
+## Current control-plane state
 Latest coordination state inspected:
 - coordination branch: `orchestrator/multi-agent-bootstrap`
 - coordination tip: `96a202796d5b454f730bf84c566367e8564db7f4`
-- QA-012 branch before this report edit: same `96a202796d5b454f730bf84c566367e8564db7f4`
+- task board still lists QA-012 as `READY`
+- this QA-012 report was already `NEEDS_REVIEW` before the present refresh
 - `main`: `df5ca5dd8ffce7c2a538495a3e8fec5ef2d6539b`
 
-Neither coordination SHA nor `main` is the runtime acceptance candidate. The coordination branch is the control-plane/source-of-truth for task metadata; QA-002 still requires a separately assembled and explicitly frozen integration SHA.
+The unchanged task-board state means the orchestrator has not yet mirrored/reviewed this QA-012 result. QA does not edit `TASK_BOARD.md` and does not self-promote to DONE.
 
-## Post-review exact-tip manifest
-The task board now records these immutable repository-review identities:
+Neither coordination SHA nor `main` is the runtime acceptance candidate. QA-002 still requires one separately assembled and explicitly frozen integration SHA.
+
+## Repository-reviewed 009/006/009 identities — unchanged
+These remain the only accepted inputs from the wave named by QA-012:
 
 | Task | Accepted exact tip | Repository disposition | Runtime-candidate effect |
 | --- | --- | --- | --- |
-| GAME-FIX-009 | `8ff9a36e4f61f41aea943ea11ec6254ed7155b4d` | DONE | **Source + verifier input.** Its `Game.gd` is the deterministic cumulative Gameplay semantic state through 009. |
-| UI-FIX-006 | `d328f227b8473297d4b74c058dfd1a7101a68074` | BLOCKED only on real exact-SHA runtime/rendered evidence | **Source + verifier input.** Include ShopUI overflow containment, but do not call it runtime/rendered PASS. |
-| NPC-AUDIT-009 | `a16920be7462436c1070e79e833cbadb7bdd0bd1` | DONE | **No source/runtime input.** Report-only triage; it only defines follow-up boundaries. |
+| GAME-FIX-009 | `8ff9a36e4f61f41aea943ea11ec6254ed7155b4d` | DONE | Source + verifier input. Its `Game.gd` is the deterministic cumulative Gameplay semantic state through 009. |
+| UI-FIX-006 | `d328f227b8473297d4b74c058dfd1a7101a68074` | BLOCKED only on real exact-SHA runtime/rendered evidence | Source + verifier input. Include ShopUI overflow containment, but do not call it runtime/rendered PASS. |
+| NPC-AUDIT-009 | `a16920be7462436c1070e79e833cbadb7bdd0bd1` | DONE | No source/runtime input. Report-only triage defining follow-up boundaries. |
 
-### File-level identities for the two new implementation inputs
-Use the accepted commit identities above, not a later branch HEAD.
+File-level identities for the two implementation inputs:
 
-GAME-FIX-009:
+### GAME-FIX-009
 - `scripts/Game.gd`
-  - blob: `85d1ce4e238fac35279c11c5f86f1a24e8f4e3cc`
+  - blob `85d1ce4e238fac35279c11c5f86f1a24e8f4e3cc`
 - `tools/verify_terminal_mutation_order.gd`
-  - blob: `79d07a38ac0ea07a8e17530028c776606f24070c`
+  - blob `79d07a38ac0ea07a8e17530028c776606f24070c`
 
-UI-FIX-006:
+### UI-FIX-006
 - `scripts/ui/ShopUI.gd`
-  - blob: `200d60bc34200dda3b6c2a1ff51c25c3bd8788d7`
+  - blob `200d60bc34200dda3b6c2a1ff51c25c3bd8788d7`
 - `tools/verify_shop_panel_overflow.gd`
-  - blob: `1924219242ba146e40106cdd03bbda3374af712a`
+  - blob `1924219242ba146e40106cdd03bbda3374af712a`
 
-Repository comparisons against the common pre-worker coordination baseline `86ea90c9742b31c8d562199f873ea0d0a6ca5a95` confirm:
-- GAME-FIX-009 changes only `scripts/Game.gd`, `tools/verify_terminal_mutation_order.gd`, and its Gameplay report.
-- UI-FIX-006 changes only `scripts/ui/ShopUI.gd`, `tools/verify_shop_panel_overflow.gd`, and its Scene/UI report.
-- NPC-AUDIT-009 changes only `agent-reports/npc-content.md`.
+Integration must use these accepted exact identities, not a later moving branch head.
 
-## What belongs in the next frozen runtime candidate
-QA-012 is a manifest only. The orchestrator/integration lane must assemble the candidate; this worker does not perform that integration.
+## What changed after the previous QA-012 capture
+The previous QA-012 report correctly recorded that GAME-AUDIT-010, UI-AUDIT-007 and NPC-CONTENT-010 had no worker deltas at that time. That statement is now stale.
 
-### A. Gameplay — authoritative cumulative source through GAME-FIX-009
-For `scripts/Game.gd`, use the accepted GAME-FIX-009 semantic file identity above as the authoritative cumulative Gameplay state.
+All three worker branches have since moved, but the current task board still records every one of those tasks as `READY`, not DONE/accepted. Therefore their current outputs are **unreviewed worker results** from the control-plane perspective.
 
-Reason:
-- the 009 worker explicitly rebuilt from the accepted GAME-FIX-007 `Game.gd` semantic state before applying the narrow 009 mutation-order repair;
-- therefore `8ff9a36...:scripts/Game.gd` already represents the intended combined Gameplay semantics through GAME-FIX-009;
-- do **not** blindly stack historical GAME-FIX-001..007 branch snapshots and then overlay 009;
-- do **not** take `Game.gd` from the metadata-oriented coordination branch.
-
-Also carry the accepted Gameplay task-specific verifier set already required by QA-011, adding the reviewed 009 verifier:
-- `tools/verify_event_year_separation.gd`
-- `tools/verify_need_zero_cadence.gd`
-- `tools/verify_needs.gd`
-- `tools/verify_terminal_state_evaluation.gd`
-- `tools/verify_save_terminal_reentry.gd`
-- `tools/verify_sleep_terminal_guard.gd`
-- `tools/verify_terminal_mutation_order.gd` **newly mandatory after 009 integration**
-
-GAME-FIX-009 repository semantics to preserve in the candidate:
-1. settled-frame need/time mutation is observed by `_evaluate_terminal_state()` before reward-bearing quest evaluation;
-2. shop-use elapsed time is synchronously settled and terminal-evaluated before another item can revive a terminal state;
-3. item use is rejected after `game_over`;
-4. existing terminal thresholds, item effects/time costs, quest rewards, save schema and previous GAME-FIX semantics remain unchanged;
-5. `_evaluate_terminal_state()` remains the single authoritative terminal/death consumer path.
-
-### B. Scene/UI — carry all repository-reviewed held deltas, now including UI-FIX-006
-The next frozen candidate should carry forward the already repository-reviewed UI-FIX-001..005 inputs and add UI-FIX-006.
-
-Accepted exact tips currently recorded by the task board:
-- UI-FIX-001 — `07a4d159e073e9f810cf1c3007ba907a49299ae3`
-- UI-FIX-002 — `b480befaedc3a3b0cbdaca1916e31dbba7283121`
-- UI-FIX-003 — `51124e758877750d01f8b72429ead0075a73c596`
-- UI-FIX-004 — `4a2ce2473dd05691fc2e1368b381497a5768d3e6`
-- UI-FIX-005 — `a0402610cef12455dfc970641e4273c8b246d6d1`
-- UI-FIX-006 — `d328f227b8473297d4b74c058dfd1a7101a68074`
-
-Expected semantic/file inputs from those reviewed tasks:
-- UI-FIX-001: grounded active-NPC presentation integration (`LocationManager` + `ActiveNpcVisual`) and `verify_active_npc_visual.gd`.
-- UI-FIX-002: localized home-bed foreground asset repair and `verify_home_bed_seam.gd`.
-- UI-FIX-003: bounded HUD/reserved-header presentation contract and `verify_hud_header_layout.gd`.
-- UI-FIX-004: bounded EventUI vertical-overflow/signal contract and `verify_event_panel_overflow.gd`.
-- UI-FIX-005: bounded StartUI vertical-overflow/reopen contract and `verify_start_screen_overflow.gd`.
-- UI-FIX-006: list-only ShopUI vertical overflow containment and `verify_shop_panel_overflow.gd`.
-
-Integration rule:
-- integrate reviewed source/assets/verifiers, not worker reports as runtime inputs;
-- preserve each task's exact public-signal/API contract;
-- no visual task is accepted as rendered PASS until QA-002 runs on the final frozen candidate.
-
-### C. NPC/content — carry accepted source through NPC-CONTENT-008; NPC-AUDIT-009 adds no source
-NPC-AUDIT-009 must **not** add a data/source file to the runtime candidate.
-
-Carry forward the separately accepted NPC-CONTENT-002..008 semantic content state from the previous integration manifest.
-
-The latest accepted safe copy delta before the audit is NPC-CONTENT-008:
-- accepted branch tip: `a787d4ab237af9db2d85eac47b9c9db504786951`
-- its source commit recorded by QA-010: `2c724e6bbaf1a791f7596c0621b79031f27482f1`
-- its authorized semantic contribution is exactly two string substitutions in `data/events.json`:
-  1. `e_first_salary`: `然后给妈妈转了两千。` -> `然后把两千块转了出去。`
-  2. `e_sidejob`: `那八千块后来变成了你妈的一台洗衣机。` -> `那八千块后来变成了一台洗衣机。`
-
-Important content integration rule:
-- do **not** replace the entire `data/events.json` with the NPC-CONTENT-008 branch snapshot if that would revert earlier accepted NPC-CONTENT-003/004/006 or other accepted semantic edits;
-- integrate the accepted NPC content set semantically;
-- NPC-AUDIT-009 itself contributes no parser/Godot/runtime command.
-
-## What does NOT belong in the current frozen candidate
-The following new branches are READY boundaries only and currently have **no worker delta**. At QA-012 capture, all three still point exactly to coordination SHA `96a202796d5b454f730bf84c566367e8564db7f4`.
-
-### GAME-AUDIT-010
+### GAME-AUDIT-010 — worker output exists, not orchestrator-accepted yet
 Branch:
 - `agent/game-audit-010-terminal-mutation-surface`
 
-Contract:
-- report-only `agent-reports/gameplay.md`;
-- audit the accepted GAME-FIX-009 semantic state for any remaining concrete pre-terminal mutation bypass;
-- may propose at most one smallest follow-up;
-- no source edit and no runtime PASS.
+Current worker tip:
+- `fee1ee8072aeea821fd78881fbb4b0a06404526b`
 
-Candidate rule:
-- GAME-AUDIT-010 can never directly add runtime source because its contract is report-only;
-- only a later separately assigned and repository-reviewed Gameplay fix may alter a future candidate.
+Comparison against its coordination start `96a202796d5b454f730bf84c566367e8564db7f4`:
+- ahead 1 / behind 0
+- changed path: `agent-reports/gameplay.md` only
 
-### UI-AUDIT-007
+Worker report status:
+- `NEEDS_REVIEW`
+
+Repository-only worker conclusion:
+- no new deterministic/repository-proven terminal revival or masking bypass found after accepted GAME-FIX-009;
+- no new Gameplay source task proposed;
+- one runtime-only event-loop stress candidate is identified: pending travel-time need settlement followed by an immediate recovery activity (strongest example: travel to cafe and attempt coffee activation before the next settled `Game._process()` pass).
+
+QA-012 disposition:
+- this branch contributes **no runtime source** because its task is report-only;
+- its conclusion is not promoted to accepted project truth until 00-Orchestrator reviews it;
+- the cafe immediate-reentry scenario may be retained as a **provisional QA-002 stress idea**, but it is not a new mandatory acceptance gate and not a repository-proven bug at this time.
+
+### UI-AUDIT-007 — worker output exists, not orchestrator-accepted yet
 Branch:
 - `agent/ui-audit-007-next-presentation-hotspot`
 
-Contract:
-- report-only `agent-reports/scene-ui.md`;
-- inspect an independent presentation hotspot outside held UI-FIX-001..006 files;
-- no source edit and no rendered/runtime PASS.
+Current worker tip:
+- `d4559faa17dd089fae82fcd0fd8b8cf605f77f37`
 
-Candidate rule:
-- exclude from current candidate;
-- any recommended UI implementation must be a separate reviewed task and would require a new candidate freeze if later included.
+Comparison against coordination start:
+- ahead 1 / behind 0
+- changed path: `agent-reports/scene-ui.md` only
 
-### NPC-CONTENT-010
+Worker report status:
+- `NEEDS_REVIEW`
+
+Worker recommendation:
+- next smallest independent presentation repair: DialogUI body overflow containment;
+- suggested future boundary: `scripts/ui/DialogUI.gd` + one narrow `tools/verify_dialog_panel_overflow.gd` + Scene/UI report;
+- keep speaker and continue/end action outside the body overflow region;
+- preserve `dialog_finished`, `show_dialog()`, `close_dialog()`, `is_busy()`, line progression and Game queue/content semantics.
+
+QA-012 disposition:
+- UI-AUDIT-007 contributes **no source/runtime input** to the current frozen candidate;
+- no UI-FIX-007 implementation exists or is accepted through the current task board;
+- do not add a DialogUI verifier or rendered requirement to QA-002 unless the orchestrator first accepts the audit and separately reviews a future implementation.
+
+### NPC-CONTENT-010 — implementation output exists, not orchestrator-accepted yet
 Branch:
 - `agent/npc-content-010-generic-family-callers`
 
-Current state:
-- READY, no worker delta yet at QA-012 capture.
+Current worker tip:
+- `923e43541303a4f66a643bddef3a993a1ed234b5`
 
-Authorized future delta if/when completed and separately reviewed:
-- exactly three string-value edits in `data/events.json`:
-  1. genericize `e_parents_call.speaker`;
-  2. genericize `e_parent_sick.speaker`;
-  3. neutralize the father-specific phrase in the first `e_parent_sick` option result while preserving the caregiving beat.
+Source commit recorded by the worker:
+- `46264de61d72c6b8a51bbe54003f665c36226f4a`
 
-Explicitly forbidden by that task:
-- conditions;
-- age/origin eligibility;
-- effects/rewards;
-- flags;
-- jobs;
-- counters;
-- IDs;
-- schema/flow;
-- `e_parent_gone`;
-- `e_roommate`;
-- the four deferred spouse/child-policy events.
+`data/events.json` blob at that source commit:
+- `6cbc94e49413b1017dcbe41a1f1a13fe24316924`
 
-Candidate rule:
-- **exclude NPC-CONTENT-010 now**;
-- if it completes before runtime freeze, do not include it until the orchestrator reviews and records an accepted exact tip;
-- if the orchestrator decides to include it after this QA-012 manifest, that changes the candidate content, so freeze a new SHA and rerun the JSON/diff gate plus any affected shared/runtime evidence.
+Comparison against coordination start:
+- ahead 2 / behind 0
+- `data/events.json`: `+3 / -3`
+- `agent-reports/npc-content.md`: report update
 
-## Deterministic integration order
-This is the recommended orchestrator/integration sequence, not work performed by QA-012.
+Worker report status:
+- `NEEDS_REVIEW`
 
-1. Start from the previously accepted semantic integration baseline described by QA-010/QA-011; do not use coordination `Game.gd`/content snapshots as replacements for accepted cumulative semantics.
-2. Replace/compose `scripts/Game.gd` to the exact accepted GAME-FIX-009 semantic identity (`85d1ce4...`) and include `verify_terminal_mutation_order.gd` (`79d07a3...`).
-3. Carry forward reviewed UI-FIX-001..005 source/assets/verifiers, then apply the reviewed UI-FIX-006 `ShopUI.gd` (`200d60b...`) and verifier (`1924219...`).
-4. Carry forward accepted NPC-CONTENT-002..008 semantic content. NPC-AUDIT-009 adds no source.
-5. Exclude GAME-AUDIT-010, UI-AUDIT-007 and NPC-CONTENT-010 from this candidate unless their status later changes through orchestrator review. Report-only audits never become runtime source inputs.
-6. Inspect the assembled diff for accidental worker-report/control-plane/source-snapshot contamination and for semantic overwrite of cumulative Gameplay/content state.
+Worker-declared three-string delta:
+1. `e_parents_call.speaker`
+   - `母亲` -> `家里来电`
+2. `e_parent_sick.speaker`
+   - `父亲` -> `家里来电`
+3. `e_parent_sick` first-option result
+   - `你在病房陪了十一天。这十一天，是你成年后跟父亲说话最多的一段时间。`
+   - -> `你在病房陪了十一天。这十一天，是你成年后陪家里人最久的一段时间。`
+
+The branch comparison is consistent with the task's exact three-string boundary. However QA-012 does **not** convert that observation into orchestrator acceptance.
+
+QA-012 disposition:
+- **exclude NPC-CONTENT-010 from the current frozen candidate while TASK_BOARD remains READY**;
+- if 00-Orchestrator later reviews it and records an accepted exact tip, the integration candidate content changes and must be re-frozen;
+- then rerun JSON parse/semantic-diff evidence and any evidence affected by the new integration SHA;
+- do not overwrite the cumulative `data/events.json` with this worker branch snapshot because the coordination branch is metadata-oriented and earlier accepted NPC content deltas must be preserved semantically.
+
+## Current frozen-candidate membership
+Until the task board records additional accepted exact tips, the next candidate membership remains:
+
+### Gameplay
+Use accepted GAME-FIX-009 cumulative semantic source:
+- `scripts/Game.gd` from accepted identity `85d1ce4e...`
+- carry the existing accepted Gameplay verifier set, including newly mandatory `verify_terminal_mutation_order.gd`
+
+Preserve:
+1. settled-frame needs/time -> terminal evaluation -> quest evaluation ordering;
+2. synchronous shop-use time settlement and terminal evaluation before another item use;
+3. shop-use rejection after `game_over`;
+4. prior accepted GAME-FIX-001..007 semantics;
+5. `_evaluate_terminal_state()` as the single authoritative terminal/death consumer path.
+
+Do not include GAME-AUDIT-010 as source; it is report-only.
+
+### Scene/UI
+Carry all six repository-reviewed held implementations and their task verifiers:
+- UI-FIX-001 `07a4d159e073e9f810cf1c3007ba907a49299ae3`
+- UI-FIX-002 `b480befaedc3a3b0cbdaca1916e31dbba7283121`
+- UI-FIX-003 `51124e758877750d01f8b72429ead0075a73c596`
+- UI-FIX-004 `4a2ce2473dd05691fc2e1368b381497a5768d3e6`
+- UI-FIX-005 `a0402610cef12455dfc970641e4273c8b246d6d1`
+- UI-FIX-006 `d328f227b8473297d4b74c058dfd1a7101a68074`
+
+Do not include UI-AUDIT-007 as source and do not invent UI-FIX-007 before orchestrator assignment/review.
+
+### NPC/content
+Carry the previously accepted cumulative NPC content semantics through NPC-CONTENT-008.
+
+NPC-AUDIT-009 adds no runtime source.
+NPC-CONTENT-010 is currently a worker `NEEDS_REVIEW` result while the task board remains `READY`; therefore its three strings are excluded until orchestrator acceptance.
+
+## Deterministic integration rules
+QA-012 is a manifest, not the integration lane.
+
+1. Start from the previously accepted semantic integration baseline; do not use the metadata-oriented coordination source snapshot as a replacement for accepted cumulative Gameplay/content semantics.
+2. Use accepted GAME-FIX-009 `Game.gd` exact identity and its verifier.
+3. Carry repository-reviewed UI-FIX-001..006 source/assets/verifiers.
+4. Carry accepted NPC-CONTENT-002..008 semantics only unless a later orchestrator heartbeat accepts NPC-CONTENT-010 before freeze.
+5. Exclude report-only audits from runtime source.
+6. Inspect the assembled diff for accidental worker-report/control-plane contamination and whole-file overwrites that revert accepted cumulative changes.
 7. Create one explicit integration commit and record its exact 40-character SHA.
-8. From that exact SHA, create/select the QA-002 local/Codex worktree and run the complete acceptance package below.
-9. Do not modify candidate source during evidence collection. Any source/asset/verifier change requires a new freeze and rerun of affected evidence.
+8. Create/select the QA-002 local/Codex worktree from exactly that SHA.
+9. Do not modify candidate source during evidence collection.
 
-## QA-002 frozen-SHA acceptance package
-Everything below must run against one and the same final integration SHA.
+## One-frozen-SHA rule
+Every parser/Godot/headless/rendered/Web/browser artifact used for acceptance must identify the same integration SHA.
 
-### Step 0 — identity / clean state
+If the candidate changes after any evidence is captured:
+- stop promotion;
+- record the new SHA;
+- determine which evidence is affected;
+- rerun all affected task-specific and shared gates;
+- never splice PASS output from different integration SHAs into one acceptance decision.
+
+A worker branch moving does not automatically replace an already accepted exact tip. An accepted input changes only when 00-Orchestrator explicitly records a new accepted identity or when the assembled integration candidate itself changes.
+
+## QA-002 frozen-SHA package
+All commands below are prepared only. They were **not run** by QA-012.
+
+### Step 0 — freeze identity
 ```bash
 git rev-parse HEAD
 git status --short
 ```
 
-Required evidence:
-- exact 40-character SHA;
-- worktree state;
-- confirmation that every later command/capture references that same SHA.
+Record the exact SHA and worktree state before any execution.
 
 ### Step 1 — JSON parse + semantic diff gate
-Because accepted NPC content changes touch JSON:
+Because accepted NPC content already touches JSON:
 
 ```bash
 python -c "import json; [json.load(open(p, encoding='utf-8')) for p in ['data/events.json','data/quests.json']]; print('JSON_PARSE_OK')"
@@ -223,12 +224,12 @@ python -c "import json; [json.load(open(p, encoding='utf-8')) for p in ['data/ev
 Required evidence:
 - exit code 0;
 - literal `JSON_PARSE_OK`;
-- diff review proving accepted content edits only;
+- semantic diff confirms only orchestrator-accepted content changes;
 - no accidental condition/ID/flag/effect/reward/schema/flow changes.
 
-If NPC-CONTENT-010 is not orchestrator-accepted into the candidate, its three future strings must not appear as an unreviewed QA-012 input.
+If NPC-CONTENT-010 is accepted before candidate freeze, this gate must explicitly confirm its three accepted strings in the cumulative file. If it remains unaccepted, those strings must not be silently treated as QA-012 accepted input.
 
-### Step 2 — complete Gameplay task-specific regression set
+### Step 2 — Gameplay task-specific regressions
 ```bash
 godot --headless --path . --script res://tools/verify_event_year_separation.gd
 godot --headless --path . --script res://tools/verify_need_zero_cadence.gd
@@ -239,16 +240,17 @@ godot --headless --path . --script res://tools/verify_sleep_terminal_guard.gd
 godot --headless --path . --script res://tools/verify_terminal_mutation_order.gd
 ```
 
-Because GAME-FIX-009 changes cumulative `Game.gd`, all prior Gameplay PASS output from a pre-009 SHA is stale. The whole Gameplay task-specific sequence must rerun on the new frozen SHA.
+Because GAME-FIX-009 changes cumulative `Game.gd`, pre-009 Gameplay PASS output is stale.
 
-Minimum 009 proof:
-- terminal/pending-terminal state is observed before quest rewards can revive it;
-- shop-use elapsed time is settled/evaluated before another healing item mutation;
-- post-`game_over` shop use is rejected;
-- healthy/non-terminal quest reward and item use still behave normally;
-- no new terminal/death authority bypasses `_evaluate_terminal_state()`.
+Provisional extra stress from unreviewed GAME-AUDIT-010, if QA-002 has a suitable real-input harness:
+- place needs/time near a terminal settlement boundary;
+- travel to cafe;
+- attempt recovery activation before the next settled Game process pass;
+- record actual Godot input/process ordering and whether terminal state can be revived.
 
-### Step 3 — complete UI task-specific headless-prepared regression set
+Do not report this theoretical sequence as a bug unless real runtime reproduction proves it.
+
+### Step 3 — UI task-specific headless regressions
 ```bash
 godot --headless --path . --script res://tools/verify_active_npc_visual.gd
 godot --headless --path . --script res://tools/verify_home_bed_seam.gd
@@ -258,11 +260,11 @@ godot --headless --path . --script res://tools/verify_start_screen_overflow.gd
 godot --headless --path . --script res://tools/verify_shop_panel_overflow.gd
 ```
 
-Headless success is necessary repository/runtime evidence but is **not** rendered visual PASS.
+Headless success is necessary but is not rendered visual PASS.
+
+No DialogUI overflow verifier belongs here yet; UI-AUDIT-007 is unreviewed/report-only and no UI-FIX-007 exists in the accepted task board.
 
 ### Step 4 — shared headless regression gate
-Run on the same frozen SHA after task-specific checks:
-
 ```bash
 godot --headless --path . --script res://tools/verify_locations.gd
 godot --headless --path . --script res://tools/verify_navigation.gd
@@ -272,157 +274,76 @@ godot --headless --path . --script res://tools/verify_npc.gd
 godot --headless --path . --script res://tools/verify_quests.gd
 ```
 
-Capture for every command:
-- candidate SHA;
-- command;
-- exit code;
-- stdout/stderr sufficient to prove no hidden parse/assertion/runtime failure.
+Capture command, exact candidate SHA, exit code and sufficient stdout/stderr for each run.
 
-### Step 5 — real rendered UI acceptance on the same SHA
-UI-FIX-001..006 remain runtime/render blocked until this evidence exists.
+### Step 5 — rendered UI acceptance
+On the exact candidate SHA, retain all held UI visual checks.
 
-UI-FIX-001 — active NPC:
-- Xiaoyu at home and Chenjie at store;
-- one static fallback NPC;
-- foot grounding/contact shadow;
-- depth/scale/tint/foreground occlusion;
-- hover label/tooltip/click target alignment;
-- clicking still opens expected dialog.
+At minimum:
+- UI-FIX-001: active NPC grounding, scale, idle frame, shadow, foreground occlusion, hover/click/dialog alignment;
+- UI-FIX-002: home sleep/duvet seam and transition coherence;
+- UI-FIX-003: HUD/header separation and reachability at its declared logical viewports;
+- UI-FIX-004: EventUI at 1280x720 and 960x540, including final-option/continue reachability;
+- UI-FIX-005: StartUI at 1280x720 and 960x540, including all origins/load/reopen behavior;
+- UI-FIX-006: ShopUI at 1280x720 and 960x540, including six-row buy/full-bag reachability, fixed status/footer/close, reset behavior and no horizontal-scroll dependency.
 
-UI-FIX-002 — home bed:
-- no duplicate/second bed or whole-bed overlay;
-- local duvet seam visually blends;
-- head/pillow relationship remains correct;
-- waist/leg occlusion only;
-- sleep enter/breathe/wake transition remains coherent.
+Any affected UI source/asset change after capture makes the corresponding rendered evidence stale.
 
-UI-FIX-003 — HUD/header:
-- declared logical viewports from the reviewed task, including 1280x720 and the narrower logical viewport used by its verifier;
-- HUD/header separation;
-- long copy containment;
-- all action buttons reachable.
+### Step 6 — Web export/browser acceptance
+On the same frozen candidate SHA:
+- perform the configured Godot 4.7.2 Web export;
+- record command, exit code, stdout/stderr and artifact path;
+- serve/open the export in a real browser;
+- inspect console/network for blocking JS/WASM/Godot/resource errors;
+- exercise start/origin/load, representative normal progression, terminal-state flows, ShopUI and the held visual paths represented in the candidate.
 
-UI-FIX-004 — EventUI:
-- 1280x720 and 960x540 logical viewports;
-- long narrative/options;
-- final enabled option reachable;
-- continue action reachable;
-- no horizontal overflow dependency;
-- option/continue signals preserve normal flow.
+Current CI curl/static smoke is not a substitute for real browser runtime acceptance.
 
-UI-FIX-005 — StartUI:
-- 1280x720 and 960x540 logical viewports;
-- all origin cards reachable;
-- load action reachable when present;
-- wrapped content remains horizontally contained;
-- reopen starts at top;
-- origin/load flow unchanged.
+## Stop / stale-evidence conditions
+Stop promotion and refresh/review the candidate if any of the following occurs:
+1. runtime/parser/render/browser evidence references a SHA other than the declared integration SHA;
+2. assembled candidate source changes after evidence begins;
+3. 00-Orchestrator accepts a new source/content task after freeze and the team chooses to include it;
+4. a supposedly accepted exact tip is replaced by a newer orchestrator-recorded accepted identity;
+5. cumulative `Game.gd` loses prior accepted GAME-FIX semantics;
+6. another direct terminal/death authority is introduced outside `_evaluate_terminal_state()`;
+7. JSON parse fails or semantic diff contains unaccepted content/schema/effect changes;
+8. UI task verifiers fail or rendered evidence does not satisfy their exact-SHA contracts;
+9. Web export/browser has blocking parse/runtime/resource failures;
+10. any unexecuted command is described as PASS;
+11. unreviewed GAME-AUDIT-010, UI-AUDIT-007 or NPC-CONTENT-010 worker output is silently treated as accepted source/project policy while TASK_BOARD still records READY.
 
-UI-FIX-006 — ShopUI:
-- 1280x720 and 960x540 logical viewports;
-- six-row buy list and six-owned-item bag path remain usable;
-- final row reachable vertically;
-- title/subtitle/status/footer/close stay fixed outside list scroll owner;
-- full-list -> empty-bag and buy <-> bag rebuilds do not retain stale range/offset/height;
-- same-mode refresh resets rebuilt list correctly;
-- buy/use/close flows remain correct;
-- no horizontal-scroll dependency at 960px.
-
-Any affected UI source/asset change after capture invalidates its rendered evidence.
-
-### Step 6 — Web export + real browser
-Still requires QA-002 local/Codex/browser context.
-
-On the same frozen SHA:
-- use Godot 4.7.2-compatible environment;
-- perform the configured Web export;
-- capture command, exit code, stdout/stderr and artifact location;
-- serve/open the exported build in a real browser;
-- inspect blocking console/network/runtime/resource failures;
-- exercise start/origin/load, ordinary progression, terminal-state flows, ShopUI, and all held visual paths represented by the candidate.
-
-No Web/browser PASS is claimed by QA-012.
-
-## Exact stale-evidence / stop rules after repository review
-QA-012 sharpens the older READY-branch rule now that 009/006/009 have been reviewed.
-
-### Accepted worker tips are immutable inputs
-The accepted task-board SHAs are commit identities. A worker branch later moving does **not** automatically replace an accepted input.
-
-For GAME-FIX-009 / UI-FIX-006 / NPC-AUDIT-009:
-- keep using the accepted exact tips recorded in the task board;
-- do not chase a later branch HEAD;
-- only change the manifest if the orchestrator explicitly supersedes/reopens the task and records a new accepted exact tip.
-
-### Runtime evidence becomes stale when the frozen integration identity changes
-Stop promotion and refresh/rerun affected evidence if:
-1. the final integration SHA changes after a command/capture was recorded;
-2. any source/asset/verifier in the frozen candidate changes;
-3. the orchestrator accepts a new task (for example NPC-CONTENT-010 or a follow-up from GAME-AUDIT-010/UI-AUDIT-007) and chooses to include it before release;
-4. GAME-FIX-009 `Game.gd` is replaced by metadata coordination source or loses prior accepted Gameplay semantics;
-5. another terminal/death authority is introduced outside the existing evaluator contract;
-6. accepted NPC semantic edits are overwritten by a whole-file branch snapshot;
-7. JSON parse/diff gate fails;
-8. any verifier/shared gate exits nonzero or logs parse/assertion/runtime failure;
-9. rendered evidence is captured from a different SHA than the declared candidate;
-10. Web export/browser evidence comes from a different SHA or shows blocking resource/runtime failure;
-11. any unexecuted parser/Godot/Web/browser command is described as PASS.
-
-## Remaining runtime-blocked state
-Repository review does not remove runtime holds.
-
-Still blocked on real exact-SHA execution:
-- QA-002 itself;
-- GAME-FIX-009 runtime regression acceptance;
-- UI-FIX-001..006 task-specific verifier execution;
-- UI-FIX-001..006 rendered visual acceptance;
-- JSON parse/diff evidence for the assembled accepted NPC content state;
-- shared headless regression matrix;
-- Web export;
-- real browser console/network/runtime validation.
-
-No current repository evidence justifies calling any of those runtime/render/Web checks passed.
-
-## Validation actually performed in QA-012
+## Validation actually performed in this continuation
 Performed:
-- read latest `TASK_BOARD.md`, `FILE_OWNERSHIP.md`, `WEB_AGENT_LAUNCHPAD.md` and current QA report from `orchestrator/multi-agent-bootstrap`;
-- confirmed QA-012 writable scope is report-only;
-- confirmed QA-012 branch started at the latest coordination tip `96a202796d5b454f730bf84c566367e8564db7f4`;
-- inspected accepted GAME-FIX-009 commit/report and its cumulative semantic-base handling;
-- compared GAME-FIX-009 against its coordination baseline and verified only `Game.gd`, its new verifier and Gameplay report differ;
-- captured exact reviewed blobs for `Game.gd` and `verify_terminal_mutation_order.gd`;
-- inspected accepted UI-FIX-006 commit/report;
-- compared UI-FIX-006 against its coordination baseline and verified only `ShopUI.gd`, its new verifier and Scene/UI report differ;
-- captured exact reviewed blobs for `ShopUI.gd` and `verify_shop_panel_overflow.gd`;
-- inspected NPC-AUDIT-009 accepted commit/report and confirmed it is report-only;
-- refreshed current task-board exact tips for held UI-FIX-001..006;
-- inspected the accepted UI task handoffs needed to preserve their runtime evidence requirements;
-- retained the accepted NPC-CONTENT-008 two-string semantic integration warning from QA-010/QA-011;
-- checked GAME-AUDIT-010, UI-AUDIT-007 and NPC-CONTENT-010 branches and confirmed all three still have no worker delta at capture time;
-- refreshed `main` and coordination identities;
-- repository-only integration/freshness analysis.
+- re-read latest `TASK_BOARD.md`, `FILE_OWNERSHIP.md`, `WEB_AGENT_LAUNCHPAD.md` and this QA-012 report from GitHub;
+- confirmed coordination branch remains `96a202796d5b454f730bf84c566367e8564db7f4` and task board still records QA-012 plus the three follow-ups as READY;
+- detected that all three follow-up worker branches moved after the previous QA-012 capture;
+- captured current worker tips for GAME-AUDIT-010, UI-AUDIT-007 and NPC-CONTENT-010;
+- compared each against its coordination start;
+- confirmed GAME-AUDIT-010 and UI-AUDIT-007 changed only their authorized reports;
+- confirmed NPC-CONTENT-010 comparison is limited to `data/events.json +3/-3` plus its report;
+- inspected all three worker reports and their current `NEEDS_REVIEW` status;
+- captured NPC-CONTENT-010 provisional source commit and `data/events.json` blob identity;
+- repository-only manifest/freshness analysis.
 
 Not performed:
+- orchestrator acceptance decision for those worker results;
 - merge/cherry-pick/rebase;
-- source/data/UI/workflow changes;
 - JSON parser execution;
-- Godot 4.7.2 launch;
-- any `verify_*.gd` execution;
+- Godot/verifier execution;
+- local/Codex terminal execution;
 - Web export;
 - browser execution;
 - screenshot/render inspection;
-- workflow run;
-- runtime PASS inference.
+- workflow edits/runs;
+- any production source/data/UI edit by QA-012.
 
 ## Handoff
-QA-012 repository-only post-review integration manifest is complete and requests `NEEDS_REVIEW`.
+QA-012 remains complete and requests `NEEDS_REVIEW`.
 
-Orchestrator review should verify:
-1. GAME-FIX-009 accepted `Game.gd` becomes the cumulative Gameplay source through 009 rather than stacking stale historical snapshots;
-2. `verify_terminal_mutation_order.gd` is added to the mandatory frozen-SHA Gameplay matrix;
-3. UI-FIX-006 joins UI-FIX-001..005 in the same candidate and QA-002 runtime/render hold;
-4. NPC-AUDIT-009 adds no source; current content remains accepted through NPC-CONTENT-008;
-5. GAME-AUDIT-010 and UI-AUDIT-007 remain report-only future boundaries;
-6. NPC-CONTENT-010 remains excluded until it has a reviewed exact tip;
-7. one explicit post-review integration commit is frozen before any QA-002 execution;
-8. all parser/headless/rendered/Web/browser evidence is collected only from that exact integration SHA.
+Important delta for 00-Orchestrator:
+1. the original 009/006/009 accepted manifest remains valid and unchanged;
+2. GAME-AUDIT-010, UI-AUDIT-007 and NPC-CONTENT-010 now each have worker `NEEDS_REVIEW` outputs even though TASK_BOARD still says READY;
+3. review those worker results independently before deciding whether to create/accept any new source input;
+4. until such review occurs, only the already accepted inputs belong in the next frozen runtime candidate;
+5. when one final candidate SHA is formed, QA-002 must execute all parser/Godot/render/Web/browser evidence on that exact SHA only.
