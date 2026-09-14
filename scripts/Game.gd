@@ -645,7 +645,6 @@ func _poi_at_click(world_pos: Vector2) -> Dictionary:
 func _process(delta: float) -> void:
 	if not game_started:
 		return
-	_evaluate_quests()
 	if location_sys and location_sys.is_active():
 		near_target = {}
 	else:
@@ -669,9 +668,12 @@ func _process(delta: float) -> void:
 		time_sys.set_paused(ui_busy)
 		time_sys.tick(delta)
 	_sync_needs_to_time()
-	# 结局判定只走这一个入口；界面/活动忙时等交互收尾后再评估，避免结局层与事件层同时弹出。
-	if not ui_busy and _evaluate_terminal_state():
-		return
+	# GAME-FIX-009：先观察已经结算完的终止状态，再允许任务奖励修改生存数值。
+	# 忙碌界面下继续延迟终局展示，同时也延迟奖励结算，避免奖励先把终止值抬回来。
+	if not ui_busy:
+		if _evaluate_terminal_state():
+			return
+		_evaluate_quests()
 	if weather_sys:
 		weather_sys.update(time_sys)
 	if npc_schedule_sys:
@@ -1110,7 +1112,7 @@ func _on_shop_buy(item_id: String) -> void:
 
 
 func _on_shop_use(item_id: String) -> void:
-	if inventory == null or not InventoryScript.ITEMS.has(item_id) or not inventory.has(item_id):
+	if game_over or inventory == null or not InventoryScript.ITEMS.has(item_id) or not inventory.has(item_id):
 		return
 	var effects: Dictionary = InventoryScript.ITEMS[item_id].get("effects", {})
 	if not inventory.remove(item_id, 1):
@@ -1131,6 +1133,14 @@ func _on_shop_use(item_id: String) -> void:
 	var minutes: int = InventoryScript.minutes_of(item_id)
 	if time_sys:
 		time_sys.advance_minutes(minutes)
+	# GAME-FIX-009：物品耗时必须在同一次点击里完成需求结算与统一终止判定。
+	# 若这段时间已经跨过终止阈值，立即收起背包，不能让第二件恢复物品把状态抬回来。
+	_sync_needs_to_time()
+	if _evaluate_terminal_state():
+		if shop_ui and shop_ui.is_open():
+			shop_ui.close()
+		_refresh_ui()
+		return
 	# 能顶一顿的算吃饭；牛奶这种垫肚子的不算，免得每日目标被随手糊弄过去。
 	if daily_routine and int(effects.get("fullness", 0)) >= MEAL_FULLNESS:
 		daily_routine.complete("meal")
