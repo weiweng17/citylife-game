@@ -4,7 +4,7 @@
 
 ## Single-controller rule
 - Only `00-Orchestrator` may edit `docs/agents/TASK_BOARD.md`.
-- Only `00-Orchestrator` may decide that a worker task is accepted, rejected, superseded, blocked, or ready for the next task.
+- Only `00-Orchestrator` may decide that a worker task is accepted, rejected, superseded, blocked, queued, or currently dispatched.
 - Workers only update their own `agent-reports/*.md` files and their task branches.
 - Never run two orchestrators against the same coordination branch at the same time.
 
@@ -17,52 +17,77 @@
 - `06-Audio-Music` -> `agent-reports/audio-music.md`
 - `07-Game-Director` -> `agent-reports/game-director.md`
 
+## Global execution gate
+The dispatcher is **orchestrator-gated**, not worker-push driven.
+
+- `READY` means **queued only**. A READY task must not automatically wake its worker.
+- `IN_PROGRESS` means **00 explicitly decided this is the team that should execute now**.
+- Default policy: at most **one web worker task globally** may be `IN_PROGRESS` at a time.
+- Parallel web execution is exceptional. It is allowed only when 00 records `Parallel dispatch: YES` in the task board/control state and verifies that the tasks are independent, non-overlapping, and worth the extra coordination cost.
+- A worker that reaches `NEEDS_REVIEW` stops receiving continuation prompts. The dispatcher wakes 00; 00 reviews, updates the board, and chooses the next worker.
+- `BLOCKED`, `BACKLOG`, and `READY` tasks are never treated as execution commands.
+- 00 chooses the next worker based on critical path, player-visible value, dependency order, and rework risk — not on keeping every chat busy.
+
+Preferred default flow:
+
+`READY queue -> 00 selects one -> IN_PROGRESS -> worker produces GitHub delta -> NEEDS_REVIEW -> 00 reviews -> DONE/correction -> 00 selects next`
+
 ## Orchestrator heartbeat
 On every orchestrator wake/run, execute this loop in order:
 
 1. Read `docs/agents/TASK_BOARD.md` from `orchestrator/multi-agent-bootstrap`.
 2. Read all current worker reports for lanes 01-07.
 3. Inspect the referenced worker branches / exact SHAs for any report in `NEEDS_REVIEW`.
-4. Review completed work immediately; do not wait for all workers.
+4. Review completed work immediately; do not wait for unrelated workers.
 5. Update `TASK_BOARD.md` only after review:
    - accepted -> `DONE`
    - incomplete/incorrect -> create a narrow correction task or return it to worker
    - execution-context blocked -> `BLOCKED` with exact blocker
-6. Keep every idle worker fed with at most one `READY` task unless intentionally paused.
-7. Keep scopes non-overlapping and respect `FILE_OWNERSHIP.md`.
-8. When a task needs real Godot, terminal, browser, Web export, screenshots, or exact-SHA runtime evidence, package a single narrow Codex/Local QA task instead of asking web workers to fake runtime proof.
-9. Art/animation and audio production are separate lanes: 00 may specify requirements and acceptance criteria but must not substitute itself for asset production.
-10. `07-Game-Director` defines player experience, mainline, pacing and prioritization; it does not directly own gameplay source, art assets or narrative production unless the task board explicitly grants a narrow file.
-11. Record the orchestrator's current state in `agent-reports/orchestrator.md`.
-12. Stop the loop only when one of these is true:
-   - all active work is waiting on the user/product decision,
-   - all active work is blocked on real runtime/Codex execution,
-   - no safe non-overlapping next task exists,
+6. Maintain useful future work as `READY`, but do not wake READY workers. After reviews/dependency reconciliation, choose the single highest-value executable task and promote only that task to `IN_PROGRESS`.
+7. If more than one ordinary web task is `IN_PROGRESS` and no explicit `Parallel dispatch: YES` exists, reconcile immediately back to one active execution lane.
+8. Keep scopes non-overlapping and respect `FILE_OWNERSHIP.md`.
+9. When a task needs real Godot, terminal, browser, Web export, screenshots, audio audition, or exact-SHA runtime evidence, package a single narrow Codex/Local QA task instead of asking web workers to fake runtime proof.
+10. Art/animation and audio production are separate lanes: 00 may specify requirements and acceptance criteria but must not substitute itself for asset production.
+11. `07-Game-Director` defines player experience, mainline, pacing and prioritization; it does not directly own gameplay source, art assets or narrative production unless the task board explicitly grants a narrow file.
+12. Record the orchestrator's current state in `agent-reports/orchestrator.md`.
+13. Stop the loop only when one of these is true:
+   - all queued work is waiting on a user/product decision,
+   - all executable work is blocked on real runtime/Codex execution,
+   - no safe next task exists,
    - release/integration gate is ready for user approval,
    - the user has explicitly paused development.
 
 ## Dispatch policy
-The orchestrator should prefer continuous pipeline flow:
+The orchestrator should optimize for **finished GitHub output**, not number of active chats.
 
-`Worker report NEEDS_REVIEW -> Orchestrator review -> task DONE/rejected -> immediately create next READY task for that role`
+Do not create or activate work simply to keep a lane busy. Do not wake multiple workers just because several tasks are READY. Choose the next lane only when its inputs are sufficiently stable that useful work can be completed without predictable rework.
 
-Do not leave a worker idle merely because another role is still working. When development is explicitly paused, preserve READY tasks but do not wake workers.
+For dependency chains, prefer finishing the blocker first. Example: if Scene/UI requires an objective-state API from Gameplay, keep Scene/UI queued and dispatch Gameplay first.
+
+When development is explicitly paused, preserve queued READY tasks but do not promote them to IN_PROGRESS.
 
 ## Current-cycle priority order
 1. Review any `NEEDS_REVIEW` worker report.
 2. Resolve coordination contradictions / stale task state.
-3. Apply Game Director product priorities to task ordering without allowing 07 to edit coordination files directly.
-4. Fill idle workers with the smallest useful next task.
-5. Refresh QA integration/runtime manifest.
-6. Escalate only the minimum required exact-SHA package to Codex/local execution.
-7. After runtime evidence, form one deterministic integration candidate and review before touching `main`.
+3. If multiple ordinary web tasks are IN_PROGRESS without explicit parallel authorization, choose the critical-path winner and return the others to READY.
+4. Apply Game Director product priorities to task ordering without allowing 07 to edit coordination files directly.
+5. Select **one** next executable web task from the READY queue and mark it IN_PROGRESS.
+6. Refresh QA integration/runtime manifest only when it adds new integration value; do not generate report-only busywork.
+7. Escalate only the minimum required exact-SHA package to Codex/local execution.
+8. After runtime evidence, form one deterministic integration candidate and review before touching `main`.
 
 ## Automation model
 For regular ChatGPT web conversations, the chat does not automatically wake on a GitHub commit by itself. Therefore 00 needs an external wake mechanism.
 
 Preferred low-cost mode is the local CityLife Dispatcher. A scheduled ChatGPT automation may be used only as an intentional fallback; do not run it simultaneously with the local dispatcher.
 
-Every wake should be idempotent: if no worker/report/branch state changed, do not create duplicate tasks or duplicate edits.
+Dispatcher contract:
+- keep 00 available as the control plane;
+- lazily open/wake only the worker whose task is currently `IN_PROGRESS`;
+- do not auto-open all 01-07 chats at startup;
+- do not dispatch READY tasks;
+- worker GitHub/report progress, not chat-message count, is the progress signal;
+- every wake is idempotent: unchanged worker/report/branch state must not create duplicate prompts or duplicate edits.
 
 ## Required orchestrator output per heartbeat
 Update `agent-reports/orchestrator.md` with:
@@ -70,7 +95,8 @@ Update `agent-reports/orchestrator.md` with:
 - worker state summary for 01-07
 - reviews completed this run
 - task-board changes made
-- next task per worker
+- queued READY tasks
+- the single currently selected IN_PROGRESS worker/task (or explicit reason none is selected)
 - Codex/runtime escalations waiting
 - art/audio asset-production blockers
 - user/product decisions waiting
