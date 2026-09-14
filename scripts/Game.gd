@@ -62,6 +62,29 @@ const CAFE_GIG_MINUTES := 90
 const CAFE_GIG_HEALTH_COST := 2
 const CAFE_GIG_MOOD_COST := 4
 
+# GAME-CONTENT-013：首日只保留一个持久化 L1 objective id；完成态同样复用 GameState.flags。
+# 旧存档没有这两个键时按“已完成 onboarding”迁移，避免上线后把老档强制拉回第一天。
+const ONBOARDING_COMPLETE_FLAG := "onboarding_complete"
+const ONBOARDING_OBJECTIVE_FLAG := "onboarding_objective"
+const ONBOARDING_MEAL := "meal"
+const ONBOARDING_SUBWAY := "subway"
+const ONBOARDING_OFFICE := "office"
+const ONBOARDING_LAOZHANG := "laozhang"
+const ONBOARDING_WORK := "work"
+const ONBOARDING_STORE := "store"
+const ONBOARDING_HOME := "home"
+const ONBOARDING_SLEEP := "sleep"
+const ONBOARDING_OBJECTIVES := {
+	ONBOARDING_MEAL: {"id": ONBOARDING_MEAL, "location": "home", "text": "现在：先做一顿饭，再出门去公司。"},
+	ONBOARDING_SUBWAY: {"id": ONBOARDING_SUBWAY, "location": "subway", "text": "现在：出门，去城南地铁站。"},
+	ONBOARDING_OFFICE: {"id": ONBOARDING_OFFICE, "location": "office", "text": "现在：坐地铁去云海科技。"},
+	ONBOARDING_LAOZHANG: {"id": ONBOARDING_LAOZHANG, "location": "office", "text": "现在：先找老张问两句。"},
+	ONBOARDING_WORK: {"id": ONBOARDING_WORK, "location": "office", "text": "现在：去工位，完成第一班工作。"},
+	ONBOARDING_STORE: {"id": ONBOARDING_STORE, "location": "store", "text": "现在：下班去街角便利店，给今晚做准备。"},
+	ONBOARDING_HOME: {"id": ONBOARDING_HOME, "location": "home", "text": "现在：回家，把第一天收尾。"},
+	ONBOARDING_SLEEP: {"id": ONBOARDING_SLEEP, "location": "home", "text": "现在：睡一觉，结束来到城市的第一天。"},
+}
+
 # 地点（与 tools/gen_scene.py 的 BUILDINGS / POI 坐标一致；都落在建筑脚下的可走地面）
 const POI_DATA := [
 	{"id": "home", "pos": Vector2(310, 392), "name": "回家", "scene": "rent"},
@@ -258,27 +281,21 @@ func _ready() -> void:
 	add_child(store_activities)
 	store_activities.configure(location_sys)
 	store_activities.activity_requested.connect(_on_store_activity)
-	# 公园是第 4 阶段扩展内容的第一个场景：此前只有地图与 NPC，玩家到了没事可做。
 	park_activities = ParkActivitiesScript.new()
 	park_activities.name = "ParkActivities"
 	add_child(park_activities)
 	park_activities.configure(location_sys)
 	park_activities.activity_requested.connect(_on_park_activity)
-	# 咖啡馆是第 4 阶段扩展内容的第二个场景：点杯咖啡要花钱，发呆免费。
 	cafe_activities = CafeActivitiesScript.new()
 	cafe_activities.name = "CafeActivities"
 	add_child(cafe_activities)
 	cafe_activities.configure(location_sys)
 	cafe_activities.activity_requested.connect(_on_cafe_activity)
-	# 医院是第 4 阶段扩展内容的第三个场景：健康目前只有睡觉和感冒药能补，
-	# 这里是第一个正经的健康恢复出口——挂号费不便宜，但补得多。
 	hospital_activities = HospitalActivitiesScript.new()
 	hospital_activities.name = "HospitalActivities"
 	add_child(hospital_activities)
 	hospital_activities.configure(location_sys)
 	hospital_activities.activity_requested.connect(_on_hospital_activity)
-	# 旧巷与天台是第 4 阶段扩展内容的最后两个场景：都是免费的慢节奏去处，
-	# 旧巷多一炷 5 元的香。
 	alley_activities = AlleyActivitiesScript.new()
 	alley_activities.name = "AlleyActivities"
 	add_child(alley_activities)
@@ -289,11 +306,9 @@ func _ready() -> void:
 	add_child(rooftop_activities)
 	rooftop_activities.configure(location_sys)
 	rooftop_activities.activity_requested.connect(_on_rooftop_activity)
-	# 背包只存物品数量；买到的东西随时可以取用，具体效果由这里结算。
 	inventory = InventoryScript.new()
 	inventory.name = "Inventory"
 	add_child(inventory)
-	# 每日循环只跟踪一天内的目标，不推进年龄、不触发年度结算。
 	daily_routine = DailyRoutineScript.new()
 	daily_routine.name = "DailyRoutine"
 	add_child(daily_routine)
@@ -304,7 +319,6 @@ func _ready() -> void:
 	add_child(npc_schedule_sys)
 	npc_schedule_sys.configure(world_manager)
 	npc_schedule_sys.reset(time_sys, weather_sys)
-	# 纯逻辑，不需要进场景树（和 GameState 一样是 RefCounted）。
 	npc_relations_sys = NpcRelationsScript.new()
 	quest_sys = QuestSystemScript.new()
 	quest_sys.name = "QuestSys"
@@ -330,7 +344,7 @@ func _ready() -> void:
 # ---------------------------------------------------------------- 地图
 
 func _setup_ui() -> void:
-	ui.layer = 2  # 保证 UI 永远在暗角层之上
+	ui.layer = 2
 	hud = HUDScript.new()
 	ui.add_child(hud)
 	hud.save_requested.connect(_save_game)
@@ -353,8 +367,6 @@ func _setup_ui() -> void:
 	toast_label.name = "Toast"
 	toast_label.visible = false
 	toast_label.set_anchors_preset(Control.PRESET_CENTER)
-	# 自审放宽了这块：追加型提示（任务进度接在结算提示下面）会有两三行，
-	# 原来只留了 40px 高、320px 宽，多行会溢出到场景外面去。
 	toast_label.offset_top = -185
 	toast_label.offset_bottom = -90
 	toast_label.offset_left = -280
@@ -381,7 +393,6 @@ func _setup_ui() -> void:
 	ending_ui = EndingUIScript.new()
 	ending_ui.restart_requested.connect(_restart)
 	ui.add_child(ending_ui)
-	# 货架/背包面板放在 UI 层最后，保证它盖在 HUD 与地点视图之上。
 	shop_ui = ShopUIScript.new()
 	shop_ui.buy_requested.connect(_on_shop_buy)
 	shop_ui.use_requested.connect(_on_shop_use)
@@ -394,25 +405,21 @@ func _refresh_ui() -> void:
 		hud.refresh_daily(daily_routine.summary())
 	if hud and inventory:
 		hud.refresh_bag(inventory.total_count())
-	# 床位提示随时刻变化，所以每帧写一次（只是一个字符串赋值）。
 	if home_activities:
 		home_activities.rest_detail = _rest_detail_text()
-	# 工位的时薪、谈薪是否够格、今天谈过没，都由 Game 算好喂给交互层（判定不放在那边）。
-	# 这几样只在变化时才重新喂：自审发现旧写法每帧新建字典、还每帧跑一次谈薪判定，
-	# 虽然不贵，但完全没必要。
 	if office_activities:
 		var today: int = time_sys.day if time_sys else 0
 		var laozhang_relation: int = 0
 		if npc_relations_sys != null:
 			laozhang_relation = npc_relations_sys.value_of(game_state.relations, "laozhang")
-		# 「有没有人帮腔」只是一个阈值比较，不必为了它每帧跑一遍 negotiate() 再丢掉结果。
 		var friend: bool = laozhang_relation >= JobGrowthScript.FRIEND_RELATION
 		var wage: int = JobGrowthScript.wage_of(skill, game_state.raise_steps)
 		var context: Dictionary = {
-			"skill": skill,
+			# 首日不把谈薪门槛推到前台；工资与实际 skill 仍照常结算。
+			"skill": 0 if _onboarding_active() else skill,
 			"wage": wage,
 			"title": JobGrowthScript.title_of(skill),
-			"can_negotiate": JobGrowthScript.can_negotiate(skill),
+			"can_negotiate": JobGrowthScript.can_negotiate(skill) and not _onboarding_active(),
 			"raised_today": int(game_state.raise_day) == today,
 			"friend": friend,
 			"worked_today": daily_routine != null and daily_routine.is_done("work"),
@@ -425,17 +432,17 @@ func _refresh_ui() -> void:
 		var cafe_context: Dictionary = {
 			"gig_today": _livelihood_done_today(CAFE_GIG_DAY_FLAG),
 			"gig_pay": CAFE_GIG_PAY,
+			"gig_visible": _cafe_side_gig_available(),
 		}
 		if cafe_activities.context != cafe_context:
 			cafe_activities.sync_context(cafe_context)
 	if hud:
 		hud.refresh_skill(skill, JobGrowthScript.title_of(skill))
-	# 人生阶段目标与主线任务共用同一行（HUD 高度被地点标题的偏移量盯死，不能再加行）。
-	# `_state()` 每帧只取一次，别在一帧里反复构造字典。
 	var st: Dictionary = _state()
 	var stage: Dictionary = story_sys.current_stage(st) if story_sys else {}
 	if hud and not stage.is_empty():
-		var quest_text: String = quest_sys.objective_text(st) if quest_sys else ""
+		# q1-q3 在 onboarding 完成前既不 evaluate，也不占前台目标位。
+		var quest_text: String = "" if _onboarding_active() else (quest_sys.objective_text(st) if quest_sys else "")
 		hud.refresh(game_state, str(stage.get("name", "")), str(stage.get("goal", "")), Data.DARK_CLUE_TOTAL, quest_text)
 		if time_sys:
 			hud.refresh_time(time_sys.day, time_sys.get_clock_text(), time_sys.get_period_name())
@@ -467,6 +474,60 @@ func _show_start_screen() -> void:
 		start_ui.open()
 
 
+func _start_new_onboarding() -> void:
+	flags[ONBOARDING_COMPLETE_FLAG] = false
+	flags[ONBOARDING_OBJECTIVE_FLAG] = ONBOARDING_MEAL
+
+
+func _normalize_onboarding_after_load() -> void:
+	# 老存档不存在 onboarding 键；不要把长期档倒灌回首日。
+	if not flags.has(ONBOARDING_COMPLETE_FLAG) and not flags.has(ONBOARDING_OBJECTIVE_FLAG):
+		flags[ONBOARDING_COMPLETE_FLAG] = true
+		return
+	if not flags.has(ONBOARDING_COMPLETE_FLAG):
+		flags[ONBOARDING_COMPLETE_FLAG] = false
+	if not bool(flags.get(ONBOARDING_COMPLETE_FLAG, false)) and str(flags.get(ONBOARDING_OBJECTIVE_FLAG, "")).is_empty():
+		flags[ONBOARDING_OBJECTIVE_FLAG] = ONBOARDING_MEAL
+
+
+func _onboarding_active() -> bool:
+	return game_started and flags.has(ONBOARDING_COMPLETE_FLAG) and not bool(flags.get(ONBOARDING_COMPLETE_FLAG, false))
+
+
+func _onboarding_objective_id() -> String:
+	if not _onboarding_active():
+		return ""
+	var objective_id := str(flags.get(ONBOARDING_OBJECTIVE_FLAG, ONBOARDING_MEAL))
+	return objective_id if ONBOARDING_OBJECTIVES.has(objective_id) else ONBOARDING_MEAL
+
+
+## 01 对外只暴露一个当前 L1 状态；后续 UI 可以消费这个字典，不需要理解整套首日 flags。
+func current_onboarding_objective() -> Dictionary:
+	var objective_id := _onboarding_objective_id()
+	if objective_id.is_empty():
+		return {}
+	return (ONBOARDING_OBJECTIVES[objective_id] as Dictionary).duplicate(true)
+
+
+func _onboarding_hint() -> String:
+	return str(current_onboarding_objective().get("text", ""))
+
+
+func _advance_onboarding(expected: String, next_objective: String) -> bool:
+	if not _onboarding_active() or _onboarding_objective_id() != expected:
+		return false
+	flags[ONBOARDING_OBJECTIVE_FLAG] = next_objective
+	return true
+
+
+func _complete_onboarding_from_sleep() -> bool:
+	if not _onboarding_active() or _onboarding_objective_id() != ONBOARDING_SLEEP:
+		return false
+	flags[ONBOARDING_COMPLETE_FLAG] = true
+	flags.erase(ONBOARDING_OBJECTIVE_FLAG)
+	return true
+
+
 func _choose_origin(o: Dictionary) -> void:
 	origin = o
 	var ini: Dictionary = o.get("init", {})
@@ -474,6 +535,7 @@ func _choose_origin(o: Dictionary) -> void:
 	dialog_pending_npc = ""
 	game_over = false
 	game_started = true
+	_start_new_onboarding()
 	start_ui.close()
 	events_sys.reset_used()
 	if encounter_sys:
@@ -499,17 +561,16 @@ func _choose_origin(o: Dictionary) -> void:
 		shop_ui.close()
 	need_fraction = 0.0
 	murmur_shown = {}
-	# 开局即记录时间基准，否则第一次同步只会初始化、漏掉开局后流逝的时间。
 	_last_total_minutes = time_sys.day * 1440 + time_sys.get_minute_of_day() if time_sys != null else -1
 	origin_open_pending = str(o.get("open", ""))
-	# 对话链：梦 → 出身开场白（旁白）→ 新手引导（操作指引）
-	if str(o.get("open", "")) != "":
-		_enqueue_dialog("旁白", [str(o.get("open", ""))])
-	_enqueue_dialog("操作指引", Data.TUTORIAL)
-	_show_dialog("梦", Data.DARK_INTRO["lines"])
+	# 首日不再让暗线梦与整套系统说明抢首屏；保留资产，onboarding 完成后系统仍可照常使用。
+	var opening_lines: Array = []
+	if not origin_open_pending.is_empty():
+		opening_lines.append(origin_open_pending)
+	opening_lines.append(_onboarding_hint())
+	_show_dialog("旁白", opening_lines)
 
 # ---------------------------------------------------------------- 存档
-
 
 func _quit_game() -> void:
 	if dialog_ui and dialog_ui.is_busy():
@@ -536,8 +597,6 @@ func _save_game() -> void:
 		start_ui.set_load_available(save_sys.has_save())
 
 
-## 存档内容集中在这一个函数里。这样"中途存档 → 读回"可以在内存里整份往返验证，
-## 不必去碰玩家真正的存档文件（user://savegame.json）。
 func build_save_payload() -> Dictionary:
 	return {
 		"game_state": game_state.to_dict(),
@@ -553,9 +612,9 @@ func build_save_payload() -> Dictionary:
 	}
 
 
-## 读档的唯一入口：把 payload 整份盖回运行时状态。
 func apply_save_payload(payload: Dictionary) -> void:
 	game_state.apply_dict(payload.get("game_state", {}))
+	_normalize_onboarding_after_load()
 	var saved_origin = payload.get("origin", {})
 	origin = saved_origin if typeof(saved_origin) == TYPE_DICTIONARY else {}
 	if events_sys:
@@ -578,8 +637,6 @@ func apply_save_payload(payload: Dictionary) -> void:
 		npc_schedule_sys.reset(time_sys, weather_sys)
 	if dark_location_sys:
 		dark_location_sys.reset(time_sys, _state())
-	# 读档会把时间整体跳到存档那一刻，必须重设消耗基准，否则这一跳会被当成
-	# "真实流过的时间"扣掉一大截饱食与精力。
 	need_fraction = 0.0
 	_last_total_minutes = time_sys.day * 1440 + time_sys.get_minute_of_day() if time_sys != null else -1
 	dialog_queue.clear()
@@ -606,7 +663,6 @@ func _load_game() -> void:
 	if not bool(result.get("ok", false)):
 		_show_toast(str(result.get("message", "读取失败。")))
 		return
-	# 读档会整体替换状态，货架/背包面板必须先收起来。
 	if shop_ui and shop_ui.is_open():
 		shop_ui.close()
 	apply_save_payload(result.get("payload", {}))
@@ -654,8 +710,6 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _poi_at_click(world_pos: Vector2) -> Dictionary:
-	# 让地点图标本身可以直接点击，不再要求先走到旁边再找交互按钮。
-	# 半径略大于视觉图标，兼顾鼠标和触屏操作。
 	for poi in POI_DATA:
 		var pos: Vector2 = poi.get("pos", Vector2.ZERO)
 		if world_pos.distance_to(pos) <= 58.0:
@@ -674,7 +728,6 @@ func _process(delta: float) -> void:
 	_check_stage()
 	var ui_busy: bool = (dialog_ui != null and dialog_ui.is_busy()) or (event_ui != null and event_ui.is_busy()) or (ending_ui != null and ending_ui.visible)
 	ui_busy = ui_busy or activity_running
-	# 货架/背包打开时也算“界面占用”：不让角色走开，也暂停时间，免得挑东西的时候一直在掉饱食。
 	ui_busy = ui_busy or (shop_ui != null and shop_ui.is_open())
 	location_sys.input_blocked = ui_busy
 	home_activities.blocked = ui_busy
@@ -690,7 +743,6 @@ func _process(delta: float) -> void:
 		time_sys.tick(delta)
 	_sync_needs_to_time()
 	# GAME-FIX-009：先观察已经结算完的终止状态，再允许任务奖励修改生存数值。
-	# 忙碌界面下继续延迟终局展示，同时也延迟奖励结算，避免奖励先把终止值抬回来。
 	if not ui_busy:
 		if _evaluate_terminal_state():
 			return
@@ -699,10 +751,12 @@ func _process(delta: float) -> void:
 		weather_sys.update(time_sys)
 	if npc_schedule_sys:
 		npc_schedule_sys.apply(time_sys, false, weather_sys)
-	if dark_location_sys:
+	# 首日暗线只退到后台，不删除；完成第一晚后原流程自动恢复。
+	if dark_location_sys and not _onboarding_active():
 		dark_location_sys.apply(time_sys, _state())
 	if location_sys:
-		location_sys.apply_story_unlocks(_state(), time_sys)
+		if not _onboarding_active():
+			location_sys.apply_story_unlocks(_state(), time_sys)
 		_sync_location_npcs()
 	if world_manager:
 		world_manager.process_visuals(delta, player, time_sys, weather_sys)
@@ -721,8 +775,6 @@ func _update_near_target() -> void:
 
 # ---------------------------------------------------------------- 分场景地图
 
-## 活动公用的开头：上锁 + 头顶反馈 + 进度条。所有场景活动都从这里走，
-## 别再各自抄一份（此前三处各抄一份，连"哪些活动脚本要上锁"都对不上）。
 func _begin_activity(prompt_label: Label, progress_text: String, feedback_text: String, activity_id: String, anchor: Dictionary = {}) -> void:
 	activity_running = true
 	location_sys.input_blocked = true
@@ -740,7 +792,6 @@ func _begin_activity(prompt_label: Label, progress_text: String, feedback_text: 
 		await get_tree().create_timer(0.12).timeout
 
 
-## 活动公用的结尾：解锁 + 刷新。数值结算发生在调用方，这里只管收尾。
 func _end_activity() -> void:
 	activity_running = false
 	location_sys.set_activity_feedback("", false)
@@ -763,6 +814,12 @@ func _on_home_activity(id: String) -> void:
 	if location_sys.current_location != "home" or not home_activities.SPOTS.has(id):
 		return
 	if id == "leave":
+		if _onboarding_active() and _onboarding_objective_id() == ONBOARDING_MEAL:
+			_show_toast("先垫点东西。第一天没必要饿着去。\n" + _onboarding_hint())
+			return
+		if _onboarding_active() and _onboarding_objective_id() == ONBOARDING_SLEEP:
+			_show_toast(_onboarding_hint())
+			return
 		location_sys.unlock("subway")
 		location_sys.travel_to("subway")
 		return
@@ -771,13 +828,12 @@ func _on_home_activity(id: String) -> void:
 		return
 	var progress_words := {"rest": "睡意渐浓", "study": "书页翻动", "meal": "锅里咕嘟作响"}
 	var activity_icons := {"rest": "Zzz", "study": "专注中", "meal": "烹饪中"}
-	# 先由 SpotActivities 自动走到 position，再把完整锚点交给地点表现层处理姿态与景深。
 	await _begin_activity(home_activities.prompt, str(progress_words.get(id, "进行中")), str(activity_icons.get(id, "进行中")), id, home_activities.SPOTS[id])
 	var feedback: String = ""
 	var slept_through := false
+	var onboarding_advanced := false
 	match id:
 		"rest":
-			# 夜里上床就是睡一整夜、跨到次日；白天躺下只是两小时小睡。
 			if _is_sleep_hour():
 				feedback = _sleep_through_night()
 				slept_through = true
@@ -801,22 +857,21 @@ func _on_home_activity(id: String) -> void:
 			fullness = mini(100, fullness + 45)
 			time_sys.advance_minutes(30)
 			feedback = "一个人也要好好吃饭。热汤下肚，身上暖了起来。（−20元 健康+5 饱食+45）"
-	# 睡整夜时"休息"已经在跨天前记进昨天了，跨天会把当日进度清空，
-	# 所以新的一天从小目标全空开始，不能在这里再补一次。
+			onboarding_advanced = _advance_onboarding(ONBOARDING_MEAL, ONBOARDING_SUBWAY)
 	if daily_routine and not slept_through:
 		if id == "meal":
 			daily_routine.complete("meal")
-			if quest_sys:
-				quest_sys.notify(_state(), "meal_cooked")
+			_notify_quest("meal_cooked")
 		elif id == "rest":
 			daily_routine.complete("sleep")
 	_end_activity()
+	if onboarding_advanced:
+		feedback += "\n" + _onboarding_hint()
 	_show_toast(feedback)
 
 
 # ---------------------------------------------------------------- 过夜
 
-## 20:00 之后、或凌晨 5:00 之前上床就是睡一整夜；白天躺下只是小睡。
 func _is_sleep_hour() -> bool:
 	if time_sys == null:
 		return false
@@ -824,27 +879,22 @@ func _is_sleep_hour() -> bool:
 	return minute >= 20 * 60 or minute < 5 * 60
 
 
-## 从当前时刻睡到次日 07:30 需要多少分钟。
 func _sleep_minutes_to_morning() -> int:
 	if time_sys == null:
 		return 0
 	var minute: int = time_sys.get_minute_of_day()
 	var wake: int = 7 * 60 + 30
 	if minute < 5 * 60:
-		# 已经过了午夜，睡到"今天"早上就够了。
 		return wake - minute
 	return (24 * 60 - minute) + wake
 
 
-## 床位的提示语按当前时刻变化：夜里告诉玩家这一觉睡到明早，白天就照常写两小时小睡。
 func _rest_detail_text() -> String:
 	if _is_sleep_hour():
 		return "睡到明早 7:30 · 跨天结算"
 	return "2小时 · 健康+12 心情+8 精力+50"
 
 
-## 睡一整夜：跨过午夜触发次日，醒来是早上 7:30。
-## 昨天一天的目标必须在跨天之前先记下来——跨天会把当日进度清空。
 func _sleep_through_night() -> String:
 	var minutes: int = _sleep_minutes_to_morning()
 	var yesterday: String = ""
@@ -853,16 +903,15 @@ func _sleep_through_night() -> String:
 		yesterday = daily_routine.summary()
 	if time_sys:
 		time_sys.advance_minutes(minutes)
-	# 睡觉本身也是"时间流过"：先把这一夜该掉的饱食掉掉，再回满精力。
-	# 醒来是"睡饱了但饿"，而不是睡完还累。
 	_sync_needs_to_time()
-	# GAME-FIX-007：过夜需求结算如果已经触发终局，必须先走统一 evaluator，
-	# 不能让随后同一流程的睡眠恢复把 0 健康/心情重新抬高。
+	# GAME-FIX-007：终局必须在睡眠恢复之前观察。
 	if _evaluate_terminal_state():
 		return ""
 	health = mini(100, health + 12)
 	mood = mini(100, mood + 8)
 	energy = 100
+	# 只有已经走到“第一晚”目标的成功整夜睡眠才解除 onboarding；单纯 day rollover 不算。
+	_complete_onboarding_from_sleep()
 	var day_now: int = time_sys.day if time_sys != null else 0
 	var wake_text: String = time_sys.get_clock_text() if time_sys != null else "07:30"
 	return "你把自己扔到床上，灯也没关。再睁眼是第 %d 天的早上 %s，雨还在下。\n昨天：%s\n（睡了 %.1f 小时 · 精力回满 健康+12 心情+8）" % [
@@ -880,8 +929,6 @@ func _overtime_pay(wage: int) -> int:
 	return maxi(1, int(round(float(wage) * 0.60)))
 
 
-## 谋生型活动在同一次结算里推进时间、消耗需求并做 authoritative terminal observation。
-## 返回 true 代表已经进入终局，调用方只负责释放 activity lock，不再追加普通完成反馈。
 func _settle_livelihood_time(minutes: int) -> bool:
 	if time_sys:
 		time_sys.advance_minutes(minutes)
@@ -894,6 +941,13 @@ func _on_office_activity(id: String) -> void:
 		return
 	if location_sys.current_location != "office" or not office_activities.SPOTS.has(id):
 		return
+	if _onboarding_active():
+		if id == "work" and _onboarding_objective_id() != ONBOARDING_WORK:
+			_show_toast(_onboarding_hint())
+			return
+		if id == "negotiate":
+			_show_toast("第一天先把眼前的班上完。谈薪以后再说。\n" + _onboarding_hint())
+			return
 	if id == "negotiate":
 		await _do_negotiate()
 		return
@@ -903,7 +957,6 @@ func _on_office_activity(id: String) -> void:
 	await _do_work_shift()
 
 
-## 上班：拿钱、掉状态、攒熟练度。时薪按技能档位走，所以"多上班"本身会涨价。
 func _do_work_shift() -> void:
 	var wage: int = JobGrowthScript.wage_of(skill, game_state.raise_steps)
 	await _begin_activity(office_activities.prompt, "键盘敲个不停", "工作中", "work")
@@ -911,19 +964,20 @@ func _do_work_shift() -> void:
 	health = maxi(0, health - 6)
 	mood = maxi(0, mood - 4)
 	time_sys.advance_minutes(240)
-	# 先结算工资再涨技能：同一班不会因为刚涨了档就按新价算，账才对得上。
 	var growth: Dictionary = JobGrowthScript.gain_shift(skill, game_state.work_exp)
 	skill = int(growth["skill"])
 	game_state.work_exp = int(growth["exp"])
 	if daily_routine:
 		daily_routine.complete("work")
-	if quest_sys:
-		quest_sys.notify(_state(), "work_shift")
+	var onboarding_advanced := _advance_onboarding(ONBOARDING_WORK, ONBOARDING_STORE)
+	_notify_quest("work_shift")
 	_end_activity()
-	_show_toast("你把一整天交给了格子间。下班时雨还在下，手机里多了 %d 块。身体发沉，话也不想说。（工资+%d 健康−6 心情−4，耗时4小时）%s" % [wage, wage, _work_growth_line(growth)])
+	var feedback := "你把一整天交给了格子间。下班时雨还在下，手机里多了 %d 块。身体发沉，话也不想说。（工资+%d 健康−6 心情−4，耗时4小时）%s" % [wage, wage, _work_growth_line(growth)]
+	if onboarding_advanced:
+		feedback += "\n" + _onboarding_hint()
+	_show_toast(feedback)
 
 
-## 当天普通班次结束后，可以再卖两个小时。一天一次，工资随当前岗位工资同比例增长。
 func _do_overtime() -> void:
 	var today: int = time_sys.day if time_sys else 0
 	if daily_routine == null or not daily_routine.is_done("work"):
@@ -946,7 +1000,6 @@ func _do_overtime() -> void:
 	_show_toast("办公室只剩空调声。你又坐了两个小时，把明天的活提前做掉一截。（加班费+%d 健康−%d 心情−%d，耗时2小时）" % [pay, OVERTIME_HEALTH_COST, OVERTIME_MOOD_COST])
 
 
-## 上班这一班的"手艺长进"。没长进时也给一句，免得玩家觉得白干。
 func _work_growth_line(growth: Dictionary) -> String:
 	if bool(growth.get("tier_up", false)):
 		return "手上的活终于有了章法——你算得上「%s」了。（时薪 %d）" % [
@@ -957,8 +1010,6 @@ func _work_growth_line(growth: Dictionary) -> String:
 	return "同样的报表，你今天少改了两遍。"
 
 
-## 谈薪：技能到「熟练」才有资格开口；谈得下来要看技能+人脉，老张熟络了会替你说一句。
-## 一天只能谈一次——不管成没成，今天都算数，省得反复进出门刷结果。
 func _do_negotiate() -> void:
 	var today: int = time_sys.day if time_sys else 0
 	if not JobGrowthScript.can_negotiate(skill):
@@ -1012,8 +1063,6 @@ func _on_store_activity(id: String) -> void:
 
 # ---------------------------------------------------------------- 公园
 
-## 公园的两个歇脚点。刻意**不算**每日目标里的"休息"——那仍然只属于回家睡觉，
-## 公园是顺路喘口气的地方，不该变成另一种打卡。
 func _on_park_activity(id: String) -> void:
 	if activity_running or not game_started or game_over or dialog_ui.is_busy() or event_ui.is_busy():
 		return
@@ -1041,7 +1090,6 @@ func _on_cafe_activity(id: String) -> void:
 		return
 	if location_sys.current_location != "cafe" or not cafe_activities.SPOTS.has(id):
 		return
-	# 咖啡要先看钱：余额不足时不下单、不结算，和做饭的食材检查同一套做法。
 	if id == "coffee" and money < 15:
 		_show_toast("一杯咖啡15元，当前余额不足。")
 		return
@@ -1066,7 +1114,14 @@ func _on_cafe_activity(id: String) -> void:
 	_show_toast(feedback)
 
 
+func _cafe_side_gig_available() -> bool:
+	return time_sys != null and time_sys.day >= 2 and not _onboarding_active()
+
+
 func _do_cafe_side_gig() -> void:
+	if not _cafe_side_gig_available():
+		_show_toast("第一天先把自己的生活安顿下来。临时帮工以后再说。")
+		return
 	var today: int = time_sys.day if time_sys else 0
 	if _livelihood_done_today(CAFE_GIG_DAY_FLAG):
 		_show_toast("老板娘摆摆手：今天够了，明天真缺人再叫你。")
@@ -1088,7 +1143,6 @@ func _on_hospital_activity(id: String) -> void:
 		return
 	if location_sys.current_location != "hospital" or not hospital_activities.SPOTS.has(id):
 		return
-	# 挂号费先看余额：与做饭的食材、咖啡馆的咖啡同一套做法。
 	if id == "clinic" and money < 50:
 		_show_toast("挂号加拿药要50元，当前余额不足。")
 		return
@@ -1114,7 +1168,6 @@ func _on_alley_activity(id: String) -> void:
 		return
 	if location_sys.current_location != "alley" or not alley_activities.SPOTS.has(id):
 		return
-	# 香钱先看余额：与做饭/咖啡/挂号同一套检查。
 	if id == "shrine" and money < 5:
 		_show_toast("一炷香5元，当前余额不足。")
 		return
@@ -1184,13 +1237,11 @@ func _on_shop_buy(item_id: String) -> void:
 		return
 	var price: int = InventoryScript.price_of(item_id)
 	if money < price:
-		# 面板里按钮已经按下去表示买不起了，这里兜住键盘/异常路径。
 		shop_ui.set_status("你把口袋翻了个底朝天，还差 %d 元。这一样先放回去了。" % (price - money))
 		return
 	money -= price
 	inventory.add(item_id, 1)
-	if quest_sys:
-		quest_sys.notify(_state(), "store_buy")
+	_notify_quest("store_buy")
 	shop_ui.refresh(money, inventory)
 	shop_ui.set_status("你把%s放上收银台。扫码的滴声很轻，塑料袋在手里晃了一下。（−%d元）" % [
 		InventoryScript.item_name(item_id), price,
@@ -1220,15 +1271,12 @@ func _on_shop_use(item_id: String) -> void:
 	var minutes: int = InventoryScript.minutes_of(item_id)
 	if time_sys:
 		time_sys.advance_minutes(minutes)
-	# GAME-FIX-009：物品耗时必须在同一次点击里完成需求结算与统一终止判定。
-	# 若这段时间已经跨过终止阈值，立即收起背包，不能让第二件恢复物品把状态抬回来。
 	_sync_needs_to_time()
 	if _evaluate_terminal_state():
 		if shop_ui and shop_ui.is_open():
 			shop_ui.close()
 		_refresh_ui()
 		return
-	# 能顶一顿的算吃饭；牛奶这种垫肚子的不算，免得每日目标被随手糊弄过去。
 	if daily_routine and int(effects.get("fullness", 0)) >= MEAL_FULLNESS:
 		daily_routine.complete("meal")
 	shop_ui.refresh(money, inventory)
@@ -1240,8 +1288,6 @@ func _on_shop_use(item_id: String) -> void:
 	_refresh_ui()
 
 
-## 需求按真实流经的分钟数消耗，不依赖 hour_changed——
-## advance_minutes 无论推进多少都只 emit 一次 hour_changed，按信号扣会算错比例。
 func _sync_needs_to_time() -> void:
 	if time_sys == null:
 		return
@@ -1266,7 +1312,6 @@ func _sync_needs_to_time() -> void:
 			mood = maxi(0, mood - 2)
 	_warn_if_need_low()
 
-## 告急时用角色的口气说一句话，而不是弹出“饱食度过低”这种数值提示。
 func _warn_if_need_low() -> void:
 	for need in ["fullness", "energy"]:
 		var value: int = fullness if need == "fullness" else energy
@@ -1279,22 +1324,35 @@ func _warn_if_need_low() -> void:
 
 
 func _on_day_changed(day: int) -> void:
-	# 只重置每日目标；年龄与年度事件由旧人生系统负责，这里不碰。
 	if daily_routine:
 		daily_routine.reset(day)
+	# 意外跨午夜只重置日常目标，绝不替代第一晚睡眠完成 onboarding。
+	if not _onboarding_active():
 		_show_toast("第 %d 天 · 今日目标已重置" % day)
 
 
 func _on_location_travel(location_id: String) -> void:
-	# 第一次抵达地铁/公司等地点即完成“地图解锁”的体验；旅行本身消耗少量时间。
 	if time_sys:
 		time_sys.advance_minutes(20 if location_id == "subway" else 35)
 	if daily_routine and location_id == "office":
 		daily_routine.complete("commute")
+	if _onboarding_active():
+		match location_id:
+			"subway":
+				_advance_onboarding(ONBOARDING_SUBWAY, ONBOARDING_OFFICE)
+			"office":
+				_advance_onboarding(ONBOARDING_OFFICE, ONBOARDING_LAOZHANG)
+			"store":
+				_advance_onboarding(ONBOARDING_STORE, ONBOARDING_HOME)
+			"home":
+				_advance_onboarding(ONBOARDING_HOME, ONBOARDING_SLEEP)
 	var location_name: String = location_id
 	if location_sys != null and location_sys.LOCATIONS.has(location_id):
 		location_name = str(location_sys.LOCATIONS[location_id].get("name", location_id))
-	_show_toast("已到达：%s" % location_name)
+	var arrival := "已到达：%s" % location_name
+	if _onboarding_active() and not _onboarding_hint().is_empty():
+		arrival += "\n" + _onboarding_hint()
+	_show_toast(arrival)
 
 
 func _on_location_action(location_id: String) -> void:
@@ -1309,6 +1367,9 @@ func _on_location_action(location_id: String) -> void:
 	if event_ui != null and event_ui.is_busy():
 		_show_toast("当前事件尚未结束。")
 		return
+	if _onboarding_active():
+		_show_toast(_onboarding_hint())
+		return
 	var scene_map: Dictionary = {
 		"home": "rent",
 		"subway": "subway",
@@ -1321,8 +1382,6 @@ func _on_location_action(location_id: String) -> void:
 		"alley": "alley",
 	}
 	var scene: String = str(scene_map.get(location_id, location_id))
-	# MAP-002：独立场景模式下，公司也直接在当前美术场景触发内容，
-	# 不再切回旧的程序化室内兼容层。
 	var dark_result: Dictionary = story_sys.resolve_dark_place(scene, _state()) if story_sys else {"handled": false}
 	if bool(dark_result.get("handled", false)):
 		if dark_result.has("event"):
@@ -1372,7 +1431,6 @@ func _sync_location_npcs() -> void:
 		visible_items.append({
 			"id": npc_id,
 			"name": str(npc.get("name", npc_id)),
-			# 悬停标签带上熟悉度，关系变化在场景里就能看见。
 			"note": npc_relations_sys.label_for(game_state.relations, npc_id) if npc_relations_sys != null else "",
 		})
 	location_sys.set_visible_npcs(visible_items)
@@ -1395,12 +1453,13 @@ func _on_interact_pressed() -> void:
 
 
 func _enter_place(d: Dictionary) -> void:
+	if _onboarding_active():
+		_show_toast(_onboarding_hint())
+		return
 	var scene: String = str(d["scene"])
-	# 当前只有公司拥有正式室内 Scene；WorldManager 统一负责切换。
 	if scene == "office":
 		_enter_interior(scene)
 		return
-	# 暗线特殊地点优先于普通事件，但流程判定由 StorySystem 统一负责。
 	var dark_result: Dictionary = story_sys.resolve_dark_place(scene, _state()) if story_sys else {"handled": false}
 	if bool(dark_result.get("handled", false)):
 		if dark_result.has("event"):
@@ -1423,7 +1482,6 @@ func _enter_place(d: Dictionary) -> void:
 	_show_event(e)
 
 
-## 进入室内：切掉街道、显示室内背景，把玩家放到门口
 func _enter_interior(id: String) -> void:
 	if world_manager:
 		world_manager.enter_interior(id, player)
@@ -1435,6 +1493,9 @@ func _exit_interior() -> void:
 
 
 func _interior_boss() -> void:
+	if _onboarding_active():
+		_show_toast(_onboarding_hint())
+		return
 	var encounter = _try_encounter("office")
 	if encounter != null:
 		_show_encounter(encounter)
@@ -1449,11 +1510,10 @@ func _interior_boss() -> void:
 func _talk_to(npc: Dictionary) -> void:
 	var npc_id := str(npc.get("id", ""))
 	var dialog_data: Dictionary = story_sys.build_npc_dialog(npc, _state()) if story_sys else {"lines": Data.npc_lines(npc, age), "pending_clue": ""}
-	dialog_pending_clue = str(dialog_data.get("pending_clue", ""))
-	# 关系也在对话读完后再结算（见 _on_dialog_finished），这里只记下是谁。
+	# 首日可以正常认识人，但暗线 clue 不在 onboarding 前台落袋。
+	dialog_pending_clue = "" if _onboarding_active() else str(dialog_data.get("pending_clue", ""))
 	dialog_pending_npc = npc_id
 	var lines: Array = (dialog_data.get("lines", []) as Array).duplicate()
-	# 同一天再聊不涨好感。与其让玩家自己猜，不如在对话里说清楚。
 	if _talked_today(npc_id):
 		lines.append("（今天已经聊过了。话是说不完的，但意思到了。）")
 	var title := "%s · %s" % [npc["name"], npc["title"]]
@@ -1475,7 +1535,6 @@ func _npc_name(npc_id: String) -> String:
 	return npc_id
 
 
-## 把一次交谈的结果落到玩家身上，并用一句生活化的话说出来（数值放括号里）。
 func _apply_talk_result(npc_id: String, result: Dictionary) -> void:
 	if result.is_empty():
 		return
@@ -1511,12 +1570,13 @@ func _state() -> Dictionary:
 	return game_state.to_dict()
 
 
-## 结算引擎改的是状态字典，统一同步回 GameState。
 func _sync_from_state(st: Dictionary) -> void:
 	game_state.apply_dict(st)
 
 
 func _show_event(e) -> void:
+	if _onboarding_active():
+		return
 	cur_event = e
 	cur_event_kind = "event"
 	cur_event_time_cost = 0
@@ -1532,12 +1592,16 @@ func _show_event(e) -> void:
 
 
 func _try_encounter(scene: String):
+	if _onboarding_active():
+		return null
 	if encounter_sys == null or time_sys == null:
 		return null
 	return encounter_sys.pick(scene, _state(), time_sys, weather_sys.get_encounter_context() if weather_sys else {"weather": "clear"})
 
 
 func _show_encounter(e: Dictionary) -> void:
+	if _onboarding_active():
+		return
 	cur_event = e
 	cur_event_kind = "encounter"
 	cur_event_time_cost = int(e.get("time_cost", 90))
@@ -1583,7 +1647,6 @@ func _close_event() -> void:
 			time_sys.advance_minutes(time_cost)
 		_show_toast("这一段插曲过去了，城市时间继续向前。")
 		return
-	# 普通日常事件到这里结束；年度推进只保留给显式调用 `_year_pass()` 的剧情路径。
 	return
 
 
@@ -1605,9 +1668,6 @@ func _year_pass() -> void:
 	_show_toast(txt)
 
 
-## 所有健康/心情/破产/年龄终局统一从这里判定。
-## 调用方只决定“什么时候评估”，阈值与优先级仍完全由 Rules.death_reason() 决定。
-## game_over 是幂等护栏，避免刷新、重入或年度路径重复触发结局 UI。
 func _evaluate_terminal_state() -> bool:
 	if game_over:
 		return true
@@ -1692,6 +1752,7 @@ func _enqueue_dialog(speaker: String, lines: Array) -> void:
 
 
 func _on_dialog_finished() -> void:
+	var onboarding_contact_advanced := false
 	if dialog_pending_npc != "":
 		var talked_id := dialog_pending_npc
 		dialog_pending_npc = ""
@@ -1703,6 +1764,8 @@ func _on_dialog_finished() -> void:
 				time_sys.day if time_sys != null else 0
 			)
 			_apply_talk_result(talked_id, result)
+		if talked_id == "laozhang" and location_sys != null and location_sys.current_location == "office":
+			onboarding_contact_advanced = _advance_onboarding(ONBOARDING_LAOZHANG, ONBOARDING_WORK)
 	if dialog_pending_clue != "":
 		var npc_id := dialog_pending_clue
 		dialog_pending_clue = ""
@@ -1711,6 +1774,8 @@ func _on_dialog_finished() -> void:
 		if bool(clue_result.get("added", false)):
 			_sync_from_state(st)
 			_show_toast("记下了一条线索：%s" % str(clue_result.get("clue", "……")))
+	if onboarding_contact_advanced:
+		_show_toast(_onboarding_hint(), true)
 	if not dialog_queue.is_empty():
 		var nxt: Dictionary = dialog_queue.pop_front()
 		_show_dialog(nxt["speaker"], nxt["lines"])
@@ -1719,6 +1784,8 @@ func _on_dialog_finished() -> void:
 # ---------------------------------------------------------------- 主线
 
 func _check_stage() -> void:
+	if _onboarding_active():
+		return
 	if not story_sys:
 		return
 	var st := _state()
@@ -1728,10 +1795,15 @@ func _check_stage() -> void:
 		_show_toast(str(result.get("text", "")))
 
 
-## 主线任务推进。放在 `_process` 每帧跑一次，判定是幂等的（进度里的标记只写一次），
-## 所以读档、漏掉信号都不会卡住。步进不弹提示（HUD 上那行一直挂着，变化看得见），
-## 开场白和收尾才弹——它们不常发生，弹一次不会被结算提示顶掉。
+func _notify_quest(event_id: String) -> void:
+	if _onboarding_active() or quest_sys == null:
+		return
+	quest_sys.notify(_state(), event_id)
+
+
 func _evaluate_quests() -> void:
+	if _onboarding_active():
+		return
 	if quest_sys == null or time_sys == null:
 		return
 	var st := _state()
@@ -1774,11 +1846,6 @@ func _apply_quest_reward(reward) -> void:
 				push_warning("[Game] 不认识的任务奖励字段：" + str(key))
 
 
-## 顶部提示。自审修掉的一个真问题：以前连着弹两条时，前一条的定时器会把
-## **后一条刚写上去的文字**提前藏掉（3.5 秒一到就 visible=false，不管文字是谁写的）。
-## 现在用递增序号，只有"最新那条"的定时器能收尾。
-## `append=true` 用于追加型提示（任务进度）：结算提示还在屏上时，任务提示接在下面，
-## 而不是把玩家刚看到的"工资+120"顶掉。
 func _show_toast(text: String, append: bool = false) -> void:
 	if not toast_label:
 		return
