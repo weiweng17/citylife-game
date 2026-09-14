@@ -1354,6 +1354,9 @@ func _on_location_travel(location_id: String) -> void:
 			if objective_id == ONBOARDING_MEAL:
 				location_sys.reset_new_game()
 			else:
+				# 被首日 gate 拒绝的提前访店不能留下 visited.store；否则后续拒绝一次其它旅行会被误判成“已到店”。
+				if location_id == "store" and objective_id in [ONBOARDING_SUBWAY, ONBOARDING_OFFICE, ONBOARDING_LAOZHANG, ONBOARDING_WORK]:
+					location_sys.visited.erase("store")
 				var fallback_location: String = str({
 					ONBOARDING_SUBWAY: "home",
 					ONBOARDING_OFFICE: "subway",
@@ -1585,7 +1588,7 @@ func _apply_talk_result(npc_id: String, result: Dictionary) -> void:
 	var npc_name := _npc_name(npc_id)
 	var text := ""
 	if bool(result.get("tier_up", false)):
-		text = "你和%s的交情到了「%s」。" % [npc_name, str(result.get("tier_label", ""))]
+		text = "你和%s的交情到了「%s」." % [npc_name, str(result.get("tier_label", ""))]
 		if not parts.is_empty():
 			text += "（%s）" % ", ".join(parts)
 	elif not parts.is_empty():
