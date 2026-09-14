@@ -14,6 +14,11 @@ const InventoryScript = preload("res://scripts/systems/Inventory.gd")
 const GOLD := Color(1.0, 0.93, 0.68)
 const TEXT := Color(0.94, 0.93, 0.88)
 const DIM := Color(0.68, 0.72, 0.80)
+const PANEL_MIN_WIDTH := 660.0
+const PANEL_MIN_HEIGHT := 360.0
+const PANEL_MAX_HEIGHT := 620.0
+const PANEL_VERTICAL_MARGIN := 48.0
+const LIST_MIN_HEIGHT := 120.0
 
 var mode: String = ""
 var dim: ColorRect
@@ -22,6 +27,7 @@ var panel: PanelContainer
 var title_label: Label
 var subtitle_label: Label
 var status_label: Label
+var list_scroll: ScrollContainer
 var list_box: VBoxContainer
 var close_btn: Button
 
@@ -50,6 +56,16 @@ func _sync_viewport() -> void:
 	if center != null:
 		center.position = Vector2.ZERO
 		center.size = viewport_size
+	if panel != null:
+		# CenterContainer 以 child 的 minimum size 居中。给面板一个随逻辑视口变化、
+		# 但有上限的高度目标；真正可变的货品列表交给内部 ScrollContainer 吸收。
+		# 这样标题 / 状态 / footer 不会因为六行商品把面板底部顶出画面。
+		var target_height := clampf(
+			viewport_size.y - PANEL_VERTICAL_MARGIN,
+			PANEL_MIN_HEIGHT,
+			PANEL_MAX_HEIGHT
+		)
+		panel.custom_minimum_size = Vector2(PANEL_MIN_WIDTH, target_height)
 
 
 func _build_ui() -> void:
@@ -69,7 +85,7 @@ func _build_ui() -> void:
 
 	panel = PanelContainer.new()
 	panel.name = "ShopPanel"
-	panel.custom_minimum_size = Vector2(660, 0)
+	panel.custom_minimum_size = Vector2(PANEL_MIN_WIDTH, PANEL_MIN_HEIGHT)
 	panel.add_theme_stylebox_override("panel", _panel_style())
 	center.add_child(panel)
 
@@ -79,12 +95,14 @@ func _build_ui() -> void:
 	panel.add_child(box)
 
 	title_label = Label.new()
+	title_label.name = "ShopTitle"
 	title_label.add_theme_font_size_override("font_size", 22)
 	title_label.add_theme_color_override("font_color", GOLD)
 	title_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	box.add_child(title_label)
 
 	subtitle_label = Label.new()
+	subtitle_label.name = "ShopSubtitle"
 	subtitle_label.add_theme_font_size_override("font_size", 12)
 	subtitle_label.add_theme_color_override("font_color", DIM)
 	subtitle_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -93,15 +111,24 @@ func _build_ui() -> void:
 
 	box.add_child(HSeparator.new())
 
-	# 不再套 ScrollContainer：面板直接按内容撑高——货架六件刚好看完，背包里只有一件
-	# 时就只有一件的高度。容器的最小尺寸要等布局刷新，包一层滚动区反而量不准
-	# （先开货架再开空背包会量到上一次的高度，撑出一大片空白）。
-	# 注意：货品目录如果涨到十几件，这个面板会高过屏幕，那时再换成固定高度的滚动区。
+	# 只让动态货品列表拥有纵向 overflow。标题、状态和关闭按钮必须留在滚动区外，
+	# 否则列表增长时用户可能连离开面板的入口都够不到。此前整块内容按最小高度撑开
+	# 会在六行货架 / 满背包时与短视口竞争；现在 ScrollContainer 只吸收列表高度。
+	list_scroll = ScrollContainer.new()
+	list_scroll.name = "ShopListScroll"
+	list_scroll.custom_minimum_size = Vector2(0, LIST_MIN_HEIGHT)
+	list_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	list_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	list_scroll.follow_focus = true
+	list_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	list_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	box.add_child(list_scroll)
+
 	list_box = VBoxContainer.new()
 	list_box.name = "ShopList"
 	list_box.add_theme_constant_override("separation", 6)
 	list_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	box.add_child(list_box)
+	list_scroll.add_child(list_box)
 
 	box.add_child(HSeparator.new())
 
@@ -115,10 +142,12 @@ func _build_ui() -> void:
 	box.add_child(status_label)
 
 	var footer := HBoxContainer.new()
+	footer.name = "ShopFooter"
 	footer.alignment = BoxContainer.ALIGNMENT_END
 	box.add_child(footer)
 
 	close_btn = Button.new()
+	close_btn.name = "ShopClose"
 	close_btn.custom_minimum_size = Vector2(140, 34)
 	close_btn.focus_mode = Control.FOCUS_NONE
 	close_btn.pressed.connect(close)
@@ -203,6 +232,16 @@ func _rebuild() -> void:
 		else:
 			for item_id in owned:
 				_add_row(str(item_id), "bag")
+	_reset_list_scroll()
+
+
+func _reset_list_scroll() -> void:
+	if list_scroll == null:
+		return
+	# refresh() 与 buy/bag 切换都会重建 rows。先同步归零，再 deferred 一次，
+	# 避免新一轮布局完成后继承上一组内容的底部 offset 或被 clamp 到旧范围。
+	list_scroll.scroll_vertical = 0
+	list_scroll.set_deferred("scroll_vertical", 0)
 
 
 func _add_empty_note(text: String) -> void:
@@ -219,6 +258,7 @@ func _add_empty_note(text: String) -> void:
 
 func _add_row(item_id: String, row_mode: String) -> void:
 	var holder := PanelContainer.new()
+	holder.name = "ShopRow_%s" % item_id
 	holder.add_theme_stylebox_override("panel", _row_style())
 	list_box.add_child(holder)
 
@@ -256,6 +296,7 @@ func _add_row(item_id: String, row_mode: String) -> void:
 	row.add_child(effect_label)
 
 	var button := Button.new()
+	button.name = "ShopAction_%s" % item_id
 	button.custom_minimum_size = Vector2(78, 32)
 	button.focus_mode = Control.FOCUS_NONE
 	button.size_flags_vertical = Control.SIZE_SHRINK_CENTER
