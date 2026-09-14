@@ -9,6 +9,14 @@
 - Baseline: accepted `DIRECTOR-CONTENT-002` tip `cebc2c868a52fcd719bbe3b5d6bd39917a17b82f`
 - Review responded to: 00 latest reviewed worker tip `dc6bb2f2419cb501ddb18c4a3a0d17a8b1ee55fd`, disposition `minimal correction required`.
 
+## Current coordination freshness check
+- Latest coordination TASK_BOARD read for this resubmission: blob `a7e35324fb5e81ce03b75c797caa10408517d4cb`.
+- That board still shows `DIRECTOR-CONTENT-003` as `IN_PROGRESS` and still cites the older reviewed worker tip `dc6bb2f...`; it has not yet consumed the later correction submission.
+- Re-read latest `FILE_OWNERSHIP` and `WEB_AGENT_LAUNCHPAD`; writable scope remains exactly `docs/design/DAY_2_7_RETENTION_LOOP.md` plus `agent-reports/game-director.md`.
+- Recompared the task branch from accepted DIRECTOR-CONTENT-002 baseline: the complete task delta is still limited to those two authorized paths.
+- Re-scanned the current design document for the correction examples named by 00. `e_cw01_hospital_kiosk` now appears only in the Week-1 suppress class; `e_cw01_park_free_class` / `e_cw01_park_lost_wallet` are only conditionally eligible with actual Lao-Zhou schedule/weather presence; the broader contradictory recommendations are gone.
+- No new product-direction change was introduced in this freshness pass. This resubmission exists so 00 can review the corrected current branch tip rather than the stale `dc6bb2f...` snapshot.
+
 ## Review-blocker closure
 00's blocker was that the report had narrowed Week-1 Pack A eligibility after schedule/time continuity review while the design document still contained broader examples. That ambiguity is now removed.
 
@@ -107,6 +115,7 @@ No Game/data/UI/art/audio production file, `main`, `TASK_BOARD.md`, or other coo
 - Searched the current design for the previously conflicting Pack A examples: `hospital_kiosk` now appears only in the suppress class; `park_free_class / park_lost_wallet` appear only under schedule/weather-aware conditional eligibility.
 - Confirmed design still retains the GAME-CONTENT-014 blocker, age gates, later-day remembered-choice pacing, map-lock rules and one-event/day pacing recommendation.
 - Reconfirmed q1 Day-2 release and cafe side-gig no-new-gate rules remain aligned with the accepted Day-1 contract.
+- Recompared current branch against `cebc2c868...`: only the authorized design/report files differ.
 
 ## Runtime / build boundary
 - Godot 4.7.2: **NOT RUN**.
