@@ -34,7 +34,7 @@ func _idle_prompt() -> String:
 ## Game 只喂一个展示布尔值；真正的结算/反刷仍由 Game.gd 保持权威。
 func _spot_available(id: String) -> bool:
 	if id == "side_gig":
-		return bool(context.get("gig_available", true))
+		return bool(context.get("gig_visible", true))
 	return true
 
 
