@@ -1,6 +1,6 @@
 extends SceneTree
 ## GAME-CONTENT-013：首日 onboarding gate / objective state 验证包。
-## Web worker 只准备该脚本；实际 Godot 执行归 QA-002 frozen integration SHA。
+## Web worker只准备该脚本；实际 Godot 执行归 QA-002 frozen integration SHA。
 
 const GAME_PATH := "res://scripts/Game.gd"
 const CAFE_PATH := "res://scripts/systems/CafeActivities.gd"
@@ -26,6 +26,12 @@ func run() -> void:
 	assert("func current_onboarding_objective() -> Dictionary:" in game_source, "Game must expose exactly one onboarding objective state")
 	assert("ONBOARDING_COMPLETE_FLAG := \"onboarding_complete\"" in game_source, "onboarding completion must use existing flags")
 	assert("gig_visible" in cafe_source, "cafe side gig must consume onboarding visibility context")
+	var travel_block := _function_block(game_source, "func _on_location_travel(location_id: String) -> void:")
+	var buy_block := _function_block(game_source, "func _on_shop_buy(item_id: String) -> void:")
+	var year_block := _function_block(game_source, "func _year_pass() -> void:")
+	assert("_advance_onboarding(ONBOARDING_STORE, ONBOARDING_HOME)" not in travel_block, "arriving at store must not complete the food-purchase gate")
+	assert("_advance_onboarding(ONBOARDING_STORE, ONBOARDING_HOME)" in buy_block, "qualifying store purchase must own the store->home transition")
+	assert(year_block.find("_onboarding_active()") < year_block.find("rules_sys.year_tick"), "legacy annual progression must be rejected before year_tick during onboarding")
 
 	var main = load("res://scenes/Main.tscn").instantiate()
 	root.add_child(main)
@@ -67,6 +73,13 @@ func run() -> void:
 	assert(main.location_sys.current_location == "office", "subway must lead to office")
 	_assert_objective(main, main.ONBOARDING_LAOZHANG)
 
+	# Office 的技术 unlock 会暴露 park/store；onboarding allowlist 必须阻止在见老张前跳线。
+	var before_laozhang_detour := _total_minutes(main.time_sys)
+	main.location_sys.travel_to("store")
+	assert(main.location_sys.current_location == "office", "Old Zhang gate must keep the player at office")
+	assert(_total_minutes(main.time_sys) == before_laozhang_detour, "blocked Old Zhang detour must not cost time")
+	_assert_objective(main, main.ONBOARDING_LAOZHANG)
+
 	_set_clock(main, 8 * 60 + 55)
 	var laozhang_state: Dictionary = main.npc_schedule_sys.get_state_for("laozhang", main.time_sys, main.weather_sys)
 	assert(bool(laozhang_state.get("visible", false)), "Old Zhang must be available around 08:55")
@@ -85,8 +98,13 @@ func run() -> void:
 	await main._on_office_activity("work")
 	_assert_objective(main, main.ONBOARDING_STORE)
 
-	# 可选 overtime 做/不做都不能改变“去便利店”L1 目标。
+	# 可选 overtime 做/不做都不能改变“去便利店”L1 目标；其它旅行不能抢线。
 	main.flags[main.OVERTIME_DAY_FLAG] = main.time_sys.day
+	_assert_objective(main, main.ONBOARDING_STORE)
+	var before_store_detour := _total_minutes(main.time_sys)
+	main.location_sys.travel_to("park")
+	assert(main.location_sys.current_location == "office", "store objective must reject unrelated park travel")
+	assert(_total_minutes(main.time_sys) == before_store_detour, "blocked store detour must not cost time")
 	_assert_objective(main, main.ONBOARDING_STORE)
 
 	# 4) onboarding 期间随机事件、encounter、暗线/quest/annual 都退到后台。
@@ -102,8 +120,14 @@ func run() -> void:
 	main._year_pass()
 	assert(main.age == age_before, "direct legacy annual progression must be suppressed during onboarding")
 
-	# 5) 到 store 本身不能算完成；只有买到真正能顶一顿的食物才进入 home。
+	# 5) 到 store 本身不能算完成；买食物前也不能先回 home。只有能顶一顿的食物才进入 home。
 	main.location_sys.travel_to("store")
+	assert(main.location_sys.current_location == "store", "store objective must allow the authored store trip")
+	_assert_objective(main, main.ONBOARDING_STORE)
+	var before_early_home := _total_minutes(main.time_sys)
+	main.location_sys.travel_to("home")
+	assert(main.location_sys.current_location == "store", "food-purchase gate must keep the player at store before qualifying purchase")
+	assert(_total_minutes(main.time_sys) == before_early_home, "blocked early-home attempt must not cost time")
 	_assert_objective(main, main.ONBOARDING_STORE)
 	main.money = maxi(main.money, 100)
 	main._on_shop_buy("milk")
