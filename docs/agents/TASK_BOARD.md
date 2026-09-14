@@ -7,8 +7,9 @@ Only 00-Orchestrator edits this file. Workers update only their own reports.
 - Wave source: `planning/content-expansion-wave-01` exact tip `5ca3e0140d440bf1e07597b115ed04c2bc1d17c3`.
 - Wave title: **城市开始活起来**.
 - Dispatch mode: **ORCHESTRATOR-GATED**.
-- Parallel dispatch: **NO**.
-- Selected web execution lane: **01-Gameplay / GAME-CONTENT-013**.
+- Parallel dispatch: **YES — GAME-CONTENT-013 + ART-INGEST-004 binary asset lane**.
+- Selected execution lanes: **01-Gameplay / GAME-CONTENT-013** and **05-Art-Animation / ART-INGEST-004**.
+- Parallel rationale: ART-INGEST-004 is restricted to isolated `assets/art/production/**` binary ingestion and does not overlap GAME-CONTENT-013 writable scripts.
 - `main` remains untouched by the multi-agent control plane.
 
 ## Scheduling rule
@@ -16,6 +17,7 @@ Only 00-Orchestrator edits this file. Workers update only their own reports.
 - `IN_PROGRESS` means 00 explicitly selected that worker to execute now.
 - Default global limit: **one ordinary web task IN_PROGRESS at a time**.
 - Multiple IN_PROGRESS web tasks are allowed only when this board explicitly says `Parallel dispatch: YES` and records why the work is independent and worth the extra coordination cost.
+- ART-INGEST-004 is an explicitly user-authorized binary-ingestion exception and may run alongside GAME-CONTENT-013 because their writable paths do not overlap.
 - `NEEDS_REVIEW` stops worker continuation and wakes 00 for review.
 - `BLOCKED` / `BACKLOG` are never execution commands.
 - Progress is measured by GitHub branch/report deltas and accepted outputs, not chat-message count.
@@ -47,7 +49,7 @@ UI-CONTENT-008, NPC-CONTENT-015, QA-CONTENT-015,
 - Status: IN_PROGRESS
 - Priority: HIGH
 - Player-visible/direct-unblock: YES.
-- Selected by 00 as the **single current web execution task** because it is the critical dependency for first-day HUD/UI, GAME-CONTENT-014, Week-1 implementation and the next useful QA freeze.
+- Selected by 00 as the current ordinary web execution task because it is the critical dependency for first-day HUD/UI, GAME-CONTENT-014, Week-1 implementation and the next useful QA freeze.
 - Base: accepted GAME-CONTENT-012 exact tip `14ca63ac569680008f9f4b20cb01514672d75caa`.
 - Latest observed branch tip: `60e8c5e68f0a12ae4d77ab88754ae0ea766da13d`.
 - Current branch has task-specific changes in authorized `scripts/Game.gd`, `scripts/systems/CafeActivities.gd`, and `tools/verify_first30_flow.gd`.
@@ -194,11 +196,30 @@ UI-CONTENT-008, NPC-CONTENT-015, QA-CONTENT-015,
 - Review: repository delta is report-only as authorized. The 05 chat/workspace produced deterministic exact-256 cooking + typing candidate handoff packages with enter/contact/loopA/loopB/exit poses, fixture references, common scale/root plans and hashes.
 - Acceptance boundary: candidate handoff only. Canonical protagonist identity, actor/fixture separation, repository asset ingestion, SpriteFrames/Godot integration and rendered loop/contact acceptance are **not** claimed.
 
-### ART-INGEST-004 — Cooking + typing asset ingestion
-- Owner: art-animation / Codex-local with later Scene/UI integration grant
-- Status: BLOCKED
-- Blocked by: binary candidate-package ingestion from 05 chat/workspace, canonical-identity cleanup, explicit repository `assets/**` paths, actor/fixture/prop separation, and later real Godot/render calibration.
-- Do not expand to study/additional actions until cooking + typing ingestion path is proven.
+### ART-INGEST-004 — Today’s generated production-art ingestion
+- Owner: art-animation / Codex-local; later Scene/UI integration requires a separate grant
+- Branch: `agent/art-ingest-004-production-assets`
+- Status: IN_PROGRESS
+- Priority: HIGH / USER-AUTHORIZED.
+- User authorization date: 2026-09-15.
+- Mission: ingest and organize today’s generated `《都市浮生》` art assets from the shared 05 chat/workspace/library into repository production paths, preserving usable source sheets and normalized game-ready exports where available.
+- Writable — exact grant only:
+  - `assets/art/production/player/actions/**`
+  - `assets/art/production/npc/**`
+  - `assets/art/production/foreground/**`
+  - `assets/art/production/fx/**`
+  - `agent-reports/art-animation.md`
+- Required ingestion behavior:
+  - player action/sprite/pose sheets -> `player/actions/**`;
+  - NPC-specific character/action sheets -> `npc/**`;
+  - occlusion, cutout and foreground layers -> `foreground/**`;
+  - VFX/weather/interaction feedback frames -> `fx/**`;
+  - keep deterministic filenames; replace generic `image-gen-*` names with descriptive production names during ingestion;
+  - record an asset manifest in the authorized production tree or agent report with source filename, destination path, intended use, dimensions/hash when available, and whether it is source-only or integration-ready;
+  - do not silently discard today’s generated candidates: if an asset is not yet integration-ready, store it as a clearly named source/candidate under the appropriate authorized subtree rather than losing it;
+  - no edit to `scenes/**`, `scripts/**`, `data/**`, `project.godot`, UI integration or `main` under this task.
+- Parallel safety: this task is asset-only and may run simultaneously with GAME-CONTENT-013.
+- Acceptance boundary: repository ingestion + organization + manifest only. Godot SpriteFrames hookup, scene composition, runtime loop/contact calibration and rendered acceptance remain separate Scene/UI + QA work.
 
 ## Lane 06 — Audio / Music
 ### AUDIO-AUDIT-001 — V1.0 sound-system & asset audit
@@ -252,18 +273,10 @@ UI-CONTENT-008, NPC-CONTENT-015, QA-CONTENT-015,
 - No new Director web task is queued now. Product direction is sufficiently specified; implementation should proceed through 01/02/03 rather than more design documents.
 
 ## Current execution gate
-- Parallel dispatch: **NO**.
-- Global web `IN_PROGRESS` count: **1**.
-- Current selected task: **GAME-CONTENT-013 / 01-Gameplay**.
+- Parallel dispatch: **YES**.
+- Ordinary web `IN_PROGRESS` count: **1** (`GAME-CONTENT-013`).
+- Parallel binary-ingest `IN_PROGRESS` count: **1** (`ART-INGEST-004`).
+- Current selected tasks: **GAME-CONTENT-013 / 01-Gameplay** + **ART-INGEST-004 / 05-Art-Animation**.
+- ART-INGEST-004 is limited to the four authorized production-art directory trees and may not expand into scenes/scripts.
 - Queued/held work stays READY/BACKLOG/BLOCKED and will not wake workers until 00 explicitly promotes the next task.
-- Player-visible/direct-unblock share of active web execution: **100%**.
-
-## Deferred product decisions
-- Xiaoyu canon: roommate / romance possibility / close friend only.
-- Family semantics: married-household-only vs co-parent-inclusive.
-- Whether recurring rent/fixed expenses becomes a core survival mechanic.
-- Whether first public Alpha markets realistic-life first or supernatural dark line first.
-- Whether V1.0 formally narrows to the first month or keeps long-life mode visible.
-
-## Status values
-`READY` = queued only; `IN_PROGRESS` = explicitly selected by 00 and executable now; `NEEDS_REVIEW` = worker stopped and awaits 00; `DONE` = accepted; `BLOCKED` = real dependency/runtime/local blocker; `BACKLOG` = intentionally non-active work.
+- Player-visible/direct-unblock share of active execution: **100%**.
