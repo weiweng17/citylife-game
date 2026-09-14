@@ -953,7 +953,7 @@ func _work_growth_line(growth: Dictionary) -> String:
 			str(growth["tier_title"]), JobGrowthScript.wage_of(skill, game_state.raise_steps),
 		]
 	if bool(growth.get("leveled", false)):
-		return "活儿还是这些活儿，你今天少改了两遍。（技能 %d/%d）" % [skill, JobGrowthScript.MAX_SKILL]
+		return "活儿还是这些活儿，你做得比上个月快了。（技能 %d/%d）" % [skill, JobGrowthScript.MAX_SKILL]
 	return "同样的报表，你今天少改了两遍。"
 
 
