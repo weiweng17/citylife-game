@@ -30,6 +30,14 @@ func _idle_prompt() -> String:
 	return "雨声混着磨豆声。走近吧台或圆桌，按 E 或点击标签"
 
 
+## GAME-CONTENT-013：临时帮工不是 Day-1 onboarding 行动。
+## Game 只喂一个展示布尔值；真正的结算/反刷仍由 Game.gd 保持权威。
+func _spot_available(id: String) -> bool:
+	if id == "side_gig":
+		return bool(context.get("gig_available", true))
+	return true
+
+
 func _label_of(id: String) -> String:
 	if id == "side_gig" and bool(context.get("gig_today", false)):
 		return "吧台后 · 今天已经帮过忙"
@@ -47,5 +55,7 @@ func _detail_of(id: String) -> String:
 func _sync_display() -> void:
 	for id in SPOTS:
 		var button: Button = buttons[id]
-		button.text = _label_of(str(id))
-		button.tooltip_text = _detail_of(str(id))
+		button.visible = _spot_available(str(id))
+		if button.visible:
+			button.text = _label_of(str(id))
+			button.tooltip_text = _detail_of(str(id))
