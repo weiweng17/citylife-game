@@ -43,7 +43,7 @@ func run() -> void:
 	_assert_objective(main, main.ONBOARDING_MEAL)
 	assert(not main.cafe_activities._spot_available("side_gig"), "cafe side gig must be hidden during onboarding")
 
-	# 2) meal-before-leave：房门和已解锁旅行按钮两条路径都不能绕过，也不应扣旅行时间。
+	# 2) meal-before-leave：房门和已解锁旅行按钮两条路径都不能绕过，也不应扣旅行时间或留下后续解锁。
 	var before_reject := _total_minutes(main.time_sys)
 	main._on_home_activity("leave")
 	assert(main.location_sys.current_location == "home", "home leave must be blocked before the first meal")
@@ -51,9 +51,9 @@ func run() -> void:
 	main.location_sys.travel_to("subway")
 	assert(main.location_sys.current_location == "home", "travel button must be reverted before the first meal")
 	assert(_total_minutes(main.time_sys) == before_reject, "blocked travel-button bypass must not cost time")
+	assert(not main.location_sys.is_unlocked("office"), "blocked pre-meal subway travel must not leak the office unlock")
 
 	# 正常做饭必须把唯一目标推进到 subway。
-	main.location_sys.travel_to("home")
 	main.money = maxi(main.money, 100)
 	await main._on_home_activity("meal")
 	_assert_objective(main, main.ONBOARDING_SUBWAY)
@@ -63,7 +63,6 @@ func run() -> void:
 	main.location_sys.travel_to("subway")
 	assert(main.location_sys.current_location == "subway", "meal completion must release subway travel")
 	_assert_objective(main, main.ONBOARDING_OFFICE)
-	main.location_sys.unlock("office")
 	main.location_sys.travel_to("office")
 	assert(main.location_sys.current_location == "office", "subway must lead to office")
 	_assert_objective(main, main.ONBOARDING_LAOZHANG)
@@ -90,19 +89,20 @@ func run() -> void:
 	main.flags[main.OVERTIME_DAY_FLAG] = main.time_sys.day
 	_assert_objective(main, main.ONBOARDING_STORE)
 
-	# 4) onboarding 期间随机事件、encounter、暗线/quest 都退到后台。
+	# 4) onboarding 期间随机事件、encounter、暗线/quest/annual 都退到后台。
 	assert(main._try_encounter("office") == null, "encounters must be suppressed during onboarding")
 	var age_before: int = main.age
 	main._on_location_action("office")
 	assert(main.cur_event == null, "ordinary/dark event takeover must be suppressed during onboarding")
 	assert(main.age == age_before, "onboarding location actions must not advance a year")
-	var quest_before: Dictionary = main.game_state.quest_progress.duplicate(true)
+	var quest_before: Dictionary = main.game_state.quests.duplicate(true)
 	main._notify_quest("work_shift")
 	main._evaluate_quests()
-	assert(main.game_state.quest_progress == quest_before, "q1-q3 progress/reward noise must be suppressed during onboarding")
+	assert(main.game_state.quests == quest_before, "q1-q3 progress/reward noise must be suppressed during onboarding")
+	main._year_pass()
+	assert(main.age == age_before, "direct legacy annual progression must be suppressed during onboarding")
 
 	# 5) 到 store 本身不能算完成；只有买到真正能顶一顿的食物才进入 home。
-	main.location_sys.unlock("store")
 	main.location_sys.travel_to("store")
 	_assert_objective(main, main.ONBOARDING_STORE)
 	main.money = maxi(main.money, 100)
