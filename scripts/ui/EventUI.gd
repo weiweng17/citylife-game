@@ -68,6 +68,7 @@ func _build_ui() -> void:
 	head_label = Label.new()
 	head_label.name = "EventHeader"
 	head_label.add_theme_font_size_override("font_size", 15)
+	head_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	head_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	vbox.add_child(head_label)
 
@@ -138,6 +139,7 @@ func _sync_viewport() -> void:
 
 func show_event(header: String, body: String, option_views: Array, background: Texture2D = null) -> void:
 	head_label.text = header
+	head_label.tooltip_text = header
 	body_label.text = body
 	background_rect.texture = background
 	background_rect.visible = background != null
@@ -163,6 +165,7 @@ func show_event(header: String, body: String, option_views: Array, background: T
 
 func show_result(result_text: String) -> void:
 	head_label.text = "结果"
+	head_label.tooltip_text = "结果"
 	body_label.text = result_text
 	_clear_options()
 	continue_button.visible = true
