@@ -7,80 +7,249 @@
 - Status: NEEDS_REVIEW
 
 ## Scope
-CONTENT-WAVE-01 Pack A acceptance/integration gate.
+CONTENT-WAVE-01 Pack A repository acceptance / frozen-runtime handoff gate.
 
-Web-agent writable scope is **only** `agent-reports/qa-build.md`. No production source/data/UI/verifier/workflow/coordination file or `main` change is authorized here. Real parser/Godot/render/Web/browser evidence remains QA-002/Codex work on one exact frozen candidate SHA.
+Authorized web-agent write scope: **`agent-reports/qa-build.md` only**. This task did not edit production source/data/UI/verifiers/workflows/coordination files or `main`.
 
-No parser, Godot, verifier, Web export, browser or screenshot test was run by QA-CONTENT-014.
+Parser/Godot/headless/render/Web/browser checks below are validation packages only unless explicitly marked repository/static inspection. They were **NOT RUN** by this web worker.
 
-## Coordination baseline
-Latest coordination state inspected:
-- branch: `orchestrator/multi-agent-bootstrap`
-- exact tip: `d415ecf165fc6c90d5abf42e5929745d1739acf4`
-- QA-CONTENT-014: READY
-- GAME-CONTENT-012: READY
-- UI-FIX-007: READY
-- NPC-CONTENT-012: READY
-- wave plan: `planning/content-expansion-wave-01` at `5ca3e0140d440bf1e07597b115ed04c2bc1d17c3`
+## Coordination source of truth
+Latest control-plane tip inspected:
+- `orchestrator/multi-agent-bootstrap`
+- exact SHA: `d415ecf165fc6c90d5abf42e5929745d1739acf4`
+- TASK_BOARD still records QA-CONTENT-014, GAME-CONTENT-012, UI-FIX-007 and NPC-CONTENT-012 as `READY` at this control-plane snapshot.
 
-The coordination branch is the control plane, not the final semantic/runtime candidate. Existing accepted Gameplay/content semantics newer than coordination must be preserved during integration.
+The coordination branch is metadata/control-plane state, **not** the cumulative accepted production-source baseline. Final integration must preserve accepted semantic work newer than the control-plane source snapshots.
 
-Relevant accepted anchors:
-- GAME-FIX-009 exact tip `8ff9a36e4f61f41aea943ea11ec6254ed7155b4d`; accepted `Game.gd` blob `85d1ce4e238fac35279c11c5f86f1a24e8f4e3cc`.
-- NPC-CONTENT-010 branch tip `923e43541303a4f66a643bddef3a993a1ed234b5`; source change commit `46264de61d72c6b8a51bbe54003f665c36226f4a`.
+Accepted anchors relevant to this gate:
+- GAME-FIX-009 exact tip: `8ff9a36e4f61f41aea943ea11ec6254ed7155b4d`
+  - accepted `scripts/Game.gd` blob: `85d1ce4e238fac35279c11c5f86f1a24e8f4e3cc`
+- NPC-CONTENT-010 exact branch tip: `923e43541303a4f66a643bddef3a993a1ed234b5`
+  - source/content commit: `46264de61d72c6b8a51bbe54003f665c36226f4a`
 
-For final Pack A integration, do not replace cumulative `Game.gd` or `data/events.json` from a metadata-oriented branch snapshot. Compose accepted semantics deterministically.
+**Baseline rule:** Pack A event integration must use the accepted pre-Pack-A content state through NPC-CONTENT-010 (or a later 00-recorded superseding content baseline). Do not use `d415ecf...:data/events.json` as the semantic pre-Pack-A baseline.
 
-## Current producer snapshot
-These are moving worker tips observed during this QA pass, **not accepted inputs**. Re-read exact tips before review/freeze.
+## Producer tips now requesting review
+All three active producer branches moved while QA-CONTENT-014 was being prepared. Final observed worker states for this report are:
 
-### GAME-CONTENT-012
-Observed exact tip:
-- `8b2bf910d2831819329c10b0c34bdb59b1e8f4b3`
+| Task | Exact tip | Worker report | Repository disposition |
+| --- | --- | --- | --- |
+| GAME-CONTENT-012 | `14ca63ac569680008f9f4b20cb01514672d75caa` | `NEEDS_REVIEW` | Repository implementation/verifier formed; real Godot execution pending. |
+| UI-FIX-007 | `fe2e527616e18868df0900c3b6b8b1f2db9599d4` | `NEEDS_REVIEW` | Scope-clean repository implementation/verifier; rendered/runtime evidence pending. |
+| NPC-CONTENT-012 | `a86c953d475c6f6eb18d99a02ef87b2d6932e4b2` | `NEEDS_REVIEW` | 20-event append delta is repository-reviewable; full `events.json` snapshot is based on stale control-plane data and must be semantically composed onto accepted content baseline. |
 
-Current production/verifier blobs:
-- `scripts/Game.gd`: `5a2ee0f952953e8e17ba91db6399ffb2429238fe`
-- `scripts/systems/OfficeActivities.gd`: `ab8d2662287bf1b853f2e63e612e01dad0db338f`
-- `scripts/systems/CafeActivities.gd`: `a060dd15a270aca1ab96a2ea980a08843cb13b11`
-- `tools/verify_livelihood_actions.gd`: `9cbac50a43bdc4a27a5a228e132000d463a7400f`
+These are still worker tips, not orchestrator-accepted inputs. Re-read exact branch heads immediately before 00 review/freeze.
 
-Repository-visible implementation now includes:
-- office overtime after ordinary work;
-- cafe side gig;
-- same-day flags using existing `GameState.flags` persistence rather than a new save section;
-- overtime: 120 minutes, health -4, mood -8, pay = 60% of current shift wage;
-- cafe gig: 90 minutes, +55 money, health -2, mood -4;
-- livelihood time settlement calls time advance -> needs settlement -> existing authoritative terminal evaluator;
-- dedicated verifier covering visibility, costs/reward, anti-spam, save-payload persistence, next-day reopening and terminal-order invariants.
+---
 
-Current worker report is still the inherited GAME-001 placeholder, so this observed tip is **not review-complete and must not be frozen**.
+## GAME-CONTENT-012 repository review
+Observed exact tip: `14ca63ac569680008f9f4b20cb01514672d75caa`.
 
-One current scope concern also remains: the livelihood settlement patch changes an existing ordinary-work `_work_growth_line()` sentence that is not required by the narrow livelihood handlers/context-feed grant. If the final review tip still contains that unrelated copy edit, either remove it or have 00 explicitly accept the expanded scope; QA should not silently absorb it.
+Compared with coordination `d415ecf...`, the branch is ahead and changes only task-authorized paths:
+- `scripts/Game.gd`
+- `scripts/systems/OfficeActivities.gd`
+- `scripts/systems/CafeActivities.gd`
+- `tools/verify_livelihood_actions.gd`
+- `agent-reports/gameplay.md`
 
-### UI-FIX-007
-Observed exact tip:
-- `fe2e527616e18868df0900c3b6b8b1f2db9599d4`
+### Repository-visible contract
+The final worker report and source inspection now show the previously in-flight gaps are closed:
 
-Worker report at that tip: `NEEDS_REVIEW`.
+**Office overtime**
+- normal interaction id `overtime`;
+- hidden until ordinary work is completed that day;
+- once per day using `GameState.flags` day marker `cw01_overtime_day`;
+- 120 minutes;
+- health −4;
+- mood −8;
+- pay = 60% of current ordinary work-shift wage;
+- no additional work-shift quest count / skill-growth reward;
+- visible interaction copy states time/pay/major costs/daily limit.
 
-Diff is limited to authorized paths:
+**Cafe temporary side gig**
+- normal interaction id `side_gig`;
+- once per day using `GameState.flags` day marker `cw01_cafe_gig_day`;
+- 90 minutes;
+- +55 money;
+- health −2;
+- mood −4;
+- 55 is below the existing minimum ordinary work-shift pay of 90;
+- visible interaction copy states time/pay/major costs/daily limit.
+
+**Persistence / schema**
+- no new `GameState` field;
+- no new `SaveManager` schema;
+- no new top-level livelihood save section;
+- existing `game_state.flags` persistence carries the day markers;
+- marker compares with `time_sys.day`, so next day naturally reopens without a new reset schema.
+
+**Terminal ordering**
+New livelihood settlement uses:
+1. elapsed-minute advance;
+2. `_sync_needs_to_time()`;
+3. existing `_evaluate_terminal_state()`;
+4. normal completion feedback only if still alive.
+
+This is aligned with accepted GAME-FIX-009 ordering and does not introduce a second terminal/death authority.
+
+### Prepared verifier
+`tools/verify_livelihood_actions.gd` now covers repository/source invariants plus intended runtime checks for:
+- terminal evaluator ordering;
+- visible time/reward/cost copy;
+- overtime hidden pre-work / visible post-work;
+- Office/Cafe navigation reachability;
+- overtime 60% pay / 120 minutes / −4 health / −8 mood;
+- same-day duplicate prevention;
+- existing save-payload persistence;
+- cafe +55 / 90 minutes / −2 health / −4 mood;
+- cafe pay lower than ordinary shift;
+- next-day reopening.
+
+The worker hardened the verifier to wait for interaction layers and deep-copy the in-memory save payload before restore checks.
+
+**Important QA boundary:** this verifier is still `assert()` driven and has not been executed here. Real QA-002 must capture both process exit code and stdout/stderr on Godot 4.7.2; do not infer mandatory-gate failure propagation from source inspection alone.
+
+### Gameplay repository disposition
+**Repository contract: READY FOR 00 REVIEW.**
+
+**Runtime acceptance: PENDING QA-002.**
+
+No Godot PASS is claimed.
+
+---
+
+## UI-FIX-007 repository review
+Observed exact tip: `fe2e527616e18868df0900c3b6b8b1f2db9599d4`.
+
+Scope is limited to authorized paths:
 - `scripts/ui/DialogUI.gd`
 - `tools/verify_dialog_panel_overflow.gd`
 - `agent-reports/scene-ui.md`
 
-File identities:
-- `DialogUI.gd`: `ebd30a2b37ad3a33ff0e86a5be52fcb9749335a8`
-- verifier: `74fe12315eedcfdad5aa3888def7cb7418a41b21`
+Repository/static contract:
+- only body text belongs to the vertical `ScrollContainer`;
+- speaker and `继续` / `结束` remain siblings outside the scroll region;
+- horizontal scrolling disabled;
+- body scroll reset on next line and close/reopen;
+- fixed 220px panel contract preserved;
+- `show_dialog()`, `close_dialog()`, `is_busy()`, one-line progression and `dialog_finished` lifecycle preserved;
+- prepared verifier covers 1280×720 and 960×540, real long-text overflow, scroll-to-bottom, reset and exactly-once completion semantics.
 
-Repository/static contract is coherent: only the body scrolls; speaker/action remain outside; horizontal scrolling is disabled; line progression/reopen reset body scroll; public dialogue lifecycle remains intact. This is still not Godot/render PASS until 00 accepts an exact tip and QA-002 runs it on the frozen integration SHA.
+### UI repository disposition
+**Repository contract: READY FOR 00 REVIEW.**
 
-### NPC-CONTENT-012
-Observed exact tip:
-- `d415ecf165fc6c90d5abf42e5929745d1739acf4`
+**Godot/rendered acceptance: PENDING QA-002.**
 
-No worker delta exists at final capture. The 20-event Pack A cannot yet be counted or reviewed.
+Headless success, scrollbar behavior, typography and clipping are not claimed from source inspection.
 
-## Event schema contract
+---
+
+## NPC-CONTENT-012 repository review
+Observed final worker tip: `a86c953d475c6f6eb18d99a02ef87b2d6932e4b2`.
+
+Content commit: `fe1625c7a302ac6fc0c902f55145772fa5521580`.
+
+Final branch diff vs its assigned control-plane base is task-scope clean:
+- `data/events.json`: +720 / -0
+- `agent-reports/npc-content.md`
+- no script/schema/quest/schedule/coordination production change.
+
+Final `data/events.json` blob on the worker branch: `3a62219ad9901a44cc5993159c2c32d15c7f0cad`.
+
+### Exact Pack A event IDs
+Static diff inspection identifies exactly 20 appended `e_cw01_*` event objects:
+
+**park (4)**
+1. `e_cw01_park_free_class`
+2. `e_cw01_park_lost_wallet`
+3. `e_cw01_park_rain_aunties`
+4. `e_cw01_park_recruiter_call`
+
+**cafe (4)**
+1. `e_cw01_cafe_charger`
+2. `e_cw01_cafe_interview_prep`
+3. `e_cw01_cafe_unpaid_trial`
+4. `e_cw01_cafe_gossip`
+
+**hospital (4)**
+1. `e_cw01_hospital_kiosk`
+2. `e_cw01_hospital_report`
+3. `e_cw01_hospital_late_queue`
+4. `e_cw01_hospital_medicine`
+
+**alley (4)**
+1. `e_cw01_alley_rider_shelter`
+2. `e_cw01_alley_secondhand`
+3. `e_cw01_alley_rain_stall`
+4. `e_cw01_alley_landlord_repair`
+
+**rooftop (4)**
+1. `e_cw01_rooftop_bedding`
+2. `e_cw01_rooftop_bad_review`
+3. `e_cw01_rooftop_fireworks`
+4. `e_cw01_rooftop_afterhours`
+
+Static source/report review shows every new event has three choices. The new data uses existing supported numeric effects (`money`, `health`, `mood`, `skill`, `network`) and existing `flags` conditions/mutations; no new schema key was observed.
+
+### Five traceable remembered-choice chains
+Repository text directly exposes five writer -> reader continuity pairs:
+
+1. `e_cw01_park_free_class`
+   - writes `cw01_joined_park_class`
+   - later `e_cw01_park_rain_aunties` requires the flag and says the exercise-class auntie recognizes the player.
+2. `e_cw01_cafe_charger`
+   - writes `cw01_lent_cafe_charger`
+   - later `e_cw01_cafe_unpaid_trial` requires the flag and identifies the same young person from the charger interaction.
+3. `e_cw01_hospital_kiosk`
+   - writes `cw01_helped_hospital_kiosk`
+   - later `e_cw01_hospital_late_queue` requires the flag and refers back to the person encountered while helping 陈姐 at the kiosk.
+4. `e_cw01_alley_rider_shelter`
+   - writes `cw01_shared_rider_shelter`
+   - later `e_cw01_alley_rain_stall` requires the flag and recognizes the rider who shared the shelter.
+5. `e_cw01_rooftop_bedding`
+   - writes `cw01_helped_rooftop_bedding`
+   - later `e_cw01_rooftop_fireworks` requires the flag and brings back the neighbor whose bedding was saved.
+
+This satisfies the repository-traceability shape for >=5 remembered choices. Runtime reachability still requires QA-002.
+
+### Existing NPC references
+More than six Pack A events naturally mention existing NPCs. Repository-visible examples include:
+- 老周: `park_free_class`, `park_lost_wallet`, `park_recruiter_call`
+- 小雨: `cafe_charger`, `alley_secondhand`
+- 陈姐: `hospital_kiosk`, `hospital_medicine`
+- 阿哲: `alley_rider_shelter`
+- 老张: `cafe_interview_prep`, `hospital_report`, `rooftop_afterhours`
+
+The 小雨 references inspected are relationship-neutral and do not establish romance/cohabitation/housing canon.
+
+### Critical integration-baseline finding
+The Pack A content commit is **append-only against control-plane `d415ecf...`**, and its parent is that stale control-plane source snapshot. This is important because accepted NPC-CONTENT-010 changed existing earlier event copy after the underlying source lineage represented in that control-plane snapshot.
+
+Therefore:
+- the **20-event append delta itself is reviewable**;
+- the worker branch's **whole `data/events.json` snapshot must not be used as a replacement for the accepted cumulative content state**;
+- blindly taking the worker file would risk dropping accepted NPC-CONTENT-010 generic-family copy changes.
+
+Required integration behavior:
+1. start from the orchestrator-accepted pre-Pack-A content baseline through NPC-CONTENT-010;
+2. semantically append only these 20 new `e_cw01_*` objects;
+3. preserve every pre-existing accepted event object exactly;
+4. then freeze and run the deterministic parser/data gate.
+
+This also means the deterministic acceptance checker should assert **all baseline event objects remain equal**, not only the six deferred-policy IDs.
+
+### NPC repository disposition
+**20-event Pack A delta: READY FOR 00 REVIEW.**
+
+**Whole worker `events.json` snapshot: NOT SAFE AS A CUMULATIVE INTEGRATION REPLACEMENT.**
+
+**Parser/runtime acceptance: PENDING frozen semantic integration + QA-002.**
+
+The reported `e_cw01_alley_landlord_repair` rented-space premise remains a content/playtest risk; it does not itself mutate housing/Xiaoyu policy state.
+
+---
+
+## Supported EventSystem key contract
 Current `EventSystem.gd` supports condition keys:
 - `money_min`, `money_max`
 - `health_min`, `health_max`
@@ -92,236 +261,264 @@ Current `EventSystem.gd` supports condition keys:
 - `flags`, `flags_not`
 - `origins`
 
-Supported option mutations:
-- numeric effects: `money`, `health`, `mood`, `skill`, `network`
+Supported numeric option effects:
+- `money`
+- `health`
+- `mood`
+- `skill`
+- `network`
+
+Supported additional mutation fields:
 - `flags` dictionary
 - `job`
 
-Any Pack A condition/effect key outside these sets is a repository gate failure unless a separate Gameplay task first adds and validates support.
+New unsupported keys are a stop condition.
 
-## Repository gate — NPC-CONTENT-012
-Run only on the orchestrator-reviewed exact worker tip.
+---
 
-Required scope:
-- `data/events.json`
-- `agent-reports/npc-content.md`
-
-Required content contract:
-1. exactly 20 new events;
-2. exactly 4 each at park / cafe / hospital / alley / rooftop;
-3. globally unique non-empty IDs;
-4. each event has 2-3 usable choices with non-empty results;
-5. every event has a real downside/cost and meaningful tradeoff;
-6. no unsupported condition/effect keys;
-7. at least 5 remembered-choice chains: one Pack A option writes a flag and a later Pack A event/option reads and narratively acknowledges it;
-8. at least 6 Pack A events naturally reference existing NPCs;
-9. ordinary city life remains primary and dark content secondary;
-10. no accidental change to `e_parent_gone`, `e_roommate`, `e_kid_school`, `e_second_child`, `e_downsize`, `e_empty_nest`;
-11. no new Xiaoyu romance/housing canon.
-
-Prepared parser command, **not run here**:
+## Deterministic Pack A data gate — prepared, NOT RUN
+Run this only on the **semantically integrated frozen candidate**, with `$BASE` set to the exact accepted pre-Pack-A content baseline.
 
 ```powershell
+$BASE='923e43541303a4f66a643bddef3a993a1ed234b5'
+git rev-parse HEAD
+git status --short
 py -m json.tool data/events.json > $null
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+git show "$BASE`:data/events.json" | Set-Content -Encoding utf8 "$env:TEMP\events-pack-a-base.json"
 ```
 
-For deterministic Pack A delta analysis, compare the reviewed Pack A data to the accepted pre-Pack-A content baseline (currently NPC-CONTENT-010 or a later 00-recorded superseding baseline), not blindly to coordination `d415ecf...`.
-
-Required QA trace output after the worker lands:
-- exact 20 new IDs;
-- scene count map proving 4/4/4/4/4;
-- option count and real cost per event;
-- >=5 `writer event -> flag -> later acknowledgement event` traces;
-- >=6 event IDs with the referenced existing NPC(s);
-- explicit deferred-policy preservation statement.
-
-## Repository gate — GAME-CONTENT-012
-Expected authorized files:
-- `scripts/systems/OfficeActivities.gd`
-- `scripts/systems/CafeActivities.gd`
-- narrow livelihood-only regions in `scripts/Game.gd`
-- `tools/verify_livelihood_actions.gd`
-- `agent-reports/gameplay.md`
-
-Required semantics:
-1. overtime hidden before ordinary work and available after ordinary work that day;
-2. overtime once/day and repeatable after day rollover;
-3. overtime about 120 minutes, meaningful pay, health/mood cost, roughly 50-70% normal shift pay unless narrowly justified;
-4. cafe side gig visible/reachable in normal cafe play, once/day, 90-120 minutes, health/mood cost;
-5. cafe gig pays less than ordinary work;
-6. visible labels/tooltips state time/reward/major cost;
-7. no opaque random success;
-8. same-day retry cannot settle money/stats/time again;
-9. save/load preserves same-day consumed state through an already-saved mechanism;
-10. no new save-schema section / no SaveManager or GameState schema edit;
-11. GAME-FIX-001..009 terminal/death ordering remains authoritative;
-12. livelihood time/stat costs are observed by the existing terminal evaluator before normal continuation.
-
-Prepared commands, **not run here**:
+Then:
 
 ```powershell
-$godotExe = 'F:\Downloads\Godot_v4.7.2-stable_win64.exe\Godot_v4.7.2-stable_win64_console.exe'
-& $godotExe --headless --path . --editor --quit
-if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-& $godotExe --headless --path . --script res://tools/verify_livelihood_actions.gd
-if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-& $godotExe --headless --path . --script res://tools/verify_daily_routine.gd
-if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-& $godotExe --headless --path . --script res://tools/verify_day_cycle.gd
-if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-& $godotExe --headless --path . --script res://tools/verify_day_flow.gd
-if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-& $godotExe --headless --path . --script res://tools/verify_terminal_mutation_order.gd
+@'
+import json, pathlib, collections
+base = json.loads(pathlib.Path(r"__BASE__").read_text(encoding="utf-8-sig"))
+cur = json.loads(pathlib.Path("data/events.json").read_text(encoding="utf-8-sig"))
+assert isinstance(base, list) and isinstance(cur, list)
+b = {str(e.get("id", "")): e for e in base}
+c = {str(e.get("id", "")): e for e in cur}
+ids = [str(e.get("id", "")) for e in cur]
+assert all(ids) and len(ids) == len(set(ids)), "IDs must be non-empty and globally unique"
+
+# NPC-CONTENT-012 is append-only: every accepted baseline event must survive unchanged.
+for eid, obj in b.items():
+    assert eid in c, f"baseline event missing: {eid}"
+    assert c[eid] == obj, f"accepted baseline event changed: {eid}"
+
+new = [e for e in cur if str(e.get("id", "")) not in b]
+assert len(new) == 20, f"expected 20 new events, got {len(new)}"
+counts = collections.Counter(str(e.get("scene", "")) for e in new)
+assert dict(counts) == {"park":4,"cafe":4,"hospital":4,"alley":4,"rooftop":4}, counts
+
+allowed_cond = {"money_min","money_max","health_min","health_max","mood_min","mood_max","skill_min","network_min","age_min","job","flags","flags_not","origins"}
+allowed_effect = {"money","health","mood","skill","network"}
+
+def check_cond(cond, where):
+    if cond is None: return
+    assert isinstance(cond, dict), f"{where}: cond must be dict/null"
+    assert not (set(cond)-allowed_cond), f"{where}: unsupported cond keys {set(cond)-allowed_cond}"
+
+def conds(e):
+    yield e.get("cond")
+    for o in e.get("options", []): yield o.get("cond")
+
+for e in new:
+    eid = str(e["id"])
+    assert str(e.get("title", "")).strip() and str(e.get("text", "")).strip(), eid
+    check_cond(e.get("cond"), eid)
+    opts = e.get("options", [])
+    assert 2 <= len(opts) <= 3, f"{eid}: option count"
+    axes=set(); has_cost=False
+    for i,o in enumerate(opts):
+        assert str(o.get("text", "")).strip() and str(o.get("result", "")).strip(), f"{eid}[{i}]"
+        check_cond(o.get("cond"), f"{eid}[{i}]")
+        effects=o.get("effects") or {}
+        assert isinstance(effects, dict)
+        assert not (set(effects)-allowed_effect), f"{eid}[{i}]: unsupported effects"
+        for k,v in effects.items():
+            axes.add(k)
+            if isinstance(v,(int,float)) and v < 0: has_cost=True
+        flags=o.get("flags")
+        assert flags is None or isinstance(flags,dict)
+        if flags: axes.add("flags")
+        assert o.get("job") is None or isinstance(o.get("job"),str)
+    assert has_cost, f"{eid}: no machine-traceable downside"
+    assert len(axes) >= 2, f"{eid}: <2 consequence axes"
+
+writers={}; readers={}
+for i,e in enumerate(new):
+    for o in e.get("options",[]):
+        for f in (o.get("flags") or {}): writers.setdefault(str(f),[]).append((i,str(e["id"])))
+    for cond in conds(e):
+        if isinstance(cond,dict):
+            for key in ("flags","flags_not"):
+                for f in cond.get(key,[]) or []: readers.setdefault(str(f),[]).append((i,str(e["id"])))
+pairs=[]
+for flag,ws in writers.items():
+    for wi,wid in ws:
+        later=[(ri,rid) for ri,rid in readers.get(flag,[]) if ri>wi and rid!=wid]
+        if later: pairs.append((flag,wid,later[0][1])); break
+assert len({x[0] for x in pairs}) >= 5, pairs
+
+print("PACK_A_STATIC_OK")
+print("NEW_IDS", [e["id"] for e in new])
+print("SCENE_COUNTS", dict(counts))
+print("REMEMBERED_FLAG_PAIRS", pairs)
+'@.Replace('__BASE__', "$env:TEMP\events-pack-a-base.json") | py -
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 ```
 
-The current livelihood verifier is assert-driven. Real QA must capture both stdout/stderr and process exit status on the exact Godot 4.7.2 environment; do not infer branch-protection-grade failure propagation from source inspection alone.
+Required later evidence: exit 0 + literal `PACK_A_STATIC_OK`, exact 20 IDs, 4/4/4/4/4 counts, >=5 remembered pairs, and no baseline-object mutation failure.
 
-## Repository gate — UI-FIX-007
-If 00 accepts an exact UI-FIX-007 tip, require:
-- body-only vertical scroll;
-- speaker and continue/end action outside/reachable;
-- no horizontal-scroll dependency;
-- `show_dialog()`, `close_dialog()`, `is_busy()`, one-line progression, button copy and `dialog_finished` compatibility;
-- scroll reset on next line and close/reopen;
-- exactly-once completion emission;
-- no Gameplay/content/save/navigation changes.
+Manual QA must still confirm NPC references are natural and narrative acknowledgements read coherently; a machine checker cannot prove writing quality.
 
-Prepared command, **not run here**:
+---
 
-```powershell
-& $godotExe --headless --path . --script res://tools/verify_dialog_panel_overflow.gd
-if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-```
+## Frozen QA-002 package — prepared, NOT RUN
+Only after 00 records accepted exact producer tips and creates **one semantic integration SHA**.
 
-Headless success is not rendered PASS. On the same frozen SHA, inspect normal and long dialogue at 1280x720 and 960x540.
-
-## Frozen-SHA / stale-evidence rule
-QA-CONTENT-014 never accepts movable branch heads.
-
-Before QA-002 execution, 00 must record accepted exact producer tips and assemble one integration commit. Record:
-
+### Identity
 ```powershell
 git rev-parse HEAD
 git status --short
 & $godotExe --version
 ```
+Expected: recorded exact SHA, clean worktree, Godot 4.7.2.
 
-All parser/Godot/render/Web/browser evidence must reference that single exact SHA. Any accepted source/verifier change after evidence capture requires a new freeze and rerun of affected checks. Do not splice PASS artifacts from different SHAs.
-
-## Runtime gate — initial Pack A frozen candidate
-Prepared only; **not run here**.
-
-### Events
-Through normal play, trigger and complete at least one new Pack A event at each of:
-- park
-- cafe
-- hospital
-- alley
-- rooftop
-
-Record event ID/title, choice, before/after state/flags and UI readability. Existing pre-wave events do not count.
-
-### Office overtime
-- prove hidden before ordinary work;
-- complete ordinary work and prove overtime appears;
-- execute once and record money/time/health/mood;
-- retry same day and prove no second settlement;
-- save/load while consumed and prove no duplicate payout;
-- next day, satisfy the prerequisite again and prove it is repeatable.
-
-### Cafe side gig
-- prove normal-play visibility/reachability;
-- execute once and record money/time/health/mood;
-- prove same-day anti-spam;
-- prove pay < ordinary work;
-- save/load consumed state;
-- prove next-day repeatability.
-
-### Save/load content slice
-Prefer a save after both a remembered Pack A flag and a consumed livelihood action exist. After reload, verify the remembered flag, later acknowledgement eligibility, same-day anti-spam, normal player/time/location state, and next-day reopening.
-
-### Dialogue/readability
-At 1280x720 and 960x540, verify body-only scrolling, speaker/action reachability, next-line reset, reopen reset and no clipping/overlap.
-
-### Shared regressions
-Run on the same frozen SHA at minimum:
-- `verify_locations.gd`
-- `verify_navigation.gd`
-- `verify_day_cycle.gd`
-- `verify_day_flow.gd`
-- `verify_npc.gd`
-- `verify_quests.gd`
-- accepted terminal-state regressions applicable to cumulative `Game.gd`
-
-## Later-pack extension — not an initial Pack A blocker
-Current `data/quests.json` is still q1-q3. The following runtime requirements activate only after NPC-CONTENT-013 / NPC-CONTENT-014 are implemented and accepted:
-- progress at least two q4-q8 steps;
-- trigger one relationship-stage episode.
-
-When those packs land, freeze a new candidate. Existing Pack A evidence does not cover new source.
-
-## Web/browser exact-SHA gate
-After parser/headless/runtime checks pass on the same candidate:
-
+### Minimum headless set
 ```powershell
-Remove-Item -Recurse -Force build\web -ErrorAction SilentlyContinue
-New-Item -ItemType Directory -Force build\web | Out-Null
-& $godotExe --headless --path . --export-release "Web" build/web/index.html
-if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-Get-Item build/web/index.html, build/web/index.js, build/web/index.pck, build/web/index.wasm | Select-Object Name,Length
-py -m http.server 8000 --directory build/web
+& $godotExe --headless --path . --editor --quit
+& $godotExe --headless --path . --script res://tools/verify_livelihood_actions.gd
+& $godotExe --headless --path . --script res://tools/verify_dialog_panel_overflow.gd
+& $godotExe --headless --path . --script res://tools/verify_locations.gd
+& $godotExe --headless --path . --script res://tools/verify_navigation.gd
+& $godotExe --headless --path . --script res://tools/verify_day_cycle.gd
+& $godotExe --headless --path . --script res://tools/verify_day_flow.gd
+& $godotExe --headless --path . --script res://tools/verify_npc.gd
+& $godotExe --headless --path . --script res://tools/verify_quests.gd
+& $godotExe --headless --path . --script res://tools/verify_terminal_mutation_order.gd
 ```
 
-Browser acceptance on that exact export:
-- first frame renders;
-- no fatal console errors;
-- no required-resource 404s;
-- normal gameplay starts;
-- representative Pack A event, livelihood and long-dialogue flow work;
-- screenshots/evidence are tied to the same frozen SHA.
+Capture command, exact SHA, exit code, stdout and stderr separately. Any parser/script/assert/runtime failure stops promotion.
 
-## Current gate disposition
-**Gate specification: READY FOR ORCHESTRATOR REVIEW.**
+### Pack A normal-play slice
+On the same frozen SHA:
+- trigger one **new** Pack A event at each of park/cafe/hospital/alley/rooftop;
+- record exact event ID/title, choice and state/flag result;
+- prove at least one remembered-choice writer -> later acknowledgement path if reachable in the run;
+- verify ordinary event completion does not unexpectedly advance age/year;
+- verify long event/dialogue copy remains readable.
 
-**Pack A integration candidate: NOT READY TO FREEZE at this snapshot.**
+### Livelihood slice
+**Office**
+1. overtime hidden before ordinary work;
+2. complete ordinary work;
+3. overtime appears;
+4. complete overtime and record before/after money/time/health/mood;
+5. same-day retry does not settle again;
+6. save/load same day remains consumed;
+7. next day, after ordinary work, overtime is available again.
 
-Reasons:
-1. NPC-CONTENT-012 has no worker delta, so the required 20-event Pack A does not exist yet.
-2. GAME-CONTENT-012 has implementation + verifier at observed `8b2bf910...`, but its worker report is still stale and one unrelated ordinary-work copy change needs removal or explicit 00 scope acceptance.
-3. UI-FIX-007 has a scope-clean worker `NEEDS_REVIEW` result at observed `fe2e5276...`, but TASK_BOARD is still READY and 00 has not recorded an accepted exact tip.
-4. No real parser/Godot/render/Web/browser evidence has been executed for CONTENT-WAVE-01.
+**Cafe**
+1. side gig reachable through normal cafe interaction;
+2. complete once and record before/after money/time/health/mood;
+3. same-day retry blocked/no second settlement;
+4. save/load same day remains consumed;
+5. next day available again;
+6. pay remains lower than ordinary work.
 
-## Validation performed in this web phase
-Repository/static inspection only:
-- read latest TASK_BOARD, FILE_OWNERSHIP, WEB_AGENT_LAUNCHPAD, MASTER_PLAN, AGENT_RULES and HANDOFF;
-- read CONTENT-WAVE-01 plan;
-- repeatedly refreshed moving producer tips;
-- compared producer diffs to coordination/wave start;
-- inspected EventSystem supported condition/effect semantics;
-- inspected current Gameplay settlement patch and livelihood verifier;
-- inspected current UI-FIX-007 implementation/report/verifier;
-- confirmed NPC-CONTENT-012 still has no event-pack delta at final capture.
+### Save/load during new content
+Save after at least one remembered Pack A flag and one consumed livelihood action. Reload and verify:
+- remembered flag persists;
+- later acknowledgement remains eligible when its other conditions are met;
+- same-day livelihood anti-spam persists;
+- event-used/player/time/location state remains compatible;
+- no save migration/schema error.
 
-Not performed:
+### Rendered dialogue acceptance
+Same frozen SHA at 1280×720 and 960×540:
+- normal + deliberately long dialogue;
+- body-only vertical scrolling;
+- speaker and continue/end control remain fixed/reachable;
+- no horizontal-scroll dependency;
+- next-line and reopen visibly reset to top;
+- no clipping/overlap.
+
+### Web/browser
+Same frozen SHA:
+- export configured Web build;
+- record export command/exit/stdout/stderr/artifact identity;
+- serve/open in a real browser;
+- inspect fatal console/network/resource/runtime errors;
+- exercise start/origin/load, one Pack A event, both livelihood actions, save/load and long-dialog path;
+- screenshots/evidence must be tied to the same SHA.
+
+No browser/Web PASS without actual execution.
+
+### Later-pack extension
+Only after NPC-CONTENT-013 and NPC-CONTENT-014 are separately implemented/reviewed/accepted:
+- trigger one relationship-stage episode;
+- progress at least two q4–q8 quest steps.
+
+Do not block initial Pack A repository integration on those later tasks. They will require a new then-current frozen SHA.
+
+---
+
+## One-frozen-SHA / stale-evidence stop rules
+- Worker branch names are movable; accepted inputs must be exact 40-character SHAs.
+- 00 must record accepted exact tips before semantic integration.
+- NPC Pack A must be appended onto the accepted cumulative content baseline, not whole-file copied from the stale worker base.
+- Gameplay must preserve accepted GAME-FIX-009 semantics while adding livelihood deltas.
+- Any source/data/UI/verifier/config change after freeze creates a new candidate identity.
+- Do not combine PASS evidence from different SHAs.
+- Stop on JSON/parser failure, non-zero verifier exit, assertion/script error, render mismatch, merge conflict, stale branch evidence, or blocking Web/browser failure.
+
+## Validation performed by QA-CONTENT-014
+Repository/GitHub inspection only:
+- latest TASK_BOARD / FILE_OWNERSHIP / WEB_AGENT_LAUNCHPAD / MASTER_PLAN / AGENT_RULES / HANDOFF / orchestrator report;
+- producer exact tips and reports;
+- branch scope comparisons;
+- EventSystem condition/effect implementation;
+- Gameplay livelihood handlers/context/save/terminal ordering and verifier source;
+- UI-FIX-007 implementation/report/verifier source;
+- NPC Pack A append diff, exact 20 IDs, 4-per-location distribution, five flag chains and >6 existing-NPC references;
+- accepted baseline ancestry hazard for `data/events.json`;
+- concurrent QA report writes were reconciled rather than overwritten from stale blobs.
+
+## Explicitly NOT performed
 - JSON parser execution;
-- Godot import/start;
+- Python deterministic checker execution;
+- Godot/editor/headless execution;
 - any `.gd` verifier execution;
 - rendered viewport validation;
 - Web export;
 - browser console/network/runtime validation;
-- screenshots.
+- screenshot/deployment;
+- merge/cherry-pick/rebase/integration;
+- runtime/build/parser/render/Web PASS claim.
+
+## Current gate disposition
+**QA-CONTENT-014 gate specification: READY FOR ORCHESTRATOR REVIEW.**
+
+**Producer repository deltas:**
+- GAME-CONTENT-012 `14ca63ac569680008f9f4b20cb01514672d75caa`: repository contract ready for 00 review; runtime pending.
+- UI-FIX-007 `fe2e527616e18868df0900c3b6b8b1f2db9599d4`: repository contract ready for 00 review; render/runtime pending.
+- NPC-CONTENT-012 `a86c953d475c6f6eb18d99a02ef87b2d6932e4b2`: Pack A append delta ready for 00 review; whole worker file snapshot must not replace accepted cumulative content baseline.
+
+**Frozen candidate:** NOT YET CREATED / NOT QA-002-ACCEPTED.
 
 ## Files changed by QA-CONTENT-014
 - `agent-reports/qa-build.md` only.
 
 ## Handoff to 00-Orchestrator
-1. Review this report-only gate.
-2. Do not freeze moving producer branch heads merely because QA observed them.
-3. Review UI-FIX-007 exact worker tip and record the accepted identity if scope/contract passes.
-4. Require GAME-CONTENT-012 to submit its own `NEEDS_REVIEW` report and resolve/explicitly accept the unrelated `_work_growth_line()` copy edit before 00 accepts an exact tip.
-5. Continue NPC-CONTENT-012 until exactly 20 reviewable events exist, then run the repository shape/content gate against its exact review tip.
-6. Assemble one frozen integration SHA only from accepted inputs.
-7. Hand that exact SHA to QA-002/Codex/local for parser + Godot + rendered + Web/browser evidence.
-8. Any source/tip movement after freeze invalidates affected evidence and requires a new freeze/rerun.
+1. Review the three current `NEEDS_REVIEW` producer tips above and record accepted exact identities.
+2. Build the candidate semantically:
+   - Gameplay from accepted GAME-FIX-009 cumulative source + reviewed livelihood deltas;
+   - UI from accepted cumulative UI state + reviewed UI-FIX-007 delta;
+   - Content from accepted NPC-CONTENT-010 cumulative `events.json` + exactly the 20 Pack A appended events.
+3. Run the deterministic baseline-preservation/Pack-A checker on that assembled candidate.
+4. Freeze exactly one integration SHA.
+5. Hand that SHA to QA-002/Codex/local for parser + Godot + rendered + Web/browser evidence.
+
+No additional speculative QA/audit task is requested.
