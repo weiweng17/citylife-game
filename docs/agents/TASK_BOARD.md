@@ -11,6 +11,8 @@ Only 00-Orchestrator edits this file. Workers update only their own reports.
 ## Scheduling rule
 At least **60% of active work must create player-visible content or directly unblock player-visible content**. Non-blocking speculative audits remain BACKLOG. Every execution lane has at most one active `READY/IN_PROGRESS` task. A blocked historical/runtime task may coexist with one non-overlapping active task. Real Godot/render/browser/Web/audio-playback evidence stays centralized in QA-002 on one frozen SHA.
 
+Machine-readable coordination rule: active task status lines use plain tokens (`Status: READY` / `Status: IN_PROGRESS`) with no Markdown emphasis around the token, so Dispatcher parsing cannot mistake a scheduled task for an idle lane.
+
 ## Completed
 ORCH-001, GAME-001, UI-001, NPC-001, QA-001,
 GAME-FIX-001..007, GAME-AUDIT-008, GAME-FIX-009, GAME-AUDIT-010,
@@ -32,7 +34,7 @@ ART-AUDIT-001, AUDIO-AUDIT-001, DIRECTOR-001,
 ### GAME-CONTENT-013 — First-day onboarding gate & objective state
 - Owner: gameplay
 - Branch: `agent/game-content-013-first-day-onboarding-gate`
-- Status: **READY**
+- Status: READY
 - Priority: HIGH
 - Player-visible/direct-unblock: YES.
 - Base requirement: start from accepted GAME-CONTENT-012 exact tip `14ca63ac569680008f9f4b20cb01514672d75caa`; do not reimplement its settlement values.
@@ -76,7 +78,7 @@ ART-AUDIT-001, AUDIO-AUDIT-001, DIRECTOR-001,
 ### UI-CONTENT-008 — Pack A event-choice readability pass
 - Owner: scene-ui
 - Branch: `agent/ui-content-008-event-choice-readability`
-- Status: **READY**
+- Status: READY
 - Priority: HIGH
 - Player-visible/direct-unblock: YES.
 - Current task branch has no task-specific production/report delta yet; inherited report remains stale.
@@ -100,7 +102,7 @@ ART-AUDIT-001, AUDIO-AUDIT-001, DIRECTOR-001,
 ### NPC-CONTENT-015 — First-day NPC recognition micro-pass
 - Owner: npc-content
 - Branch: `agent/npc-content-015-first-day-recognition`
-- Status: **READY**
+- Status: READY
 - Priority: HIGH
 - Player-visible/direct-unblock: YES.
 - Writable:
@@ -137,7 +139,7 @@ ART-AUDIT-001, AUDIO-AUDIT-001, DIRECTOR-001,
 ### QA-CONTENT-015 — Accepted producer consolidation manifest
 - Owner: qa-build
 - Branch: `agent/qa-content-015-producer-consolidation`
-- Status: **READY**
+- Status: READY
 - Priority: MEDIUM
 - Writable: `agent-reports/qa-build.md` only.
 - Inputs accepted by 00:
@@ -189,7 +191,7 @@ ART-AUDIT-001, AUDIO-AUDIT-001, DIRECTOR-001,
 ### ART-PROD-003 — First-day action cleanup candidates: cooking + typing
 - Owner: art-animation
 - Branch: `agent/art-prod-003-first-day-action-cleanup`
-- Status: **READY**
+- Status: READY
 - Priority: HIGH
 - Player-visible/direct-unblock: YES.
 - Writable repository scope: `agent-reports/art-animation.md` only; actual image-generation outputs remain chat deliverables until a later explicit ingestion task.
@@ -217,7 +219,7 @@ ART-AUDIT-001, AUDIO-AUDIT-001, DIRECTOR-001,
 
 ### AUDIO-CONTENT-003 — Approved-source acquisition + first playback pack
 - Owner: audio-music / Codex-local
-- Status: **BLOCKED**
+- Status: BLOCKED
 - Blocked by: binary download/edit/listening context and an explicit local asset-ingestion execution package.
 - Input: accepted AUDIO-CONTENT-002 tip `67033f8c0bf8323d5600c7bccf47f42a0baa1042`.
 - Local package requirements: re-verify CC0 source page at download time, preserve source/license snapshots and upstream filenames, create only approved derived game-ready files under exact future `assets/audio/**` paths, record trims/loops/gain/EQ/conversion, and audition for intelligible speech/real-city announcements/copyrighted background music/clipping. Runtime AudioStreamPlayer/bus integration requires a separate explicit code grant; playback/Web evidence belongs QA-002.
@@ -244,7 +246,7 @@ ART-AUDIT-001, AUDIO-AUDIT-001, DIRECTOR-001,
 ### DIRECTOR-CONTENT-003 — Day 2–7 retention loop implementation map
 - Owner: game-director
 - Branch: `agent/director-content-003-day2-7-retention`
-- Status: **READY**
+- Status: READY
 - Priority: MEDIUM
 - Player-visible/direct-unblock: YES.
 - Branch baseline was corrected to final accepted DIRECTOR-CONTENT-002 tip `cebc2c868a52fcd719bbe3b5d6bd39917a17b82f` before worker execution.
@@ -265,7 +267,7 @@ Active web lanes with READY tasks: 01, 02, 03, 04, 05, 07 = 6. Player-visible/di
 - Xiaoyu canon: roommate / romance possibility / close friend only.
 - Family semantics: married-household-only vs co-parent-inclusive.
 - Whether recurring rent/fixed expenses becomes a core survival mechanic.
-- Whether first public Alpha markets realistic daily life first or supernatural dark line first.
+- Whether first public Alpha markets realistic-life vs supernatural marketing emphasis.
 - Whether V1.0 formally narrows to the first month or keeps long-life mode visible.
 
 ## Status values
