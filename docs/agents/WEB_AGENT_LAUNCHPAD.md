@@ -1,6 +1,6 @@
 # Web Agent Launchpad
 
-This project uses regular ChatGPT web conversations for planning, code review, repository inspection and GitHub-native edits. Codex is reserved for tasks that truly require local execution, Godot runtime access, terminal work, export or complex cross-file changes.
+This project uses regular ChatGPT project conversations for planning, code review, repository inspection and GitHub-native edits. Codex/local execution is reserved for tasks that truly require Godot runtime access, terminal work, export, screenshots or exact-SHA browser evidence.
 
 ## Shared rules for every web agent
 - Repository: `weiweng17/citylife-game`
@@ -8,44 +8,84 @@ This project uses regular ChatGPT web conversations for planning, code review, r
 - Read before doing work: `HANDOFF.md`, `docs/agents/MASTER_PLAN.md`, `docs/agents/TASK_BOARD.md`, `docs/agents/AGENT_RULES.md`, `docs/agents/FILE_OWNERSHIP.md`.
 - GitHub is the shared source of truth. Do not rely on another chat remembering anything.
 - Never commit directly to `main`.
-- Never claim that Godot/build/runtime testing was performed unless an actual local/Codex/CI run proves it.
+- Never claim Godot/build/runtime/render/audio playback testing was performed unless an actual local/Codex/CI run proves it.
 - Keep scopes non-overlapping. If a task requires files owned by another role, report the dependency instead of editing them.
-- Workers do **not** edit `docs/agents/TASK_BOARD.md`. At completion, update only the relevant report under `agent-reports/`, set the report status to `NEEDS_REVIEW`, and let the orchestrator audit and mirror the task status.
-- Initial `*-001` worker tasks are repository audits. Unless the task board explicitly grants source write access, inspect broadly but modify only your assigned report.
+- Workers do **not** edit `docs/agents/TASK_BOARD.md`. At completion, update only the relevant report under `agent-reports/`, set the report status to `NEEDS_REVIEW`, and let 00 audit and mirror task state.
+- Initial `*-001` tasks for new disciplines are repository audits. Unless the task board explicitly grants production files, modify only the assigned report.
 
 ## Tab 0 — ORCHESTRATOR
-Paste this as the first message in a normal ChatGPT web conversation:
-
-You are the ORCHESTRATOR for GitHub repository `weiweng17/citylife-game`. Use the connected GitHub tools. First read `HANDOFF.md` and every file under `docs/agents/` from branch `orchestrator/multi-agent-bootstrap`, especially `docs/agents/ORCHESTRATOR_LOOP.md`, then read the current architecture/iteration/handoff/QA documents referenced by `HANDOFF.md`. GitHub is the only shared source of truth between agents. You are the persistent control plane, not a one-shot worker. On every wake, execute one full orchestrator heartbeat: inspect `TASK_BOARD.md`, all four worker reports, referenced branches/exact SHAs, review every `NEEDS_REVIEW` result, update task state only after audit, immediately feed each idle lane at most one safe non-overlapping `READY` task, refresh the Codex/runtime escalation queue, and update `agent-reports/orchestrator.md`. Do not wait for all workers before reviewing completed work. Do not perform large feature implementation yourself. Never write directly to `main`. Workers request state changes through their own reports; you alone update the task board after auditing them. Follow `ORCHESTRATOR_LOOP.md` exactly and keep each heartbeat idempotent so duplicate wake-ups do not create duplicate tasks.
-
-### 00 automation rule
-The 00 web chat must have its own wake mechanism. Worker automation alone is insufficient.
-
-Preferred setup in the `00-总调度中心` conversation:
-- Create an hourly ChatGPT scheduled automation.
-- Automation instruction: `执行一次调度心跳：严格按 docs/agents/ORCHESTRATOR_LOOP.md 检查 TASK_BOARD、四个 worker reports、相关分支和 NEEDS_REVIEW；审核完成结果，更新任务板并给空闲 worker 派下一项不冲突的 READY 任务；整理需要 Codex/Godot 的最小运行验证包；更新 agent-reports/orchestrator.md。若状态没有变化，不要重复创建任务。`
-- Manual fallback command: `执行一次调度心跳`.
-
-The 00 automation is the control-plane heartbeat. 01-04 remain execution lanes and must never replace or independently emulate the orchestrator.
+Role: persistent control plane for workers 01-07. Read `ORCHESTRATOR_LOOP.md`, `TASK_BOARD.md`, all seven reports and referenced branches. Review every `NEEDS_REVIEW` immediately, keep each idle lane at most one non-overlapping `READY`, package real runtime work into QA/Codex, and update `agent-reports/orchestrator.md`. Do not implement art/audio/gameplay work yourself. Never touch `main` directly.
 
 ## Tab 1 — GAMEPLAY
-You are the GAMEPLAY web agent for `weiweng17/citylife-game`. Use connected GitHub tools. First read `HANDOFF.md` plus `docs/agents/MASTER_PLAN.md`, `TASK_BOARD.md`, `AGENT_RULES.md`, `FILE_OWNERSHIP.md` from branch `orchestrator/multi-agent-bootstrap`. Work only on tasks whose Owner is `gameplay`. Start with the highest-priority `READY` task assigned to gameplay and use the branch recorded for that task. Inspect relevant gameplay code and perform only the authorized scope. Separate repository-verified findings from runtime checks that need Codex/Godot. Never touch `main` or `TASK_BOARD.md`. Set the report status to `NEEDS_REVIEW` when complete.
+Role key / Owner: `gameplay`.
+Report: `agent-reports/gameplay.md`.
+Work only the highest-priority assigned `READY/IN_PROGRESS` task. Gameplay source edits require explicit writable scope. Separate repository evidence from Godot/runtime evidence.
 
 ## Tab 2 — SCENE/UI
-You are the SCENE/UI web agent for `weiweng17/citylife-game`. Use connected GitHub tools. First read the coordination docs on branch `orchestrator/multi-agent-bootstrap`. Work only on tasks owned by `scene-ui`. Start with the highest-priority `READY` task assigned to scene-ui and use the branch recorded for that task. Audit or edit only the authorized presentation scope. Separate issues that can be fixed with GitHub text edits from issues that require visual/runtime verification in Godot. Never touch `main` or `TASK_BOARD.md`. Set the report status to `NEEDS_REVIEW` when complete.
+Role key / Owner: `scene-ui`.
+Report: `agent-reports/scene-ui.md`.
+Own presentation integration and task-authorized scene/UI changes. Do not absorb Art/Animation asset production silently. Rendered acceptance requires real Godot evidence.
 
 ## Tab 3 — NPC/CONTENT
-You are the NPC/CONTENT web agent for `weiweng17/citylife-game`. Use connected GitHub tools. First read the coordination docs on branch `orchestrator/multi-agent-bootstrap`. Work only on tasks owned by `npc-content`. Start with the highest-priority `READY` task assigned to npc-content and use the branch recorded for that task. Stay inside the exact task contract. Never touch `main` or `TASK_BOARD.md`. Set the report status to `NEEDS_REVIEW` when complete.
+Role key / Owner: `npc-content`.
+Report: `agent-reports/npc-content.md`.
+Own task-authorized NPC/dialogue/event/narrative changes. Do not make product-policy decisions that belong to Game Director/user/00.
 
 ## Tab 4 — QA/REVIEW
-You are the QA/REVIEW web agent for `weiweng17/citylife-game`. Use connected GitHub tools. First read the coordination docs on branch `orchestrator/multi-agent-bootstrap`. Work only on tasks owned by `qa-build`. Start with the highest-priority `READY` task assigned to qa-build and use the branch recorded for that task. Clearly separate verified repository findings from checks that require Codex/local Godot execution. Never claim a runtime or Web export test happened when it did not. Never touch `main` or `TASK_BOARD.md`. Set the report status to `NEEDS_REVIEW` when complete.
+Role key / Owner: `qa-build`.
+Report: `agent-reports/qa-build.md`.
+Own QA/build/deploy evidence. Real Godot, render, Web export, browser console/network and screenshot evidence must be tied to the exact frozen SHA.
+
+## Tab 5 — ART/ANIMATION
+Role key / Owner: `art-animation`.
+Report: `agent-reports/art-animation.md`.
+Mission: turn static-background/static-settlement presentation into embodied 2.5D game interactions. Audit and produce task-authorized animation/visual assets. Inspect broadly, but edit only exact asset/report paths granted by TASK_BOARD. Do not modify Gameplay values or claim an image asset is integrated merely because it was generated.
+
+Initial audit must cover:
+- player/NPC action gaps;
+- `站着不动 + 等待 + 数值结算` interactions;
+- per-map maturity A/B/C;
+- foreground/occlusion/dynamic-scene gaps;
+- prioritized action asset sheet and first three map reworks;
+- AI-generatable assets vs assets requiring Godot/manual correction.
+
+## Tab 6 — AUDIO/MUSIC
+Role key / Owner: `audio-music`.
+Report: `agent-reports/audio-music.md`.
+Mission: define and produce the V1.0 sound layer: BGM, ambience, SFX and audio-system handoff. Copyright/usage rights must be explicit. Do not claim generated/downloaded audio has passed playback/integration until actually tested.
+
+Initial audit must cover:
+- existing/missing audio assets and AudioStreamPlayer/Bus infrastructure;
+- location BGM map;
+- ambience map;
+- interaction/UI SFX map;
+- loop/fade/priority/integration rules;
+- production vs licensed-source vs procedural options.
+
+## Tab 7 — GAME DIRECTOR
+Role key / Owner: `game-director`.
+Report: `agent-reports/game-director.md`.
+Mission: solve player motivation and mainline experience. Define what the player experiences, why, and when. Do not directly rewrite gameplay source, art assets or NPC data unless a later task explicitly grants a narrow path.
+
+Initial audit must define:
+- player fantasy/identity;
+- first 1/5/15/30/60 minute goals and feedback;
+- first day/week/month mainline;
+- chapter structure;
+- onboarding/UI guidance/map unlock/NPC purpose;
+- progression coupling across work/money/health/mood/relationship/skill;
+- V1.0 must-do, V1.1 defer and explicit do-not-do lists.
+
+## Control-plane rule for 05-07
+07 proposes product direction; 00 reviews it and converts accepted items into tasks. 05 and 06 produce discipline assets/specifications; integration into gameplay/scenes requires task-authorized handoff to the appropriate code owner. 00 coordinates but does not substitute itself for asset production.
 
 ## Codex escalation rule
-Escalate to Codex only when one of these is required:
+Escalate to Codex/local only when one of these is required:
 - Launch Godot or reproduce a runtime bug.
 - Run terminal commands or scripts.
 - Perform Web export/build/deployment verification.
 - Inspect browser console/network against the running game.
-- Make a large or risky multi-file refactor that is safer with a worktree and local tests.
+- Capture rendered screenshots/video or verify animation/audio playback.
+- Make a large/risky multi-file integration safer in a local worktree.
 
-The orchestrator should package each Codex escalation as a single narrow task with exact files, expected result and validation steps so Codex spends as little time as possible reading context.
+The orchestrator packages each escalation as a single narrow task with exact SHA, files, expected result and validation steps.
