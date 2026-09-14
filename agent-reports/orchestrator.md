@@ -3,133 +3,144 @@
 ## Control plane
 - Agent: 00-Orchestrator
 - Branch: `orchestrator/multi-agent-bootstrap`
-- Status: **ACTIVE — CONTENT-WAVE-01**
-- Heartbeat: `2026-09-14 CONTENT-WAVE-01 SWITCH`
+- Status: **ACTIVE — CONTENT-WAVE-01 / 00-07 ENABLED**
+- Heartbeat: `2026-09-14 15:40 +08:00`
 - Rule source: `docs/agents/ORCHESTRATOR_LOOP.md`
-- Planning source: `planning/content-expansion-wave-01` exact tip `5ca3e0140d440bf1e07597b115ed04c2bc1d17c3`.
+- Planning source: `planning/content-expansion-wave-01` exact planning tip `5ca3e0140d440bf1e07597b115ed04c2bc1d17c3`.
 
-## Explicit user directive consumed
-The prior user-level pause is lifted by the explicit instruction to execute a heartbeat, read `planning/CONTENT_EXPANSION_WAVE_01.md`, formally switch to CONTENT-WAVE-01, backlog non-blocking audits, and dispatch the first 01-04 content batch.
+## Heartbeat trigger
+Dispatcher reported that 05-Art-Animation, 06-Audio-Music and 07-Game-Director had no READY/IN_PROGRESS task. This heartbeat therefore inspected all seven worker reports, their assigned branches/exact tips, all current NEEDS_REVIEW outputs, the board/ownership/launchpad rules, and then filled idle lanes without violating CONTENT-WAVE-01's >=60% player-visible/direct-unblock rule.
 
-The wave product rule is now authoritative for scheduling: **at least 60% of active work must create or directly unblock player-visible content**. Low/medium speculative repository audits no longer dominate the active board.
-
-## Worker/report state at heartbeat start
+## Worker / branch state at heartbeat start
 ### 01 Gameplay
-- Assigned old task: `GAME-AUDIT-011`.
-- Branch report was still the inherited initial READY template; no current GAME-AUDIT-011 work product / NEEDS_REVIEW existed.
-- Disposition: moved to BACKLOG per the accepted wave plan.
+- Board task: `GAME-CONTENT-012`.
+- Branch: `agent/game-content-012-daily-economy-hooks`.
+- Exact observed tip: `437618ad4a1950257204a7e4d792b76ec924a683` (`GAME-CONTENT-012 restore accepted gameplay baseline`).
+- Worker report on that branch is still the inherited GAME-001 READY template, so the branch movement is not yet reviewable output.
+- Disposition: normalize to `IN_PROGRESS`; do not duplicate or replace the task.
 
 ### 02 Scene/UI
-- Assigned task: `UI-FIX-007`.
-- Branch report was still the inherited initial READY template; no NEEDS_REVIEW existed.
-- Disposition: keep READY because bounded dialogue directly enables longer player-visible content.
+- Board task: `UI-FIX-007`.
+- Branch: `agent/ui-fix-007-dialog-body-overflow`.
+- Exact observed tip: `5f1e4d3831007a131fbbd20d2342447a4f6575f7` (`test: add DialogUI overflow verifier`).
+- Worker report remains the inherited UI-001 READY template, so this is not yet a NEEDS_REVIEW submission and no Godot/rendered PASS is inferred.
+- Disposition: normalize to `IN_PROGRESS`; keep the same task.
 
 ### 03 NPC/Content
-- Assigned old task: `NPC-AUDIT-011`.
-- Branch report was still the inherited initial READY template; no NEEDS_REVIEW existed.
-- Disposition: moved to BACKLOG; pronoun polishing is non-blocking for Pack A.
+- Board task: `NPC-CONTENT-012`.
+- Branch: `agent/npc-content-012-city-event-pack-a`.
+- Exact tip: `d415ecf165fc6c90d5abf42e5929745d1739acf4`, still the task-creation coordination baseline.
+- Worker report is inherited NPC-001 READY template.
+- Disposition: remain `READY`; Dispatcher should dispatch/continue it.
 
 ### 04 QA/Build
-- Assigned old task: `QA-013`.
-- Branch report was still the inherited initial READY template; no NEEDS_REVIEW existed.
-- Disposition: generic preflight moved to BACKLOG/SUPERSEDED FOR NOW; a content-specific acceptance gate replaces it.
+- Board task: `QA-CONTENT-014`.
+- Branch: `agent/qa-content-014-content-pack-acceptance`.
+- Exact tip: `d415ecf165fc6c90d5abf42e5929745d1739acf4`, still the task-creation coordination baseline.
+- Worker report is inherited QA-001 READY template.
+- Disposition: remain `READY`; prepare Pack A gate, not a new generic audit.
 
 ### 05 Art/Animation
-- `ART-AUDIT-001` report requested `NEEDS_REVIEW` on `agent/art-audit-001-production-gap`.
-- Exact tip: `727c81b7afaf3d46f03a5048fcfda37715bfb11c`.
-- Compare against coordination shows the worker delta is report-only as authorized; the branch diverged only because coordination advanced after branch creation, not because the worker touched unauthorized production files.
+- `ART-AUDIT-001` exact tip remains `727c81b7afaf3d46f03a5048fcfda37715bfb11c`.
+- TASK_BOARD already consumed and accepted it as DONE. The worker report still says NEEDS_REVIEW because workers do not rewrite orchestrator acceptance; the board is authoritative.
+- Disposition: no duplicate review; feed one new player-visible art-production task.
 
 ### 06 Audio/Music
-- `AUDIO-AUDIT-001` remains initial READY/not started.
-- Disposition: BACKLOG during first Pack A because the selected wave explicitly requires no new external art/audio.
+- `AUDIO-AUDIT-001` report is `NEEDS_REVIEW`.
+- Branch exact tip: `cb17301c2dd9e4f4502e5279f27024dc84b503b1`.
+- Compare against its branch base `9002e2b8a6202f991d94384eba5209fdb59f984c`: exactly one changed file, `agent-reports/audio-music.md`.
+- Disposition: reviewed and accepted this heartbeat; feed one direct sound-content unblock task.
 
 ### 07 Game Director
-- `DIRECTOR-001` remains initial READY/not started.
-- Disposition: BACKLOG during first Pack A because the user explicitly selected CONTENT-WAVE-01 as the current scheduling plan. The first-hour/mainline plan remains required before V1.0 freeze.
+- `DIRECTOR-001` report is `NEEDS_REVIEW`.
+- Branch exact tip: `cea3443980458e0fb930289c6c487a0cc96be01a`.
+- Compare against branch base `9002e2b8a6202f991d94384eba5209fdb59f984c`: exactly one changed file, `agent-reports/game-director.md`.
+- Disposition: reviewed and accepted this heartbeat; feed one first-30-minute implementation-map task.
 
-## Review completed this heartbeat
-### ART-AUDIT-001 — ACCEPTED / DONE
-- Exact tip: `727c81b7afaf3d46f03a5048fcfda37715bfb11c`.
-- Scope: report-only; no production asset/source/coordination changes.
-- Accepted findings:
-  - all nine current active maps are structurally playable but still background-heavy B-tier scenes; none qualifies as a fully mature A-tier 2.5D scene under the audit's requested standard;
-  - most non-sleep actions still present as a standing body plus progress/text/numeric settlement;
-  - highest first-30-minute visual priorities are work, study, cooking, commute/subway, NPC talk, then office/subway/home scene contact/dynamics;
-  - runtime NPCs are effectively static despite some candidate sheets;
-  - active independent locations do not currently deliver the dynamic rainy-city atmosphere implied by the art.
-- No generated asset is treated as integrated work and no rendered Godot PASS is inferred.
-- CONTENT-WAVE-01 Pack A does not immediately dispatch a new 05 production task; the audit remains an accepted input for the later visual vertical-slice wave.
+## Reviews completed this heartbeat
+### AUDIO-AUDIT-001 — ACCEPTED / DONE
+- Exact tip: `cb17301c2dd9e4f4502e5279f27024dc84b503b1`.
+- Scope respected: report-only; no audio assets, source, `project.godot`, `main` or coordination files changed.
+- Accepted repository conclusion: the active game currently has essentially no BGM, ambience, SFX, AudioStreamPlayer/AudioServer/Bus/fade/volume infrastructure, while the existing location/time/weather/activity/dialogue/shop/quest/ending lifecycle already provides enough trigger points for a clean audio layer.
+- Accepted design direction: quiet urban-life identity, rain/spatial ambience stronger than constant music, reusable location/time/weather state, restrained feedback, clear license tracking.
+- No sound was generated, downloaded, mixed, played or runtime-verified; no playback PASS is inferred.
 
-## CONTENT-WAVE-01 first parallel batch dispatched
-### 01 Gameplay — GAME-CONTENT-012
-`Daily-life economy hooks v1`.
-- Adds two normal-play livelihood choices using existing activity architecture:
-  - office overtime;
-  - cafe temporary side gig.
-- Explicit narrow writable boundary: `OfficeActivities.gd`, `CafeActivities.gd`, only relevant Office/Cafe activity portions of high-conflict `Game.gd`, one narrow verifier, Gameplay report.
-- Both are once-per-day/repeatable-across-days choices with visible money/time/stat tradeoffs and no save-schema change.
-- This is player-visible economy/gameplay work, not an audit.
+### DIRECTOR-001 — ACCEPTED / DONE AS STRATEGIC DIRECTION
+- Exact tip: `cea3443980458e0fb930289c6c487a0cc96be01a`.
+- Scope respected: report-only; no Game/data/UI/art/audio/main/coordination edits.
+- Accepted central product diagnosis: the current game has many systems but no single foreground life objective; daily routine, serial quests, life-stage goals and annual events currently compete for player attention.
+- Accepted V1.0 direction: foreground minutes/days/weeks/month for the first-month vertical slice; give the first hour one authored objective hierarchy; make maps/NPCs matter because life creates a reason to visit/return; preserve old annual/midlife content as later-life assets rather than allowing it to dominate onboarding.
+- Acceptance of the plan does **not** authorize a giant rewrite. Any hiding/gating/time-scale/source change must be split into narrow implementation tasks and reviewed independently.
 
-### 02 Scene/UI — UI-FIX-007 retained as active wave support
-- Keep only the dialogue body scrollable/bounded while speaker/action remain fixed.
-- This directly supports longer Pack A dialogue/event copy.
-- `UI-CONTENT-008` is recorded as the next task after UI-FIX-007 review, not a second simultaneous READY.
+## Task-board changes this heartbeat
+- `GAME-CONTENT-012`: READY -> IN_PROGRESS based on concrete branch movement; no acceptance yet.
+- `UI-FIX-007`: READY -> IN_PROGRESS based on concrete branch movement; no acceptance yet.
+- `NPC-CONTENT-012`: remains READY.
+- `QA-CONTENT-014`: remains READY.
+- `ART-AUDIT-001`: remains DONE; stale worker-report NEEDS_REVIEW is not re-consumed.
+- `AUDIO-AUDIT-001`: BACKLOG/report NEEDS_REVIEW -> DONE after actual review.
+- `DIRECTOR-001`: BACKLOG/report NEEDS_REVIEW -> DONE after actual review.
 
-### 03 NPC/Content — NPC-CONTENT-012
-`City Event Pack A`.
-- Exactly 20 ordinary-life events: park/cafe/hospital/alley/rooftop, four each.
-- 2–3 choices each, real downside/cost, at least five remembered-choice acknowledgements, at least six natural references to existing NPCs.
-- Deferred family/romance/roommate canon remains untouched.
-- Relationship Episode Pack A and q4–q8 Quest Pack B are recorded as sequential BACKLOG, not simultaneous READY tasks.
+Exactly one safe new READY task is added to each previously idle 05-07 lane:
 
-### 04 QA/Build — QA-CONTENT-014
-`Content Pack acceptance gate`.
-- Replaces generic QA audit churn with a Pack A-specific repository/runtime manifest.
-- Repository checks cover counts, IDs, supported keys, deferred-policy safety, livelihood costs/anti-spam/save compatibility and exact branch tips.
-- Real JSON parser/Godot/render/Web/browser evidence remains in the single frozen-SHA QA-002 lane.
+### 05 -> ART-PROD-002 — First-hour embodied action candidate pack
+Produce actual visual candidates in the 05 chat for work typing, study/reading and cooking/stirring. Repository write stays report-only during this pass; generated images are explicit chat artifacts, not falsely treated as integrated assets. Handoff must specify sprite cell size/anchor/contact geometry and the later 02/Codex integration needed.
 
-## Active-work ratio
-Current active lanes = 4:
-- player-visible/direct-unblock: GAME-CONTENT-012, UI-FIX-007, NPC-CONTENT-012 = 3/4 = **75%**;
-- QA/integration: QA-CONTENT-014 = 1/4 = **25%**.
+### 06 -> AUDIO-CONTENT-002 — First-hour legally usable sound-source pack
+Curate one rain-home musical bed, office ambience, subway ambience, indoor rain layer and at least eight high-frequency SFX from clearly reusable sources. Record source URL/creator/license/attribution/modification/filename plus trim/loop/fade/use-point mapping. No YouTube/commercial-game ripping and no fake download/playback claim.
 
-This satisfies the wave requirement of at least 60% player-visible work.
+### 07 -> DIRECTOR-CONTENT-002 — First-30-minute mainline implementation map
+Turn the accepted V1.0 direction into one deterministic 0-30 minute sequence: current objective hierarchy, location reasons, NPC return motivation, Pack A onboarding eligibility, livelihood action timing and smallest cross-lane task handoff. No production-source rewrite in this task.
 
-## Backlog transitions this heartbeat
-- GAME-AUDIT-011 -> BACKLOG.
-- NPC-AUDIT-011 -> BACKLOG.
-- QA-013 -> BACKLOG / superseded for now by QA-CONTENT-014.
-- AUDIO-AUDIT-001 -> BACKLOG for Pack A only; V1.0 sound requirement remains.
-- DIRECTOR-001 -> BACKLOG for Pack A only; V1.0 mainline requirement remains.
-- UI-CONTENT-008, NPC-CONTENT-013 and NPC-CONTENT-014 are sequential next tasks, not active concurrently.
+## Active-work ratio after heartbeat
+Seven active execution lanes:
+- player-visible or direct-unblock: 01 Gameplay, 02 Scene/UI, 03 NPC/Content, 05 Art/Animation, 06 Audio/Music, 07 Game Director = **6/7 = 85.7%**;
+- QA/integration: 04 QA = **1/7 = 14.3%**.
 
-## Codex / runtime escalation
+This remains above CONTENT-WAVE-01's 60% requirement and avoids returning to audit-heavy scheduling.
+
+## Conflict check
+Writable scopes are non-overlapping:
+- 01: Office/Cafe activity code + narrow Game handlers + verifier + Gameplay report.
+- 02: DialogUI + dialog verifier + Scene/UI report.
+- 03: `data/events.json` + NPC report.
+- 04: QA report only.
+- 05: Art report only; candidate images live as chat-generation artifacts pending later integration.
+- 06: `assets/audio/licenses/CONTENT_WAVE_01_SOURCES.md` + Audio report.
+- 07: `docs/design/FIRST_30_MIN_MAINLINE_IMPLEMENTATION.md` + Director report.
+
+No task grants 05/06/07 permission to silently edit gameplay/source integration owned by another lane.
+
+## Codex / real-runtime escalation
 `QA-002 — Single frozen Codex/Local runtime package` remains the only final real-execution package.
 
-For CONTENT-WAVE-01 it must eventually add, on one frozen integration SHA:
-- at least one new event triggered in each of park/cafe/hospital/alley/rooftop;
-- both new livelihood actions including daily anti-spam/day rollover;
-- save/load during the new content slice;
-- later, at least two q4–q8 steps and one relationship-stage episode after those packs are accepted;
-- all prior terminal/UI exact-SHA regressions;
-- Web export + browser smoke/runtime evidence.
+Do **not** run/freeze it yet while current player-visible source work is moving. When a candidate is frozen, minimum evidence must include:
+- exact integration SHA + clean/declared worktree;
+- accepted Gameplay terminal regressions + new livelihood verifier;
+- accepted UI verifiers including DialogUI if UI-FIX-007 passes review;
+- Pack A JSON/schema/count/diff gates;
+- actual triggering of new events in each target location;
+- both livelihood actions including once-per-day/day-rollover and save/load;
+- exact-SHA rendered checks for integrated art candidates only after an integration task exists;
+- actual playback/mix checks for audio only after licensed assets and audio integration exist;
+- Web export + real browser smoke/runtime evidence.
 
-No web worker may substitute source inspection for this runtime evidence.
+Web workers must not substitute source inspection for these gates.
 
-## User decisions
-No user decision blocks Pack A. Defaults from the accepted wave plan:
-- Xiaoyu remains relationship-neutral close friend; no romance canon.
-- deferred spouse/child/family-state cases remain untouched.
-- supernatural/dark line remains secondary to ordinary city life.
-- Pack A requires no new external art/audio.
+## Product decisions / boundaries
+No new user decision blocks current work. Keep unresolved:
+- Xiaoyu canon beyond relationship-neutral close friend in this wave;
+- spouse/child/family-state semantics;
+- recurring rent/fixed-expense canon;
+- public Alpha realistic-life vs supernatural marketing emphasis.
 
-Ask the user only if later blocked on Xiaoyu canon, family semantics, recurring rent/fixed expenses as a core survival mechanic, or Alpha marketing emphasis.
+DIRECTOR-001's first-month emphasis is accepted as V1.0 scheduling/product direction, but irreversible mechanics changes still require normal task-level review and do not bypass the above deferred decisions.
 
 ## Integration / release position
 - `main` remains untouched.
-- Current public Pages preview remains older than the multi-agent work.
-- Do not freeze Alpha yet: first integrate and actually play Pack A.
-- After first integrated Pack A build, ask the user only three playtest questions: which location still feels empty, which NPC they want to see again, and whether money/time/health actually forced a choice.
+- Current public Pages preview remains older than multi-agent work.
+- Do not freeze Alpha yet: complete/review first Pack A + livelihood/UI support, obtain first art/audio/director vertical-slice inputs, then form one integration candidate.
+- The first post-integration playtest remains the product gate before Pack B.
 
 ## Idempotency marker
-CONTENT-WAVE-01 has been switched on once, ART-AUDIT-001 has been consumed once, non-blocking audits have been moved out of the active queue, and exactly one active task per lane 01-04 is defined. Do not recreate or duplicate these tasks unless their branch/report state changes.
+This heartbeat consumed the two genuinely new NEEDS_REVIEW reports (AUDIO-AUDIT-001 and DIRECTOR-001), did not re-review already-consumed ART-AUDIT-001, did not invent acceptance for 01/02 branch movement without worker reports, and created exactly one new non-overlapping READY task for each previously idle lane 05-07. Do not recreate these tasks unless their report/branch/board state changes.
