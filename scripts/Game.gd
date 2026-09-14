@@ -85,6 +85,7 @@ const ONBOARDING_OBJECTIVES := {
 	ONBOARDING_SLEEP: {"id": ONBOARDING_SLEEP, "location": "home", "text": "现在：睡一觉，结束来到城市的第一天。"},
 }
 
+# 地点（与 tools/gen_scene.py 的 BUILDINGS / POI 坐标一致；都落在建筑脚下的可走地面）
 const POI_DATA := [
 	{"id": "home", "pos": Vector2(310, 392), "name": "回家", "scene": "rent"},
 	{"id": "store", "pos": Vector2(385, 962), "name": "便利店", "scene": "cafe"},
@@ -96,52 +97,83 @@ const POI_DATA := [
 	{"id": "alley", "pos": Vector2(230, 935), "name": "旧巷口", "scene": "alley"},
 ]
 
+# 玩家状态：由 GameState 作为唯一数据源。
+# 下面这些代理属性暂时保留旧调用方式，避免一次性重写整个 Game.gd；后续模块拆分时直接依赖 game_state。
 var game_state = GameStateScript.new()
 
 var age: int:
-	get: return game_state.age
-	set(value): game_state.age = value
+	get:
+		return game_state.age
+	set(value):
+		game_state.age = value
 var money: int:
-	get: return game_state.money
-	set(value): game_state.money = value
+	get:
+		return game_state.money
+	set(value):
+		game_state.money = value
 var health: int:
-	get: return game_state.health
-	set(value): game_state.health = value
+	get:
+		return game_state.health
+	set(value):
+		game_state.health = value
 var mood: int:
-	get: return game_state.mood
-	set(value): game_state.mood = value
+	get:
+		return game_state.mood
+	set(value):
+		game_state.mood = value
 var skill: int:
-	get: return game_state.skill
-	set(value): game_state.skill = value
+	get:
+		return game_state.skill
+	set(value):
+		game_state.skill = value
 var fullness: int:
-	get: return game_state.fullness
-	set(value): game_state.fullness = value
+	get:
+		return game_state.fullness
+	set(value):
+		game_state.fullness = value
 var energy: int:
-	get: return game_state.energy
-	set(value): game_state.energy = value
+	get:
+		return game_state.energy
+	set(value):
+		game_state.energy = value
 var network: int:
-	get: return game_state.network
-	set(value): game_state.network = value
+	get:
+		return game_state.network
+	set(value):
+		game_state.network = value
 var job: String:
-	get: return game_state.job
-	set(value): game_state.job = value
+	get:
+		return game_state.job
+	set(value):
+		game_state.job = value
 var flags: Dictionary:
-	get: return game_state.flags
-	set(value): game_state.flags = value
+	get:
+		return game_state.flags
+	set(value):
+		game_state.flags = value
 var clues: Array:
-	get: return game_state.clues
-	set(value): game_state.clues = value
+	get:
+		return game_state.clues
+	set(value):
+		game_state.clues = value
 var stage_idx: int:
-	get: return game_state.stage_idx
-	set(value): game_state.stage_idx = value
+	get:
+		return game_state.stage_idx
+	set(value):
+		game_state.stage_idx = value
 var jobless_years: int:
-	get: return game_state.jobless_years
-	set(value): game_state.jobless_years = value
+	get:
+		return game_state.jobless_years
+	set(value):
+		game_state.jobless_years = value
+
 
 var near_target := {}
 var world_manager
 var npc_schedule_sys
+## NPC 关系（好感度/熟悉度）。纯逻辑，不进场景树。
 var npc_relations_sys
+## 主线任务（一次一条，串行推进）。判定与进度在这里，奖励仍然由 Game 发。
 var quest_sys
 var dark_location_sys
 var encounter_sys
@@ -177,19 +209,28 @@ var interact_btn: Button
 var dialog_ui
 var shop_ui
 var toast_label: Label
+## 提示的序号：只有最新一条的定时器能把它藏掉（见 _show_toast 的注释）。
 var _toast_seq: int = 0
+
+# 开局 / 出身
 var start_ui
 var game_started := false
 var origin_open_pending := ""
 var origin: Dictionary = {}
+
+# 事件面板
 var event_ui
+
+# 结局面板
 var ending_ui
+
 var dialog_pending_clue := ""
+## 本次对话结束后要结算关系的 NPC。与线索一样，读完了才算数。
 var dialog_pending_npc := ""
-var dialog_queue: Array = []
-var murmur_shown: Dictionary = {}
+var dialog_queue: Array = []  # 对话队列：当前对话关闭后依次播放
+var murmur_shown: Dictionary = {}  # 需求告急独白每天每种只播一次
 var _last_total_minutes: int = -1
-var need_fraction: float = 0.0
+var need_fraction: float = 0.0  # 不足一小时的消耗先攒着，避免每帧被舍掉
 
 func _ready() -> void:
 	events_sys = EventSystemScript.new()
@@ -209,13 +250,16 @@ func _ready() -> void:
 	weather_sys.name = "WeatherSys"
 	add_child(weather_sys)
 	weather_sys.reset(time_sys)
+
 	y_sort_enabled = true
 	world_manager = WorldManagerScript.new()
 	world_manager.name = "WorldManager"
 	add_child(world_manager)
 	world_manager.build(self, player, POI_DATA, Data.NPCS)
+	# MAP-001：旧的单张世界地图保留为兼容层，但默认隐藏；正式体验使用独立地点场景。
 	world_manager.set_legacy_world_visible(false)
-	if player: player.visible = false
+	if player:
+		player.visible = false
 	location_sys = LocationManagerScript.new()
 	location_sys.name = "LocationSys"
 	add_child(location_sys)
@@ -297,6 +341,8 @@ func _ready() -> void:
 	_setup_ui()
 	_show_start_screen()
 
+# ---------------------------------------------------------------- 地图
+
 func _setup_ui() -> void:
 	ui.layer = 2
 	hud = HUDScript.new()
@@ -305,6 +351,7 @@ func _setup_ui() -> void:
 	hud.load_requested.connect(_load_game)
 	hud.quit_requested.connect(_quit_game)
 	hud.backpack_requested.connect(_open_bag)
+
 	interact_btn = Button.new()
 	interact_btn.name = "InteractBtn"
 	interact_btn.visible = false
@@ -315,6 +362,7 @@ func _setup_ui() -> void:
 	interact_btn.offset_right = 90
 	interact_btn.pressed.connect(_on_interact_pressed)
 	ui.add_child(interact_btn)
+
 	toast_label = Label.new()
 	toast_label.name = "Toast"
 	toast_label.visible = false
@@ -328,9 +376,11 @@ func _setup_ui() -> void:
 	toast_label.add_theme_font_size_override("font_size", 14)
 	toast_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	ui.add_child(toast_label)
+
 	dialog_ui = DialogUIScript.new()
 	dialog_ui.dialog_finished.connect(_on_dialog_finished)
 	ui.add_child(dialog_ui)
+
 	event_ui = EventUIScript.new()
 	event_ui.option_selected.connect(_choose_option)
 	event_ui.continue_requested.connect(_close_event)
@@ -349,38 +399,72 @@ func _setup_ui() -> void:
 	shop_ui.closed.connect(_on_shop_closed)
 	ui.add_child(shop_ui)
 
+
 func _refresh_ui() -> void:
-	if hud and daily_routine: hud.refresh_daily(daily_routine.summary())
-	if hud and inventory: hud.refresh_bag(inventory.total_count())
-	if home_activities: home_activities.rest_detail = _rest_detail_text()
+	if hud and daily_routine:
+		hud.refresh_daily(daily_routine.summary())
+	if hud and inventory:
+		hud.refresh_bag(inventory.total_count())
+	if home_activities:
+		home_activities.rest_detail = _rest_detail_text()
 	if office_activities:
 		var today: int = time_sys.day if time_sys else 0
 		var laozhang_relation: int = 0
-		if npc_relations_sys != null: laozhang_relation = npc_relations_sys.value_of(game_state.relations, "laozhang")
+		if npc_relations_sys != null:
+			laozhang_relation = npc_relations_sys.value_of(game_state.relations, "laozhang")
 		var friend: bool = laozhang_relation >= JobGrowthScript.FRIEND_RELATION
 		var wage: int = JobGrowthScript.wage_of(skill, game_state.raise_steps)
-		var context: Dictionary = {"skill": 0 if _onboarding_active() else skill, "wage": wage, "title": JobGrowthScript.title_of(skill), "can_negotiate": JobGrowthScript.can_negotiate(skill) and not _onboarding_active(), "raised_today": int(game_state.raise_day) == today, "friend": friend, "worked_today": daily_routine != null and daily_routine.is_done("work"), "overtime_today": _livelihood_done_today(OVERTIME_DAY_FLAG), "overtime_pay": _overtime_pay(wage)}
-		if office_activities.context != context: office_activities.sync_context(context)
+		var context: Dictionary = {
+			# 首日不把谈薪门槛推到前台；工资与实际 skill 仍照常结算。
+			"skill": 0 if _onboarding_active() else skill,
+			"wage": wage,
+			"title": JobGrowthScript.title_of(skill),
+			"can_negotiate": JobGrowthScript.can_negotiate(skill) and not _onboarding_active(),
+			"raised_today": int(game_state.raise_day) == today,
+			"friend": friend,
+			"worked_today": daily_routine != null and daily_routine.is_done("work"),
+			"overtime_today": _livelihood_done_today(OVERTIME_DAY_FLAG),
+			"overtime_pay": _overtime_pay(wage),
+		}
+		if office_activities.context != context:
+			office_activities.sync_context(context)
 	if cafe_activities:
-		var cafe_context: Dictionary = {"gig_today": _livelihood_done_today(CAFE_GIG_DAY_FLAG), "gig_pay": CAFE_GIG_PAY, "gig_visible": _cafe_side_gig_available()}
-		if cafe_activities.context != cafe_context: cafe_activities.sync_context(cafe_context)
-	if hud: hud.refresh_skill(skill, JobGrowthScript.title_of(skill))
+		var cafe_context: Dictionary = {
+			"gig_today": _livelihood_done_today(CAFE_GIG_DAY_FLAG),
+			"gig_pay": CAFE_GIG_PAY,
+			"gig_visible": _cafe_side_gig_available(),
+		}
+		if cafe_activities.context != cafe_context:
+			cafe_activities.sync_context(cafe_context)
+	if hud:
+		hud.refresh_skill(skill, JobGrowthScript.title_of(skill))
 	var st: Dictionary = _state()
 	var stage: Dictionary = story_sys.current_stage(st) if story_sys else {}
 	if hud and not stage.is_empty():
+		# q1-q3 在 onboarding 完成前既不 evaluate，也不占前台目标位。
 		var quest_text: String = "" if _onboarding_active() else (quest_sys.objective_text(st) if quest_sys else "")
 		hud.refresh(game_state, str(stage.get("name", "")), str(stage.get("goal", "")), Data.DARK_CLUE_TOTAL, quest_text)
-		if time_sys: hud.refresh_time(time_sys.day, time_sys.get_clock_text(), time_sys.get_period_name())
-		if weather_sys: hud.refresh_weather(weather_sys.get_weather_name())
+		if time_sys:
+			hud.refresh_time(time_sys.day, time_sys.get_clock_text(), time_sys.get_period_name())
+		if weather_sys:
+			hud.refresh_weather(weather_sys.get_weather_name())
+
 	if interact_btn:
 		var busy: bool = (dialog_ui != null and dialog_ui.is_busy()) or (event_ui != null and event_ui.is_busy())
 		interact_btn.visible = (not near_target.is_empty()) and (not busy)
 		if interact_btn.visible:
 			var t: String = near_target["type"]
-			if t == "npc" or t == "interior_npc": interact_btn.text = "和%s说话" % near_target["data"]["name"]
-			elif t == "place": interact_btn.text = "进入%s" % near_target["data"]["name"]
-			elif t == "locked_place": interact_btn.text = "查看%s" % near_target["data"]["name"]
-			else: interact_btn.text = "出门"
+			if t == "npc" or t == "interior_npc":
+				interact_btn.text = "和%s说话" % near_target["data"]["name"]
+			elif t == "place":
+				interact_btn.text = "进入%s" % near_target["data"]["name"]
+			elif t == "locked_place":
+				interact_btn.text = "查看%s" % near_target["data"]["name"]
+			else:
+				interact_btn.text = "出门"
+
+
+# ---------------------------------------------------------------- 开局 / 出身
 
 func _show_start_screen() -> void:
 	game_started = false
@@ -389,43 +473,60 @@ func _show_start_screen() -> void:
 		start_ui.set_load_available(save_sys != null and save_sys.has_save())
 		start_ui.open()
 
+
 func _start_new_onboarding() -> void:
 	flags[ONBOARDING_COMPLETE_FLAG] = false
 	flags[ONBOARDING_OBJECTIVE_FLAG] = ONBOARDING_MEAL
 
+
 func _normalize_onboarding_after_load() -> void:
+	# 老存档不存在 onboarding 键；不要把长期档倒灌回首日。
 	if not flags.has(ONBOARDING_COMPLETE_FLAG) and not flags.has(ONBOARDING_OBJECTIVE_FLAG):
 		flags[ONBOARDING_COMPLETE_FLAG] = true
 		return
-	if not flags.has(ONBOARDING_COMPLETE_FLAG): flags[ONBOARDING_COMPLETE_FLAG] = false
-	if not bool(flags.get(ONBOARDING_COMPLETE_FLAG, false)) and str(flags.get(ONBOARDING_OBJECTIVE_FLAG, "")).is_empty(): flags[ONBOARDING_OBJECTIVE_FLAG] = ONBOARDING_MEAL
+	if not flags.has(ONBOARDING_COMPLETE_FLAG):
+		flags[ONBOARDING_COMPLETE_FLAG] = false
+	if not bool(flags.get(ONBOARDING_COMPLETE_FLAG, false)) and str(flags.get(ONBOARDING_OBJECTIVE_FLAG, "")).is_empty():
+		flags[ONBOARDING_OBJECTIVE_FLAG] = ONBOARDING_MEAL
+
 
 func _onboarding_active() -> bool:
 	return game_started and flags.has(ONBOARDING_COMPLETE_FLAG) and not bool(flags.get(ONBOARDING_COMPLETE_FLAG, false))
 
+
 func _onboarding_objective_id() -> String:
-	if not _onboarding_active(): return ""
+	if not _onboarding_active():
+		return ""
 	var objective_id := str(flags.get(ONBOARDING_OBJECTIVE_FLAG, ONBOARDING_MEAL))
 	return objective_id if ONBOARDING_OBJECTIVES.has(objective_id) else ONBOARDING_MEAL
 
+
+## 01 对外只暴露一个当前 L1 状态；后续 UI 可以消费这个字典，不需要理解整套首日 flags。
 func current_onboarding_objective() -> Dictionary:
 	var objective_id := _onboarding_objective_id()
-	if objective_id.is_empty(): return {}
+	if objective_id.is_empty():
+		return {}
 	return (ONBOARDING_OBJECTIVES[objective_id] as Dictionary).duplicate(true)
+
 
 func _onboarding_hint() -> String:
 	return str(current_onboarding_objective().get("text", ""))
 
+
 func _advance_onboarding(expected: String, next_objective: String) -> bool:
-	if not _onboarding_active() or _onboarding_objective_id() != expected: return false
+	if not _onboarding_active() or _onboarding_objective_id() != expected:
+		return false
 	flags[ONBOARDING_OBJECTIVE_FLAG] = next_objective
 	return true
 
+
 func _complete_onboarding_from_sleep() -> bool:
-	if not _onboarding_active() or _onboarding_objective_id() != ONBOARDING_SLEEP: return false
+	if not _onboarding_active() or _onboarding_objective_id() != ONBOARDING_SLEEP:
+		return false
 	flags[ONBOARDING_COMPLETE_FLAG] = true
 	flags.erase(ONBOARDING_OBJECTIVE_FLAG)
 	return true
+
 
 func _choose_origin(o: Dictionary) -> void:
 	origin = o
@@ -437,58 +538,105 @@ func _choose_origin(o: Dictionary) -> void:
 	_start_new_onboarding()
 	start_ui.close()
 	events_sys.reset_used()
-	if encounter_sys: encounter_sys.reset()
-	if time_sys: time_sys.reset()
-	if weather_sys: weather_sys.reset(time_sys)
-	if npc_schedule_sys: npc_schedule_sys.reset(time_sys, weather_sys)
-	if dark_location_sys: dark_location_sys.reset(time_sys, _state())
+	if encounter_sys:
+		encounter_sys.reset()
+	if time_sys:
+		time_sys.reset()
+	if weather_sys:
+		weather_sys.reset(time_sys)
+	if npc_schedule_sys:
+		npc_schedule_sys.reset(time_sys, weather_sys)
+	if dark_location_sys:
+		dark_location_sys.reset(time_sys, _state())
 	if player:
 		player.position = Vector2(300, 400)
 		player.set_target(Vector2(300, 400))
-	if location_sys: location_sys.reset_new_game()
-	if daily_routine: daily_routine.reset(1)
-	if inventory: inventory.reset()
-	if shop_ui and shop_ui.is_open(): shop_ui.close()
+	if location_sys:
+		location_sys.reset_new_game()
+	if daily_routine:
+		daily_routine.reset(1)
+	if inventory:
+		inventory.reset()
+	if shop_ui and shop_ui.is_open():
+		shop_ui.close()
 	need_fraction = 0.0
 	murmur_shown = {}
 	_last_total_minutes = time_sys.day * 1440 + time_sys.get_minute_of_day() if time_sys != null else -1
 	origin_open_pending = str(o.get("open", ""))
+	# 首日不再让暗线梦与整套系统说明抢首屏；保留资产，onboarding 完成后系统仍可照常使用。
 	var opening_lines: Array = []
-	if not origin_open_pending.is_empty(): opening_lines.append(origin_open_pending)
+	if not origin_open_pending.is_empty():
+		opening_lines.append(origin_open_pending)
 	opening_lines.append(_onboarding_hint())
 	_show_dialog("旁白", opening_lines)
 
+# ---------------------------------------------------------------- 存档
+
 func _quit_game() -> void:
-	if dialog_ui and dialog_ui.is_busy(): _show_toast("请先结束当前对话。"); return
-	if event_ui and event_ui.is_busy(): _show_toast("请先结束当前事件。"); return
+	if dialog_ui and dialog_ui.is_busy():
+		_show_toast("请先结束当前对话。")
+		return
+	if event_ui and event_ui.is_busy():
+		_show_toast("请先结束当前事件。")
+		return
 	get_tree().quit()
 
 func _save_game() -> void:
-	if activity_running: _show_toast("行动完成后即可保存。"); return
-	if save_sys == null or not game_started or game_over: _show_toast("当前没有可以保存的游戏进度。"); return
-	if (dialog_ui and dialog_ui.is_busy()) or (event_ui and event_ui.is_busy()): _show_toast("请先结束当前对话或事件，再保存。"); return
+	if activity_running:
+		_show_toast("行动完成后即可保存。")
+		return
+	if save_sys == null or not game_started or game_over:
+		_show_toast("当前没有可以保存的游戏进度。")
+		return
+	if (dialog_ui and dialog_ui.is_busy()) or (event_ui and event_ui.is_busy()):
+		_show_toast("请先结束当前对话或事件，再保存。")
+		return
 	var result: Dictionary = save_sys.save_game(build_save_payload())
 	_show_toast(str(result.get("message", "存档失败。")))
-	if start_ui: start_ui.set_load_available(save_sys.has_save())
+	if start_ui:
+		start_ui.set_load_available(save_sys.has_save())
+
 
 func build_save_payload() -> Dictionary:
-	return {"game_state": game_state.to_dict(), "time": time_sys.to_save_dict() if time_sys else {}, "weather": weather_sys.to_save_dict() if weather_sys else {}, "events": events_sys.to_save_dict() if events_sys else {}, "encounters": encounter_sys.to_save_dict() if encounter_sys else {}, "world": world_manager.to_save_dict(player) if world_manager else {}, "locations": location_sys.to_save_dict() if location_sys else {}, "daily": daily_routine.to_save_dict() if daily_routine else {}, "inventory": inventory.to_save_dict() if inventory else {}, "origin": origin.duplicate(true)}
+	return {
+		"game_state": game_state.to_dict(),
+		"time": time_sys.to_save_dict() if time_sys else {},
+		"weather": weather_sys.to_save_dict() if weather_sys else {},
+		"events": events_sys.to_save_dict() if events_sys else {},
+		"encounters": encounter_sys.to_save_dict() if encounter_sys else {},
+		"world": world_manager.to_save_dict(player) if world_manager else {},
+		"locations": location_sys.to_save_dict() if location_sys else {},
+		"daily": daily_routine.to_save_dict() if daily_routine else {},
+		"inventory": inventory.to_save_dict() if inventory else {},
+		"origin": origin.duplicate(true),
+	}
+
 
 func apply_save_payload(payload: Dictionary) -> void:
 	game_state.apply_dict(payload.get("game_state", {}))
 	_normalize_onboarding_after_load()
 	var saved_origin = payload.get("origin", {})
 	origin = saved_origin if typeof(saved_origin) == TYPE_DICTIONARY else {}
-	if events_sys: events_sys.apply_save_dict(payload.get("events", {}))
-	if encounter_sys: encounter_sys.apply_save_dict(payload.get("encounters", {}))
-	if time_sys: time_sys.apply_save_dict(payload.get("time", {}))
-	if weather_sys: weather_sys.apply_save_dict(payload.get("weather", {}), time_sys)
-	if world_manager: world_manager.apply_save_dict(payload.get("world", {}), player)
-	if location_sys: location_sys.apply_save_dict(payload.get("locations", {}))
-	if daily_routine: daily_routine.apply_save_dict(payload.get("daily", {}))
-	if inventory: inventory.apply_save_dict(payload.get("inventory", {}))
-	if npc_schedule_sys: npc_schedule_sys.reset(time_sys, weather_sys)
-	if dark_location_sys: dark_location_sys.reset(time_sys, _state())
+	if events_sys:
+		events_sys.apply_save_dict(payload.get("events", {}))
+	if encounter_sys:
+		encounter_sys.apply_save_dict(payload.get("encounters", {}))
+	if time_sys:
+		time_sys.apply_save_dict(payload.get("time", {}))
+	if weather_sys:
+		weather_sys.apply_save_dict(payload.get("weather", {}), time_sys)
+	if world_manager:
+		world_manager.apply_save_dict(payload.get("world", {}), player)
+	if location_sys:
+		location_sys.apply_save_dict(payload.get("locations", {}))
+	if daily_routine:
+		daily_routine.apply_save_dict(payload.get("daily", {}))
+	if inventory:
+		inventory.apply_save_dict(payload.get("inventory", {}))
+	if npc_schedule_sys:
+		npc_schedule_sys.reset(time_sys, weather_sys)
+	if dark_location_sys:
+		dark_location_sys.reset(time_sys, _state())
 	need_fraction = 0.0
 	_last_total_minutes = time_sys.day * 1440 + time_sys.get_minute_of_day() if time_sys != null else -1
 	dialog_queue.clear()
@@ -500,32 +648,58 @@ func apply_save_payload(payload: Dictionary) -> void:
 	game_over = false
 	game_started = true
 
+
 func _load_game() -> void:
-	if activity_running: _show_toast("请等待当前行动完成，再读取存档。"); return
-	if save_sys == null: _show_toast("存档系统尚未初始化。"); return
-	if (dialog_ui and dialog_ui.is_busy()) or (event_ui and event_ui.is_busy()): _show_toast("请先结束当前对话或事件，再读取。"); return
+	if activity_running:
+		_show_toast("请等待当前行动完成，再读取存档。")
+		return
+	if save_sys == null:
+		_show_toast("存档系统尚未初始化。")
+		return
+	if (dialog_ui and dialog_ui.is_busy()) or (event_ui and event_ui.is_busy()):
+		_show_toast("请先结束当前对话或事件，再读取。")
+		return
 	var result: Dictionary = save_sys.load_game()
-	if not bool(result.get("ok", false)): _show_toast(str(result.get("message", "读取失败。"))); return
-	if shop_ui and shop_ui.is_open(): shop_ui.close()
+	if not bool(result.get("ok", false)):
+		_show_toast(str(result.get("message", "读取失败。")))
+		return
+	if shop_ui and shop_ui.is_open():
+		shop_ui.close()
 	apply_save_payload(result.get("payload", {}))
-	if start_ui: start_ui.close()
-	if ending_ui: ending_ui.close()
+	if start_ui:
+		start_ui.close()
+	if ending_ui:
+		ending_ui.close()
 	_refresh_ui()
 	_show_toast("已读取存档。")
 
+
+# ---------------------------------------------------------------- 输入与循环
+
 func _unhandled_input(event: InputEvent) -> void:
-	if not game_started or (location_sys and location_sys.is_active()): return
+	if not game_started:
+		return
+	if location_sys and location_sys.is_active():
+		return
 	var pressed := false
-	if event is InputEventScreenTouch: pressed = event.pressed
-	elif event is InputEventMouseButton: pressed = event.pressed and event.button_index == MOUSE_BUTTON_LEFT
-	if not pressed: return
-	if (dialog_ui and dialog_ui.is_busy()) or (event_ui and event_ui.is_busy()) or (ending_ui and ending_ui.visible): return
+	if event is InputEventScreenTouch:
+		pressed = event.pressed
+	elif event is InputEventMouseButton:
+		pressed = event.pressed and event.button_index == MOUSE_BUTTON_LEFT
+	if not pressed:
+		return
+	if (dialog_ui and dialog_ui.is_busy()) \
+		or (event_ui and event_ui.is_busy()) \
+		or (ending_ui and ending_ui.visible):
+		return
 	var click := get_global_mouse_position()
 	var clicked_place := _poi_at_click(click)
 	if not clicked_place.is_empty():
 		var poi_id := str(clicked_place.get("id", ""))
-		if world_manager and not world_manager.is_poi_interactable(poi_id): _show_toast(world_manager.get_poi_lock_reason(poi_id))
-		else: _enter_place(clicked_place)
+		if world_manager and not world_manager.is_poi_interactable(poi_id):
+			_show_toast(world_manager.get_poi_lock_reason(poi_id))
+		else:
+			_enter_place(clicked_place)
 		return
 	if player and player.has_method("set_target"):
 		player.set_target(click)
@@ -534,20 +708,27 @@ func _unhandled_input(event: InputEvent) -> void:
 			flags["tut_moved"] = true
 			_show_toast("点击地面移动；也可以直接点击发光地点进入。")
 
+
 func _poi_at_click(world_pos: Vector2) -> Dictionary:
 	for poi in POI_DATA:
 		var pos: Vector2 = poi.get("pos", Vector2.ZERO)
-		if world_pos.distance_to(pos) <= 58.0: return poi
+		if world_pos.distance_to(pos) <= 58.0:
+			return poi
 	return {}
 
+
 func _process(delta: float) -> void:
-	if not game_started: return
-	if location_sys and location_sys.is_active(): near_target = {}
-	else: _update_near_target()
+	if not game_started:
+		return
+	if location_sys and location_sys.is_active():
+		near_target = {}
+	else:
+		_update_near_target()
 	_refresh_ui()
 	_check_stage()
 	var ui_busy: bool = (dialog_ui != null and dialog_ui.is_busy()) or (event_ui != null and event_ui.is_busy()) or (ending_ui != null and ending_ui.visible)
-	ui_busy = ui_busy or activity_running or (shop_ui != null and shop_ui.is_open())
+	ui_busy = ui_busy or activity_running
+	ui_busy = ui_busy or (shop_ui != null and shop_ui.is_open())
 	location_sys.input_blocked = ui_busy
 	home_activities.blocked = ui_busy
 	office_activities.blocked = ui_busy
@@ -561,23 +742,38 @@ func _process(delta: float) -> void:
 		time_sys.set_paused(ui_busy)
 		time_sys.tick(delta)
 	_sync_needs_to_time()
+	# GAME-FIX-009：先观察已经结算完的终止状态，再允许任务奖励修改生存数值。
 	if not ui_busy:
-		if _evaluate_terminal_state(): return
+		if _evaluate_terminal_state():
+			return
 		_evaluate_quests()
-	if weather_sys: weather_sys.update(time_sys)
-	if npc_schedule_sys: npc_schedule_sys.apply(time_sys, false, weather_sys)
-	if dark_location_sys and not _onboarding_active(): dark_location_sys.apply(time_sys, _state())
+	if weather_sys:
+		weather_sys.update(time_sys)
+	if npc_schedule_sys:
+		npc_schedule_sys.apply(time_sys, false, weather_sys)
+	# 首日暗线只退到后台，不删除；完成第一晚后原流程自动恢复。
+	if dark_location_sys and not _onboarding_active():
+		dark_location_sys.apply(time_sys, _state())
 	if location_sys:
-		if not _onboarding_active(): location_sys.apply_story_unlocks(_state(), time_sys)
+		if not _onboarding_active():
+			location_sys.apply_story_unlocks(_state(), time_sys)
 		_sync_location_npcs()
-	if world_manager: world_manager.process_visuals(delta, player, time_sys, weather_sys)
+	if world_manager:
+		world_manager.process_visuals(delta, player, time_sys, weather_sys)
+
 
 func _update_near_target() -> void:
-	if not interaction_sys: near_target = {}; return
+	if not interaction_sys:
+		near_target = {}
+		return
 	var result: Dictionary = interaction_sys.detect_near(flags)
 	near_target = result.get("target", {})
 	var tutorial := str(result.get("tutorial", ""))
-	if not tutorial.is_empty(): _show_toast(tutorial)
+	if not tutorial.is_empty():
+		_show_toast(tutorial)
+
+
+# ---------------------------------------------------------------- 分场景地图
 
 func _begin_activity(prompt_label: Label, progress_text: String, feedback_text: String, activity_id: String, anchor: Dictionary = {}) -> void:
 	activity_running = true
@@ -595,6 +791,7 @@ func _begin_activity(prompt_label: Label, progress_text: String, feedback_text: 
 		prompt_label.text = "%s… %d%%" % [progress_text, (step + 1) * 10]
 		await get_tree().create_timer(0.12).timeout
 
+
 func _end_activity() -> void:
 	activity_running = false
 	location_sys.set_activity_feedback("", false)
@@ -610,18 +807,25 @@ func _end_activity() -> void:
 	rooftop_activities.blocked = still_busy
 	_refresh_ui()
 
+
 func _on_home_activity(id: String) -> void:
-	if activity_running or not game_started or game_over or dialog_ui.is_busy() or event_ui.is_busy(): return
-	if location_sys.current_location != "home" or not home_activities.SPOTS.has(id): return
+	if activity_running or not game_started or game_over or dialog_ui.is_busy() or event_ui.is_busy():
+		return
+	if location_sys.current_location != "home" or not home_activities.SPOTS.has(id):
+		return
 	if id == "leave":
 		if _onboarding_active() and _onboarding_objective_id() == ONBOARDING_MEAL:
-			_show_toast("先垫点东西。第一天没必要饿着去。\n" + _onboarding_hint()); return
+			_show_toast("先垫点东西。第一天没必要饿着去。\n" + _onboarding_hint())
+			return
 		if _onboarding_active() and _onboarding_objective_id() == ONBOARDING_SLEEP:
-			_show_toast(_onboarding_hint()); return
+			_show_toast(_onboarding_hint())
+			return
 		location_sys.unlock("subway")
 		location_sys.travel_to("subway")
 		return
-	if id == "meal" and money < 20: _show_toast("食材需要20元，当前余额不足。"); return
+	if id == "meal" and money < 20:
+		_show_toast("食材需要20元，当前余额不足。")
+		return
 	var progress_words := {"rest": "睡意渐浓", "study": "书页翻动", "meal": "锅里咕嘟作响"}
 	var activity_icons := {"rest": "Zzz", "study": "专注中", "meal": "烹饪中"}
 	await _begin_activity(home_activities.prompt, str(progress_words.get(id, "进行中")), str(activity_icons.get(id, "进行中")), id, home_activities.SPOTS[id])
@@ -631,40 +835,65 @@ func _on_home_activity(id: String) -> void:
 	match id:
 		"rest":
 			if _is_sleep_hour():
-				feedback = _sleep_through_night(); slept_through = true
-				if game_over: _end_activity(); return
+				feedback = _sleep_through_night()
+				slept_through = true
+				if game_over:
+					_end_activity()
+					return
 			else:
-				health = mini(100, health + 12); mood = mini(100, mood + 8); energy = mini(100, energy + 50); time_sys.advance_minutes(120)
+				health = mini(100, health + 12)
+				mood = mini(100, mood + 8)
+				energy = mini(100, energy + 50)
+				time_sys.advance_minutes(120)
 				feedback = "你躺下睡了两个钟头，梦里什么都没有。醒来时身体松快了些。（健康+12 心情+8 精力+50）"
 		"study":
-			skill = mini(100, skill + 3); mood = maxi(0, mood - 3); time_sys.advance_minutes(60)
+			skill = mini(100, skill + 3)
+			mood = maxi(0, mood - 3)
+			time_sys.advance_minutes(60)
 			feedback = "台灯下坐了一个小时，书翻过去又翻回来。手艺见长，人有点乏。（技能+3 心情−3）"
 		"meal":
-			money -= 20; health = mini(100, health + 5); fullness = mini(100, fullness + 45); time_sys.advance_minutes(30)
+			money -= 20
+			health = mini(100, health + 5)
+			fullness = mini(100, fullness + 45)
+			time_sys.advance_minutes(30)
 			feedback = "一个人也要好好吃饭。热汤下肚，身上暖了起来。（−20元 健康+5 饱食+45）"
 			onboarding_advanced = _advance_onboarding(ONBOARDING_MEAL, ONBOARDING_SUBWAY)
 	if daily_routine and not slept_through:
-		if id == "meal": daily_routine.complete("meal"); _notify_quest("meal_cooked")
-		elif id == "rest": daily_routine.complete("sleep")
+		if id == "meal":
+			daily_routine.complete("meal")
+			_notify_quest("meal_cooked")
+		elif id == "rest":
+			daily_routine.complete("sleep")
 	_end_activity()
-	if onboarding_advanced: feedback += "\n" + _onboarding_hint()
+	if onboarding_advanced:
+		feedback += "\n" + _onboarding_hint()
 	_show_toast(feedback)
 
+
+# ---------------------------------------------------------------- 过夜
+
 func _is_sleep_hour() -> bool:
-	if time_sys == null: return false
+	if time_sys == null:
+		return false
 	var minute: int = time_sys.get_minute_of_day()
 	return minute >= 20 * 60 or minute < 5 * 60
 
+
 func _sleep_minutes_to_morning() -> int:
-	if time_sys == null: return 0
+	if time_sys == null:
+		return 0
 	var minute: int = time_sys.get_minute_of_day()
 	var wake: int = 7 * 60 + 30
-	if minute < 5 * 60: return wake - minute
+	if minute < 5 * 60:
+		return wake - minute
 	return (24 * 60 - minute) + wake
 
+
 func _rest_detail_text() -> String:
-	if _is_sleep_hour(): return "睡到明早 7:30 · 跨天结算"
+	if _is_sleep_hour():
+		return "睡到明早 7:30 · 跨天结算"
 	return "2小时 · 健康+12 心情+8 精力+50"
+
 
 func _sleep_through_night() -> String:
 	var minutes: int = _sleep_minutes_to_morning()
@@ -672,460 +901,975 @@ func _sleep_through_night() -> String:
 	if daily_routine:
 		daily_routine.complete("sleep")
 		yesterday = daily_routine.summary()
-	if time_sys: time_sys.advance_minutes(minutes)
+	if time_sys:
+		time_sys.advance_minutes(minutes)
 	_sync_needs_to_time()
-	if _evaluate_terminal_state(): return ""
-	health = mini(100, health + 12); mood = mini(100, mood + 8); energy = 100
+	# GAME-FIX-007：终局必须在睡眠恢复之前观察。
+	if _evaluate_terminal_state():
+		return ""
+	health = mini(100, health + 12)
+	mood = mini(100, mood + 8)
+	energy = 100
+	# 只有已经走到“第一晚”目标的成功整夜睡眠才解除 onboarding；单纯 day rollover 不算。
 	_complete_onboarding_from_sleep()
 	var day_now: int = time_sys.day if time_sys != null else 0
 	var wake_text: String = time_sys.get_clock_text() if time_sys != null else "07:30"
-	return "你把自己扔到床上，灯也没关。再睁眼是第 %d 天的早上 %s，雨还在下。\n昨天：%s\n（睡了 %.1f 小时 · 精力回满 健康+12 心情+8）" % [day_now, wake_text, yesterday, float(minutes) / 60.0]
+	return "你把自己扔到床上，灯也没关。再睁眼是第 %d 天的早上 %s，雨还在下。\n昨天：%s\n（睡了 %.1f 小时 · 精力回满 健康+12 心情+8）" % [
+		day_now, wake_text, yesterday, float(minutes) / 60.0,
+	]
+
 
 func _livelihood_done_today(flag_key: String) -> bool:
-	if time_sys == null: return false
+	if time_sys == null:
+		return false
 	return int(flags.get(flag_key, -1)) == time_sys.day
-func _overtime_pay(wage: int) -> int: return maxi(1, int(round(float(wage) * 0.60)))
+
+
+func _overtime_pay(wage: int) -> int:
+	return maxi(1, int(round(float(wage) * 0.60)))
+
+
 func _settle_livelihood_time(minutes: int) -> bool:
-	if time_sys: time_sys.advance_minutes(minutes)
+	if time_sys:
+		time_sys.advance_minutes(minutes)
 	_sync_needs_to_time()
 	return _evaluate_terminal_state()
 
+
 func _on_office_activity(id: String) -> void:
-	if activity_running or not game_started or game_over or dialog_ui.is_busy() or event_ui.is_busy(): return
-	if location_sys.current_location != "office" or not office_activities.SPOTS.has(id): return
+	if activity_running or not game_started or game_over or dialog_ui.is_busy() or event_ui.is_busy():
+		return
+	if location_sys.current_location != "office" or not office_activities.SPOTS.has(id):
+		return
 	if _onboarding_active():
-		if id == "work" and _onboarding_objective_id() != ONBOARDING_WORK: _show_toast(_onboarding_hint()); return
-		if id == "negotiate": _show_toast("第一天先把眼前的班上完。谈薪以后再说。\n" + _onboarding_hint()); return
-	if id == "negotiate": await _do_negotiate(); return
-	if id == "overtime": await _do_overtime(); return
+		if id == "work" and _onboarding_objective_id() != ONBOARDING_WORK:
+			_show_toast(_onboarding_hint())
+			return
+		if id == "negotiate":
+			_show_toast("第一天先把眼前的班上完。谈薪以后再说。\n" + _onboarding_hint())
+			return
+	if id == "negotiate":
+		await _do_negotiate()
+		return
+	if id == "overtime":
+		await _do_overtime()
+		return
 	await _do_work_shift()
+
 
 func _do_work_shift() -> void:
 	var wage: int = JobGrowthScript.wage_of(skill, game_state.raise_steps)
 	await _begin_activity(office_activities.prompt, "键盘敲个不停", "工作中", "work")
-	money += wage; health = maxi(0, health - 6); mood = maxi(0, mood - 4); time_sys.advance_minutes(240)
+	money += wage
+	health = maxi(0, health - 6)
+	mood = maxi(0, mood - 4)
+	time_sys.advance_minutes(240)
 	var growth: Dictionary = JobGrowthScript.gain_shift(skill, game_state.work_exp)
-	skill = int(growth["skill"]); game_state.work_exp = int(growth["exp"])
-	if daily_routine: daily_routine.complete("work")
+	skill = int(growth["skill"])
+	game_state.work_exp = int(growth["exp"])
+	if daily_routine:
+		daily_routine.complete("work")
 	var onboarding_advanced := _advance_onboarding(ONBOARDING_WORK, ONBOARDING_STORE)
 	_notify_quest("work_shift")
 	_end_activity()
 	var feedback := "你把一整天交给了格子间。下班时雨还在下，手机里多了 %d 块。身体发沉，话也不想说。（工资+%d 健康−6 心情−4，耗时4小时）%s" % [wage, wage, _work_growth_line(growth)]
-	if onboarding_advanced: feedback += "\n" + _onboarding_hint()
+	if onboarding_advanced:
+		feedback += "\n" + _onboarding_hint()
 	_show_toast(feedback)
+
 
 func _do_overtime() -> void:
 	var today: int = time_sys.day if time_sys else 0
-	if daily_routine == null or not daily_routine.is_done("work"): _show_toast("先把今天正常的班上完，再谈加班。"); return
-	if _livelihood_done_today(OVERTIME_DAY_FLAG): _show_toast("今天已经加过班了。再熬下去，赚到的钱也补不回来。"); return
+	if daily_routine == null or not daily_routine.is_done("work"):
+		_show_toast("先把今天正常的班上完，再谈加班。")
+		return
+	if _livelihood_done_today(OVERTIME_DAY_FLAG):
+		_show_toast("今天已经加过班了。再熬下去，赚到的钱也补不回来。")
+		return
 	var wage: int = JobGrowthScript.wage_of(skill, game_state.raise_steps)
 	var pay: int = _overtime_pay(wage)
 	await _begin_activity(office_activities.prompt, "屏幕上的表格还没关", "加班中", "overtime", office_activities.SPOTS["overtime"])
-	flags[OVERTIME_DAY_FLAG] = today; money += pay; health = maxi(0, health - OVERTIME_HEALTH_COST); mood = maxi(0, mood - OVERTIME_MOOD_COST)
-	if _settle_livelihood_time(OVERTIME_MINUTES): _end_activity(); return
-	_end_activity(); _show_toast("办公室只剩空调声。你又坐了两个小时，把明天的活提前做掉一截。（加班费+%d 健康−%d 心情−%d，耗时2小时）" % [pay, OVERTIME_HEALTH_COST, OVERTIME_MOOD_COST])
+	flags[OVERTIME_DAY_FLAG] = today
+	money += pay
+	health = maxi(0, health - OVERTIME_HEALTH_COST)
+	mood = maxi(0, mood - OVERTIME_MOOD_COST)
+	if _settle_livelihood_time(OVERTIME_MINUTES):
+		_end_activity()
+		return
+	_end_activity()
+	_show_toast("办公室只剩空调声。你又坐了两个小时，把明天的活提前做掉一截。（加班费+%d 健康−%d 心情−%d，耗时2小时）" % [pay, OVERTIME_HEALTH_COST, OVERTIME_MOOD_COST])
+
 
 func _work_growth_line(growth: Dictionary) -> String:
-	if bool(growth.get("tier_up", false)): return "手上的活终于有了章法——你算得上「%s」了。（时薪 %d）" % [str(growth["tier_title"]), JobGrowthScript.wage_of(skill, game_state.raise_steps)]
-	if bool(growth.get("leveled", false)): return "活儿还是这些活儿，你今天少改了两遍。（技能 %d/%d）" % [skill, JobGrowthScript.MAX_SKILL]
+	if bool(growth.get("tier_up", false)):
+		return "手上的活终于有了章法——你算得上「%s」了。（时薪 %d）" % [
+			str(growth["tier_title"]), JobGrowthScript.wage_of(skill, game_state.raise_steps),
+		]
+	if bool(growth.get("leveled", false)):
+		return "活儿还是这些活儿，你做得比上个月快了。（技能 %d/%d）" % [skill, JobGrowthScript.MAX_SKILL]
 	return "同样的报表，你今天少改了两遍。"
+
 
 func _do_negotiate() -> void:
 	var today: int = time_sys.day if time_sys else 0
-	if not JobGrowthScript.can_negotiate(skill): _show_toast("话到嘴边又咽了回去——手上的活还不够硬。（谈薪要技能 %d，你现在 %d）" % [JobGrowthScript.NEGOTIATE_SKILL, skill]); return
-	if int(game_state.raise_day) == today: _show_toast("今天已经找过主管了。再进去一次，就不叫争取了。"); return
-	if int(game_state.raise_steps) >= JobGrowthScript.MAX_RAISES: _show_toast("你的岗位工资已经到顶了。剩下的路，不在这一间办公室里。"); return
+	if not JobGrowthScript.can_negotiate(skill):
+		_show_toast("话到嘴边又咽了回去——手上的活还不够硬。（谈薪要技能 %d，你现在 %d）" % [
+			JobGrowthScript.NEGOTIATE_SKILL, skill,
+		])
+		return
+	if int(game_state.raise_day) == today:
+		_show_toast("今天已经找过主管了。再进去一次，就不叫争取了。")
+		return
+	if int(game_state.raise_steps) >= JobGrowthScript.MAX_RAISES:
+		_show_toast("你的岗位工资已经到顶了。剩下的路，不在这一间办公室里。")
+		return
 	game_state.raise_day = today
 	await _begin_activity(office_activities.prompt, "你在主管门口站了一会儿", "在门口", "negotiate")
-	var relation: int = npc_relations_sys.value_of(game_state.relations, "laozhang") if npc_relations_sys != null else 0
+	var relation: int = 0
+	if npc_relations_sys != null:
+		relation = npc_relations_sys.value_of(game_state.relations, "laozhang")
 	var result: Dictionary = JobGrowthScript.negotiate(skill, network, relation)
 	var feedback: String
 	if bool(result["ok"]):
-		game_state.raise_steps = mini(JobGrowthScript.MAX_RAISES, int(game_state.raise_steps) + 1); mood = mini(100, mood + 6)
-		feedback = "主管翻完你的考核表，沉默了一会儿，说「下个月起调一下」。（岗位工资+%d，现在 %d；心情+6）" % [JobGrowthScript.RAISE_BONUS, JobGrowthScript.wage_of(skill, game_state.raise_steps)]
-		if bool(result["friend"]): feedback += "出门的时候老张在走廊抽烟，冲你点了点头。"
+		game_state.raise_steps = mini(JobGrowthScript.MAX_RAISES, int(game_state.raise_steps) + 1)
+		mood = mini(100, mood + 6)
+		feedback = "主管翻完你的考核表，沉默了一会儿，说「下个月起调一下」。（岗位工资+%d，现在 %d；心情+6）" % [
+			JobGrowthScript.RAISE_BONUS, JobGrowthScript.wage_of(skill, game_state.raise_steps),
+		]
+		if bool(result["friend"]):
+			feedback += "出门的时候老张在走廊抽烟，冲你点了点头。"
 	else:
-		mood = maxi(0, mood - 6); feedback = "主管头也没抬：「再攒攒。」你站了两秒，说了声好。（心情−6）"
-		feedback += "老张后来替你说了一句，但这次没顶用。" if bool(result["friend"]) else "你想起老张说过，会干活的不如会说话的。"
+		mood = maxi(0, mood - 6)
+		feedback = "主管头也没抬：「再攒攒。」你站了两秒，说了声好。（心情−6）"
+		if bool(result["friend"]):
+			feedback += "老张后来替你说了一句，但这次没顶用。"
+		else:
+			feedback += "你想起老张说过，会干活的不如会说话的。"
 	time_sys.advance_minutes(JobGrowthScript.NEGOTIATE_MINUTES)
-	_end_activity(); _show_toast(feedback)
+	_end_activity()
+	_show_toast(feedback)
+
+
+# ---------------------------------------------------------------- 便利店与背包
 
 func _on_store_activity(id: String) -> void:
-	if activity_running or not game_started or game_over or dialog_ui.is_busy() or event_ui.is_busy(): return
-	if location_sys.current_location != "store" or not store_activities.SPOTS.has(id): return
-	if id == "shop": _open_shop()
+	if activity_running or not game_started or game_over or dialog_ui.is_busy() or event_ui.is_busy():
+		return
+	if location_sys.current_location != "store" or not store_activities.SPOTS.has(id):
+		return
+	if id == "shop":
+		_open_shop()
+
+
+# ---------------------------------------------------------------- 公园
 
 func _on_park_activity(id: String) -> void:
-	if activity_running or not game_started or game_over or dialog_ui.is_busy() or event_ui.is_busy(): return
-	if location_sys.current_location != "park" or not park_activities.SPOTS.has(id): return
-	var feedback := ""
+	if activity_running or not game_started or game_over or dialog_ui.is_busy() or event_ui.is_busy():
+		return
+	if location_sys.current_location != "park" or not park_activities.SPOTS.has(id):
+		return
+	var feedback: String = ""
 	match id:
-		"bench": await _begin_activity(park_activities.prompt, "你在长椅上坐了下来", "发呆中", "bench"); energy = mini(100, energy + 20); mood = mini(100, mood + 5); time_sys.advance_minutes(30); feedback = "长椅是湿的，你垫了下手还是坐了。雨声把脑子里的杂音盖掉了一半。（精力+20 心情+5，耗时30分钟）"
-		"pond": await _begin_activity(park_activities.prompt, "你看着水面上的圈", "看雨中", "pond"); mood = mini(100, mood + 8); time_sys.advance_minutes(20); feedback = "池塘边的石栏被雨洗得发亮。你看了会儿水面的圈。（心情+8，耗时20分钟）"
-	_end_activity(); _show_toast(feedback)
+		"bench":
+			await _begin_activity(park_activities.prompt, "你在长椅上坐了下来", "发呆中", "bench")
+			energy = mini(100, energy + 20)
+			mood = mini(100, mood + 5)
+			time_sys.advance_minutes(30)
+			feedback = "长椅是湿的，你垫了下手还是坐了。雨声把脑子里的杂音盖掉了一半。（精力+20 心情+5，耗时30分钟）"
+		"pond":
+			await _begin_activity(park_activities.prompt, "你看着水面上的圈", "看雨中", "pond")
+			mood = mini(100, mood + 8)
+			time_sys.advance_minutes(20)
+			feedback = "池塘边的石栏被雨洗得发亮。你看了会儿水面的圈。（心情+8，耗时20分钟）"
+	_end_activity()
+	_show_toast(feedback)
+
 
 func _on_cafe_activity(id: String) -> void:
-	if activity_running or not game_started or game_over or dialog_ui.is_busy() or event_ui.is_busy(): return
-	if location_sys.current_location != "cafe" or not cafe_activities.SPOTS.has(id): return
-	if id == "coffee" and money < 15: _show_toast("一杯咖啡15元，当前余额不足。"); return
-	if id == "side_gig": await _do_cafe_side_gig(); return
-	var feedback := ""
+	if activity_running or not game_started or game_over or dialog_ui.is_busy() or event_ui.is_busy():
+		return
+	if location_sys.current_location != "cafe" or not cafe_activities.SPOTS.has(id):
+		return
+	if id == "coffee" and money < 15:
+		_show_toast("一杯咖啡15元，当前余额不足。")
+		return
+	if id == "side_gig":
+		await _do_cafe_side_gig()
+		return
+	var feedback: String = ""
 	match id:
-		"coffee": await _begin_activity(cafe_activities.prompt, "咖啡机的蒸汽声", "冲泡中", "coffee"); money -= 15; energy = mini(100, energy + 15); mood = mini(100, mood + 6); time_sys.advance_minutes(30); feedback = "靠窗的位置看得到雨。咖啡是烫的，你捧着杯子没说话，觉得缓过来一点。（−15元 精力+15 心情+6，耗时30分钟）"
-		"idle": await _begin_activity(cafe_activities.prompt, "雨点敲着玻璃", "发呆中", "idle"); mood = mini(100, mood + 8); time_sys.advance_minutes(20); feedback = "你对着一桌子的烛光坐了二十分钟，谁的消息也没回。有些累是闲下来的那一刻才追上你的。（心情+8，耗时20分钟）"
-	_end_activity(); _show_toast(feedback)
+		"coffee":
+			await _begin_activity(cafe_activities.prompt, "咖啡机的蒸汽声", "冲泡中", "coffee")
+			money -= 15
+			energy = mini(100, energy + 15)
+			mood = mini(100, mood + 6)
+			time_sys.advance_minutes(30)
+			feedback = "靠窗的位置看得到雨。咖啡是烫的，你捧着杯子没说话，觉得缓过来一点。（−15元 精力+15 心情+6，耗时30分钟）"
+		"idle":
+			await _begin_activity(cafe_activities.prompt, "雨点敲着玻璃", "发呆中", "idle")
+			mood = mini(100, mood + 8)
+			time_sys.advance_minutes(20)
+			feedback = "你对着一桌子的烛光坐了二十分钟，谁的消息也没回。有些累是闲下来的那一刻才追上你的。（心情+8，耗时20分钟）"
+	_end_activity()
+	_show_toast(feedback)
+
 
 func _cafe_side_gig_available() -> bool:
 	return time_sys != null and time_sys.day >= 2 and not _onboarding_active()
+
+
 func _do_cafe_side_gig() -> void:
-	if not _cafe_side_gig_available(): _show_toast("第一天先把自己的生活安顿下来。临时帮工以后再说。"); return
+	if not _cafe_side_gig_available():
+		_show_toast("第一天先把自己的生活安顿下来。临时帮工以后再说。")
+		return
 	var today: int = time_sys.day if time_sys else 0
-	if _livelihood_done_today(CAFE_GIG_DAY_FLAG): _show_toast("老板娘摆摆手：今天够了，明天真缺人再叫你。"); return
+	if _livelihood_done_today(CAFE_GIG_DAY_FLAG):
+		_show_toast("老板娘摆摆手：今天够了，明天真缺人再叫你。")
+		return
 	await _begin_activity(cafe_activities.prompt, "杯子一只接一只地洗", "临时帮工", "side_gig", cafe_activities.SPOTS["side_gig"])
-	flags[CAFE_GIG_DAY_FLAG] = today; money += CAFE_GIG_PAY; health = maxi(0, health - CAFE_GIG_HEALTH_COST); mood = maxi(0, mood - CAFE_GIG_MOOD_COST)
-	if _settle_livelihood_time(CAFE_GIG_MINUTES): _end_activity(); return
-	_end_activity(); _show_toast("晚高峰缺了个人，你在吧台后顶了九十分钟。围裙不是你的，手上的咖啡味倒是真的。（工钱+%d 健康−%d 心情−%d，耗时90分钟）" % [CAFE_GIG_PAY, CAFE_GIG_HEALTH_COST, CAFE_GIG_MOOD_COST])
+	flags[CAFE_GIG_DAY_FLAG] = today
+	money += CAFE_GIG_PAY
+	health = maxi(0, health - CAFE_GIG_HEALTH_COST)
+	mood = maxi(0, mood - CAFE_GIG_MOOD_COST)
+	if _settle_livelihood_time(CAFE_GIG_MINUTES):
+		_end_activity()
+		return
+	_end_activity()
+	_show_toast("晚高峰缺了个人，你在吧台后顶了九十分钟。围裙不是你的，手上的咖啡味倒是真的。（工钱+%d 健康−%d 心情−%d，耗时90分钟）" % [CAFE_GIG_PAY, CAFE_GIG_HEALTH_COST, CAFE_GIG_MOOD_COST])
+
 
 func _on_hospital_activity(id: String) -> void:
-	if activity_running or not game_started or game_over or dialog_ui.is_busy() or event_ui.is_busy(): return
-	if location_sys.current_location != "hospital" or not hospital_activities.SPOTS.has(id): return
-	if id == "clinic" and money < 50: _show_toast("挂号加拿药要50元，当前余额不足。"); return
-	var feedback := ""
+	if activity_running or not game_started or game_over or dialog_ui.is_busy() or event_ui.is_busy():
+		return
+	if location_sys.current_location != "hospital" or not hospital_activities.SPOTS.has(id):
+		return
+	if id == "clinic" and money < 50:
+		_show_toast("挂号加拿药要50元，当前余额不足。")
+		return
+	var feedback: String = ""
 	match id:
-		"clinic": await _begin_activity(hospital_activities.prompt, "医生在写病历", "问诊中", "clinic"); money -= 50; health = mini(100, health + 25); time_sys.advance_minutes(60); feedback = "验了血，听了肺，医生说没大毛病，开了一周的药。走出诊室时你忽然觉得，能嫌医院冷的人其实是有福的。（−50元 健康+25，耗时60分钟）"
-		"bench": await _begin_activity(hospital_activities.prompt, "走廊的灯白得发凉", "候诊中", "bench"); mood = mini(100, mood + 5); time_sys.advance_minutes(15); feedback = "你在候诊椅上坐了一会儿。护士推着车走过，喊到的名字都不是你的。这样想想，好像也值得高兴。（心情+5，耗时15分钟）"
-	_end_activity(); _show_toast(feedback)
+		"clinic":
+			await _begin_activity(hospital_activities.prompt, "医生在写病历", "问诊中", "clinic")
+			money -= 50
+			health = mini(100, health + 25)
+			time_sys.advance_minutes(60)
+			feedback = "验了血，听了肺，医生说没大毛病，开了一周的药。走出诊室时你忽然觉得，能嫌医院冷的人其实是有福的。（−50元 健康+25，耗时60分钟）"
+		"bench":
+			await _begin_activity(hospital_activities.prompt, "走廊的灯白得发凉", "候诊中", "bench")
+			mood = mini(100, mood + 5)
+			time_sys.advance_minutes(15)
+			feedback = "你在候诊椅上坐了一会儿。护士推着车走过，喊到的名字都不是你的。这样想想，好像也值得高兴。（心情+5，耗时15分钟）"
+	_end_activity()
+	_show_toast(feedback)
+
 
 func _on_alley_activity(id: String) -> void:
-	if activity_running or not game_started or game_over or dialog_ui.is_busy() or event_ui.is_busy(): return
-	if location_sys.current_location != "alley" or not alley_activities.SPOTS.has(id): return
-	if id == "shrine" and money < 5: _show_toast("一炷香5元，当前余额不足。"); return
-	var feedback := ""
+	if activity_running or not game_started or game_over or dialog_ui.is_busy() or event_ui.is_busy():
+		return
+	if location_sys.current_location != "alley" or not alley_activities.SPOTS.has(id):
+		return
+	if id == "shrine" and money < 5:
+		_show_toast("一炷香5元，当前余额不足。")
+		return
+	var feedback: String = ""
 	match id:
-		"shrine": await _begin_activity(alley_activities.prompt, "香灰簌簌地落", "上香中", "shrine"); money -= 5; mood = mini(100, mood + 8); time_sys.advance_minutes(15); feedback = "你点了一炷香插进炉里，没许愿，就是站了一会儿。火光在雨里晃，心里那点堵着的东西好像松了半寸。（−5元 心情+8，耗时15分钟）"
-		"door": await _begin_activity(alley_activities.prompt, "门缝里透出灯光", "歇脚中", "door"); mood = mini(100, mood + 6); time_sys.advance_minutes(20); feedback = "这扇门总亮着灯，你从没见谁进出。你在台阶下站了二十分钟，猜里面的日子是什么样的，然后回去继续过自己的。（心情+6，耗时20分钟）"
-	_end_activity(); _show_toast(feedback)
+		"shrine":
+			await _begin_activity(alley_activities.prompt, "香灰簌簌地落", "上香中", "shrine")
+			money -= 5
+			mood = mini(100, mood + 8)
+			time_sys.advance_minutes(15)
+			feedback = "你点了一炷香插进炉里，没许愿，就是站了一会儿。火光在雨里晃，心里那点堵着的东西好像松了半寸。（−5元 心情+8，耗时15分钟）"
+		"door":
+			await _begin_activity(alley_activities.prompt, "门缝里透出灯光", "歇脚中", "door")
+			mood = mini(100, mood + 6)
+			time_sys.advance_minutes(20)
+			feedback = "这扇门总亮着灯，你从没见谁进出。你在台阶下站了二十分钟，猜里面的日子是什么样的，然后回去继续过自己的。（心情+6，耗时20分钟）"
+	_end_activity()
+	_show_toast(feedback)
+
 
 func _on_rooftop_activity(id: String) -> void:
-	if activity_running or not game_started or game_over or dialog_ui.is_busy() or event_ui.is_busy(): return
-	if location_sys.current_location != "rooftop" or not rooftop_activities.SPOTS.has(id): return
-	var feedback := ""
+	if activity_running or not game_started or game_over or dialog_ui.is_busy() or event_ui.is_busy():
+		return
+	if location_sys.current_location != "rooftop" or not rooftop_activities.SPOTS.has(id):
+		return
+	var feedback: String = ""
 	match id:
-		"ledge": await _begin_activity(rooftop_activities.prompt, "城市在脚下亮着", "看夜景", "ledge"); mood = mini(100, mood + 10); time_sys.advance_minutes(25); feedback = "你在栏杆边站了二十五分钟。楼下是别人的人生，一扇一扇亮着；从这里看，连烦恼都显得小了一圈。（心情+10，耗时25分钟）"
-		"bench": await _begin_activity(rooftop_activities.prompt, "风把雨丝吹斜", "吹风中", "bench"); mood = mini(100, mood + 8); energy = mini(100, energy + 5); time_sys.advance_minutes(20); feedback = "天台的长椅没人抢。你坐下来吹了吹风，什么也没想，肩膀自己松了下来。（心情+8 精力+5，耗时20分钟）"
-	_end_activity(); _show_toast(feedback)
+		"ledge":
+			await _begin_activity(rooftop_activities.prompt, "城市在脚下亮着", "看夜景", "ledge")
+			mood = mini(100, mood + 10)
+			time_sys.advance_minutes(25)
+			feedback = "你在栏杆边站了二十五分钟。楼下是别人的人生，一扇一扇亮着；从这里看，连烦恼都显得小了一圈。（心情+10，耗时25分钟）"
+		"bench":
+			await _begin_activity(rooftop_activities.prompt, "风把雨丝吹斜", "吹风中", "bench")
+			mood = mini(100, mood + 8)
+			energy = mini(100, energy + 5)
+			time_sys.advance_minutes(20)
+			feedback = "天台的长椅没人抢。你坐下来吹了吹风，什么也没想，肩膀自己松了下来。（心情+8 精力+5，耗时20分钟）"
+	_end_activity()
+	_show_toast(feedback)
+
 
 func _open_shop() -> void:
-	if shop_ui != null: shop_ui.open_buy(money, inventory)
+	if shop_ui == null:
+		return
+	shop_ui.open_buy(money, inventory)
+
+
 func _open_bag() -> void:
-	if shop_ui == null or not game_started or game_over: return
-	if activity_running: _show_toast("请等待当前行动完成，再打开背包。"); return
-	if (dialog_ui and dialog_ui.is_busy()) or (event_ui and event_ui.is_busy()): _show_toast("请先结束当前对话或事件。"); return
+	if shop_ui == null or not game_started or game_over:
+		return
+	if activity_running:
+		_show_toast("请等待当前行动完成，再打开背包。")
+		return
+	if (dialog_ui and dialog_ui.is_busy()) or (event_ui and event_ui.is_busy()):
+		_show_toast("请先结束当前对话或事件。")
+		return
 	shop_ui.open_bag(money, inventory)
-func _on_shop_closed() -> void: _refresh_ui()
-func _on_shop_buy(item_id: String) -> void:
-	if inventory == null or not InventoryScript.ITEMS.has(item_id): return
-	var price: int = InventoryScript.price_of(item_id)
-	if money < price: shop_ui.set_status("你把口袋翻了个底朝天，还差 %d 元。这一样先放回去了。" % (price - money)); return
-	money -= price; inventory.add(item_id, 1); _notify_quest("store_buy")
-	shop_ui.refresh(money, inventory)
-	shop_ui.set_status("你把%s放上收银台。扫码的滴声很轻，塑料袋在手里晃了一下。（−%d元）" % [InventoryScript.item_name(item_id), price])
+
+
+func _on_shop_closed() -> void:
 	_refresh_ui()
-func _on_shop_use(item_id: String) -> void:
-	if game_over or inventory == null or not InventoryScript.ITEMS.has(item_id) or not inventory.has(item_id): return
+
+
+func _on_shop_buy(item_id: String) -> void:
+	if inventory == null or not InventoryScript.ITEMS.has(item_id):
+		return
+	var price: int = InventoryScript.price_of(item_id)
+	if money < price:
+		shop_ui.set_status("你把口袋翻了个底朝天，还差 %d 元。这一样先放回去了。" % (price - money))
+		return
+	money -= price
+	inventory.add(item_id, 1)
 	var effects: Dictionary = InventoryScript.ITEMS[item_id].get("effects", {})
-	if not inventory.remove(item_id, 1): return
+	var onboarding_advanced := false
+	if int(effects.get("fullness", 0)) >= MEAL_FULLNESS:
+		onboarding_advanced = _advance_onboarding(ONBOARDING_STORE, ONBOARDING_HOME)
+	_notify_quest("store_buy")
+	shop_ui.refresh(money, inventory)
+	var status := "你把%s放上收银台。扫码的滴声很轻，塑料袋在手里晃了一下。（−%d元）" % [
+		InventoryScript.item_name(item_id), price,
+	]
+	if onboarding_advanced:
+		status += "\n" + _onboarding_hint()
+	shop_ui.set_status(status)
+	_refresh_ui()
+
+
+func _on_shop_use(item_id: String) -> void:
+	if game_over or inventory == null or not InventoryScript.ITEMS.has(item_id) or not inventory.has(item_id):
+		return
+	var effects: Dictionary = InventoryScript.ITEMS[item_id].get("effects", {})
+	if not inventory.remove(item_id, 1):
+		return
 	for key in effects:
 		var delta: int = int(effects[key])
 		match str(key):
-			"fullness": fullness = clampi(fullness + delta, 0, 100)
-			"energy": energy = clampi(energy + delta, 0, 100)
-			"health": health = clampi(health + delta, 0, 100)
-			"mood": mood = clampi(mood + delta, 0, 100)
-			"skill": skill = clampi(skill + delta, 0, 100)
+			"fullness":
+				fullness = clampi(fullness + delta, 0, 100)
+			"energy":
+				energy = clampi(energy + delta, 0, 100)
+			"health":
+				health = clampi(health + delta, 0, 100)
+			"mood":
+				mood = clampi(mood + delta, 0, 100)
+			"skill":
+				skill = clampi(skill + delta, 0, 100)
 	var minutes: int = InventoryScript.minutes_of(item_id)
-	if time_sys: time_sys.advance_minutes(minutes)
+	if time_sys:
+		time_sys.advance_minutes(minutes)
 	_sync_needs_to_time()
 	if _evaluate_terminal_state():
-		if shop_ui and shop_ui.is_open(): shop_ui.close()
-		_refresh_ui(); return
-	if daily_routine and int(effects.get("fullness", 0)) >= MEAL_FULLNESS: daily_routine.complete("meal")
-	shop_ui.refresh(money, inventory); shop_ui.set_status("%s（%s，耗时%d分钟）" % [InventoryScript.use_text(item_id), InventoryScript.effect_text(item_id), minutes]); _refresh_ui()
+		if shop_ui and shop_ui.is_open():
+			shop_ui.close()
+		_refresh_ui()
+		return
+	if daily_routine and int(effects.get("fullness", 0)) >= MEAL_FULLNESS:
+		daily_routine.complete("meal")
+	shop_ui.refresh(money, inventory)
+	shop_ui.set_status("%s（%s，耗时%d分钟）" % [
+		InventoryScript.use_text(item_id),
+		InventoryScript.effect_text(item_id),
+		minutes,
+	])
+	_refresh_ui()
+
 
 func _sync_needs_to_time() -> void:
-	if time_sys == null: return
+	if time_sys == null:
+		return
 	var total: int = time_sys.day * 1440 + time_sys.get_minute_of_day()
-	if _last_total_minutes == -1: _last_total_minutes = total; return
+	if _last_total_minutes == -1:
+		_last_total_minutes = total
+		return
 	var delta: int = total - _last_total_minutes
 	_last_total_minutes = total
-	if delta <= 0 or not game_started or game_over: return
+	if delta <= 0:
+		return
+	if not game_started or game_over:
+		return
 	need_fraction += float(delta) / 60.0
 	while need_fraction >= 1.0:
-		need_fraction -= 1.0; fullness = maxi(0, fullness - FULLNESS_PER_HOUR); energy = maxi(0, energy - ENERGY_PER_HOUR)
-		if fullness <= 0: health = maxi(0, health - 2)
-		if energy <= 0: mood = maxi(0, mood - 2)
+		need_fraction -= 1.0
+		fullness = maxi(0, fullness - FULLNESS_PER_HOUR)
+		energy = maxi(0, energy - ENERGY_PER_HOUR)
+		if fullness <= 0:
+			health = maxi(0, health - 2)
+		if energy <= 0:
+			mood = maxi(0, mood - 2)
 	_warn_if_need_low()
+
 func _warn_if_need_low() -> void:
 	for need in ["fullness", "energy"]:
 		var value: int = fullness if need == "fullness" else energy
-		if value > NEED_LOW or int(murmur_shown.get(need, -1)) == time_sys.day: continue
-		murmur_shown[need] = time_sys.day; _show_toast(str(MURMURS[need]))
+		if value > NEED_LOW:
+			continue
+		if int(murmur_shown.get(need, -1)) == time_sys.day:
+			continue
+		murmur_shown[need] = time_sys.day
+		_show_toast(str(MURMURS[need]))
+
+
 func _on_day_changed(day: int) -> void:
-	if daily_routine: daily_routine.reset(day)
-	if not _onboarding_active(): _show_toast("第 %d 天 · 今日目标已重置" % day)
+	if daily_routine:
+		daily_routine.reset(day)
+	# 意外跨午夜只重置日常目标，绝不替代第一晚睡眠完成 onboarding。
+	if not _onboarding_active():
+		_show_toast("第 %d 天 · 今日目标已重置" % day)
+
 
 func _on_location_travel(location_id: String) -> void:
-	# reset_new_game() 会为兼容旧旅行 UI 预解锁 subway。首餐 gate 必须覆盖这条按钮路径，
-	# 否则玩家可以绕过 HomeActivities.leave。信号到达时地点已切换，因此原地回退且不计时。
+	# LocationManager 先落地点/解锁再发 travel_requested。首餐前若直接点 footer 的 subway，
+	# 必须把这次尝试完整回滚到新档 home 状态，不能偷留 office 解锁。
 	if _onboarding_active() and _onboarding_objective_id() == ONBOARDING_MEAL and location_id != "home":
-		location_sys.current_location = "home"
-		location_sys._refresh()
+		location_sys.reset_new_game()
 		_show_toast("先垫点东西。第一天没必要饿着去。\n" + _onboarding_hint())
 		return
-	if time_sys: time_sys.advance_minutes(20 if location_id == "subway" else 35)
-	if daily_routine and location_id == "office": daily_routine.complete("commute")
+	if time_sys:
+		time_sys.advance_minutes(20 if location_id == "subway" else 35)
+	if daily_routine and location_id == "office":
+		daily_routine.complete("commute")
 	if _onboarding_active():
 		match location_id:
-			"subway": _advance_onboarding(ONBOARDING_SUBWAY, ONBOARDING_OFFICE)
-			"office": _advance_onboarding(ONBOARDING_OFFICE, ONBOARDING_LAOZHANG)
-			"store": _advance_onboarding(ONBOARDING_STORE, ONBOARDING_HOME)
-			"home": _advance_onboarding(ONBOARDING_HOME, ONBOARDING_SLEEP)
-	var location_name := location_id
-	if location_sys != null and location_sys.LOCATIONS.has(location_id): location_name = str(location_sys.LOCATIONS[location_id].get("name", location_id))
+			"subway":
+				_advance_onboarding(ONBOARDING_SUBWAY, ONBOARDING_OFFICE)
+			"office":
+				_advance_onboarding(ONBOARDING_OFFICE, ONBOARDING_LAOZHANG)
+			"home":
+				_advance_onboarding(ONBOARDING_HOME, ONBOARDING_SLEEP)
+	var location_name: String = location_id
+	if location_sys != null and location_sys.LOCATIONS.has(location_id):
+		location_name = str(location_sys.LOCATIONS[location_id].get("name", location_id))
 	var arrival := "已到达：%s" % location_name
-	if _onboarding_active() and not _onboarding_hint().is_empty(): arrival += "\n" + _onboarding_hint()
+	if _onboarding_active() and not _onboarding_hint().is_empty():
+		arrival += "\n" + _onboarding_hint()
 	_show_toast(arrival)
 
+
 func _on_location_action(location_id: String) -> void:
-	if activity_running: return
-	if not game_started: _show_toast("请先选择出身开始游戏。"); return
-	if dialog_ui != null and dialog_ui.is_busy(): _show_toast("请先结束当前对话。"); return
-	if event_ui != null and event_ui.is_busy(): _show_toast("当前事件尚未结束。"); return
-	if _onboarding_active(): _show_toast(_onboarding_hint()); return
-	var scene_map: Dictionary = {"home":"rent", "subway":"subway", "office":"office", "park":"park", "store":"street", "cafe":"cafe", "hospital":"hospital", "rooftop":"rooftop", "alley":"alley"}
+	if activity_running:
+		return
+	if not game_started:
+		_show_toast("请先选择出身开始游戏。")
+		return
+	if dialog_ui != null and dialog_ui.is_busy():
+		_show_toast("请先结束当前对话。")
+		return
+	if event_ui != null and event_ui.is_busy():
+		_show_toast("当前事件尚未结束。")
+		return
+	if _onboarding_active():
+		_show_toast(_onboarding_hint())
+		return
+	var scene_map: Dictionary = {
+		"home": "rent",
+		"subway": "subway",
+		"office": "office",
+		"park": "park",
+		"store": "street",
+		"cafe": "cafe",
+		"hospital": "hospital",
+		"rooftop": "rooftop",
+		"alley": "alley",
+	}
 	var scene: String = str(scene_map.get(location_id, location_id))
 	var dark_result: Dictionary = story_sys.resolve_dark_place(scene, _state()) if story_sys else {"handled": false}
 	if bool(dark_result.get("handled", false)):
-		if dark_result.has("event"): _show_event(dark_result["event"])
+		if dark_result.has("event"):
+			_show_event(dark_result["event"])
 		else:
 			var dark_toast: String = str(dark_result.get("toast", ""))
-			if not dark_toast.is_empty(): _show_toast(dark_toast)
+			if not dark_toast.is_empty():
+				_show_toast(dark_toast)
 		return
 	var encounter = _try_encounter(scene)
-	if encounter != null: _show_encounter(encounter); return
+	if encounter != null:
+		_show_encounter(encounter)
+		return
 	var event = events_sys.pick(scene, _state())
 	if event == null:
-		_show_toast("这里暂时没有新的事情发生。"); if time_sys: time_sys.advance_minutes(30); return
+		_show_toast("这里暂时没有新的事情发生。")
+		if time_sys:
+			time_sys.advance_minutes(30)
+		return
 	_show_event(event)
 
+
 func _on_location_npc_requested(npc_id: String) -> void:
-	if activity_running: return
+	if activity_running:
+		return
 	for npc in Data.NPCS:
-		if str(npc.get("id", "")) == npc_id: _talk_to(npc); return
+		if str(npc.get("id", "")) == npc_id:
+			_talk_to(npc)
+			return
+
+
 func _sync_location_npcs() -> void:
-	if location_sys == null or npc_schedule_sys == null or time_sys == null or not location_sys.is_active(): return
+	if location_sys == null or npc_schedule_sys == null or time_sys == null:
+		return
+	if not location_sys.is_active():
+		return
 	var visible_items: Array = []
 	for npc in Data.NPCS:
 		var npc_id: String = str(npc.get("id", ""))
 		var state: Dictionary = npc_schedule_sys.get_state_for(npc_id, time_sys, weather_sys)
-		if not bool(state.get("visible", false)): continue
+		if not bool(state.get("visible", false)):
+			continue
 		var scheduled_location: String = str(state.get("location", ""))
 		scheduled_location = str(SCHEDULE_LOCATION_ALIASES.get(scheduled_location, scheduled_location))
-		if scheduled_location != location_sys.current_location: continue
-		visible_items.append({"id":npc_id, "name":str(npc.get("name", npc_id)), "note":npc_relations_sys.label_for(game_state.relations, npc_id) if npc_relations_sys != null else ""})
+		if scheduled_location != location_sys.current_location:
+			continue
+		visible_items.append({
+			"id": npc_id,
+			"name": str(npc.get("name", npc_id)),
+			"note": npc_relations_sys.label_for(game_state.relations, npc_id) if npc_relations_sys != null else "",
+		})
 	location_sys.set_visible_npcs(visible_items)
 
+# ---------------------------------------------------------------- 交互
+
 func _on_interact_pressed() -> void:
-	if near_target.is_empty(): return
-	if near_target["type"] == "npc": _talk_to(near_target["data"])
-	elif near_target["type"] == "place": _enter_place(near_target["data"])
-	elif near_target["type"] == "locked_place": _show_toast(str(near_target.get("reason", "这里现在无法进入。")))
-	elif near_target["type"] == "interior_npc": _interior_boss()
-	elif near_target["type"] == "exit": _exit_interior()
+	if near_target.is_empty():
+		return
+	if near_target["type"] == "npc":
+		_talk_to(near_target["data"])
+	elif near_target["type"] == "place":
+		_enter_place(near_target["data"])
+	elif near_target["type"] == "locked_place":
+		_show_toast(str(near_target.get("reason", "这里现在无法进入。")))
+	elif near_target["type"] == "interior_npc":
+		_interior_boss()
+	elif near_target["type"] == "exit":
+		_exit_interior()
+
+
 func _enter_place(d: Dictionary) -> void:
-	if _onboarding_active(): _show_toast(_onboarding_hint()); return
+	if _onboarding_active():
+		_show_toast(_onboarding_hint())
+		return
 	var scene: String = str(d["scene"])
-	if scene == "office": _enter_interior(scene); return
+	if scene == "office":
+		_enter_interior(scene)
+		return
 	var dark_result: Dictionary = story_sys.resolve_dark_place(scene, _state()) if story_sys else {"handled": false}
 	if bool(dark_result.get("handled", false)):
-		if dark_result.has("event"): _show_event(dark_result["event"])
+		if dark_result.has("event"):
+			_show_event(dark_result["event"])
 		else:
 			var dark_toast := str(dark_result.get("toast", ""))
-			if not dark_toast.is_empty(): _show_toast(dark_toast)
-			if bool(dark_result.get("pass_year", false)): _year_pass()
+			if not dark_toast.is_empty():
+				_show_toast(dark_toast)
+			if bool(dark_result.get("pass_year", false)):
+				_year_pass()
 		return
 	var encounter = _try_encounter(scene)
-	if encounter != null: _show_encounter(encounter); return
+	if encounter != null:
+		_show_encounter(encounter)
+		return
 	var e = events_sys.pick(scene, _state())
-	if e == null: _show_toast("这里今天没什么事。"); return
+	if e == null:
+		_show_toast("这里今天没什么事。")
+		return
 	_show_event(e)
+
+
 func _enter_interior(id: String) -> void:
-	if world_manager: world_manager.enter_interior(id, player)
+	if world_manager:
+		world_manager.enter_interior(id, player)
+
+
 func _exit_interior() -> void:
-	if world_manager: world_manager.exit_interior(player)
+	if world_manager:
+		world_manager.exit_interior(player)
+
+
 func _interior_boss() -> void:
-	if _onboarding_active(): _show_toast(_onboarding_hint()); return
+	if _onboarding_active():
+		_show_toast(_onboarding_hint())
+		return
 	var encounter = _try_encounter("office")
-	if encounter != null: _show_encounter(encounter); return
+	if encounter != null:
+		_show_encounter(encounter)
+		return
 	var e = events_sys.pick("office", _state())
-	if e == null: _show_toast("今天没什么要汇报的，早点回家吧。"); return
+	if e == null:
+		_show_toast("今天没什么要汇报的，早点回家吧。")
+		return
 	_show_event(e)
+
 
 func _talk_to(npc: Dictionary) -> void:
 	var npc_id := str(npc.get("id", ""))
 	var dialog_data: Dictionary = story_sys.build_npc_dialog(npc, _state()) if story_sys else {"lines": Data.npc_lines(npc, age), "pending_clue": ""}
+	# 首日可以正常认识人，但暗线 clue 不在 onboarding 前台落袋。
 	dialog_pending_clue = "" if _onboarding_active() else str(dialog_data.get("pending_clue", ""))
 	dialog_pending_npc = npc_id
 	var lines: Array = (dialog_data.get("lines", []) as Array).duplicate()
-	if _talked_today(npc_id): lines.append("（今天已经聊过了。话是说不完的，但意思到了。）")
+	if _talked_today(npc_id):
+		lines.append("（今天已经聊过了。话是说不完的，但意思到了。）")
 	var title := "%s · %s" % [npc["name"], npc["title"]]
-	if npc_relations_sys != null: title += " · %s" % npc_relations_sys.label_for(game_state.relations, npc_id)
+	if npc_relations_sys != null:
+		title += " · %s" % npc_relations_sys.label_for(game_state.relations, npc_id)
 	_show_dialog(title, lines)
+
+
 func _talked_today(npc_id: String) -> bool:
-	return false if npc_relations_sys == null or time_sys == null else npc_relations_sys.talked_today(game_state.talk_day, npc_id, time_sys.day)
+	if npc_relations_sys == null or time_sys == null:
+		return false
+	return npc_relations_sys.talked_today(game_state.talk_day, npc_id, time_sys.day)
+
+
 func _npc_name(npc_id: String) -> String:
 	for npc in Data.NPCS:
-		if str(npc.get("id", "")) == npc_id: return str(npc.get("name", npc_id))
+		if str(npc.get("id", "")) == npc_id:
+			return str(npc.get("name", npc_id))
 	return npc_id
+
+
 func _apply_talk_result(npc_id: String, result: Dictionary) -> void:
-	if result.is_empty(): return
-	var gain := int(result.get("gain", 0)); var mood_gain := int(result.get("mood_gain", 0))
-	if mood_gain > 0: mood = clampi(mood + mood_gain, 0, 100)
+	if result.is_empty():
+		return
+	var gain := int(result.get("gain", 0))
+	var mood_gain := int(result.get("mood_gain", 0))
+	if mood_gain > 0:
+		mood = clampi(mood + mood_gain, 0, 100)
+
 	var parts := PackedStringArray()
-	if gain > 0: parts.append("好感+%d(%d)" % [gain, int(result.get("after", 0))])
-	if mood_gain > 0: parts.append("心情+%d" % mood_gain)
-	var npc_name := _npc_name(npc_id); var text := ""
+	if gain > 0:
+		parts.append("好感+%d(%d)" % [gain, int(result.get("after", 0))])
+	if mood_gain > 0:
+		parts.append("心情+%d" % mood_gain)
+
+	var npc_name := _npc_name(npc_id)
+	var text := ""
 	if bool(result.get("tier_up", false)):
 		text = "你和%s的交情到了「%s」。" % [npc_name, str(result.get("tier_label", ""))]
-		if not parts.is_empty(): text += "（%s）" % ", ".join(parts)
-	elif not parts.is_empty(): text = "你和%s聊了几句。（%s）" % [npc_name, ", ".join(parts)]
-	if text.is_empty(): return
+		if not parts.is_empty():
+			text += "（%s）" % ", ".join(parts)
+	elif not parts.is_empty():
+		text = "你和%s聊了几句。（%s）" % [npc_name, ", ".join(parts)]
+	if text.is_empty():
+		return
 	var milestone := str(result.get("milestone", ""))
-	if not milestone.is_empty(): text += " " + milestone
+	if not milestone.is_empty():
+		text += " " + milestone
 	_show_toast(text)
 
-func _state() -> Dictionary: return game_state.to_dict()
-func _sync_from_state(st: Dictionary) -> void: game_state.apply_dict(st)
+# ---------------------------------------------------------------- 事件
+
+func _state() -> Dictionary:
+	return game_state.to_dict()
+
+
+func _sync_from_state(st: Dictionary) -> void:
+	game_state.apply_dict(st)
+
+
 func _show_event(e) -> void:
-	if _onboarding_active(): return
-	cur_event = e; cur_event_kind = "event"; cur_event_time_cost = 0
+	if _onboarding_active():
+		return
+	cur_event = e
+	cur_event_kind = "event"
+	cur_event_time_cost = 0
 	var option_views: Array = events_sys.build_option_views(e, _state())
-	if event_ui: event_ui.show_event("%s · %s" % [str(e.get("speaker", "")), str(e.get("title", ""))], str(e.get("text", "")), option_views, ArtCatalog.event_background(e))
+	if event_ui:
+		var background: Texture2D = ArtCatalog.event_background(e)
+		event_ui.show_event(
+			"%s · %s" % [str(e.get("speaker", "")), str(e.get("title", ""))],
+			str(e.get("text", "")),
+			option_views,
+			background
+		)
+
+
 func _try_encounter(scene: String):
-	if _onboarding_active() or encounter_sys == null or time_sys == null: return null
+	if _onboarding_active():
+		return null
+	if encounter_sys == null or time_sys == null:
+		return null
 	return encounter_sys.pick(scene, _state(), time_sys, weather_sys.get_encounter_context() if weather_sys else {"weather": "clear"})
+
+
 func _show_encounter(e: Dictionary) -> void:
-	if _onboarding_active(): return
-	cur_event = e; cur_event_kind = "encounter"; cur_event_time_cost = int(e.get("time_cost", 90))
+	if _onboarding_active():
+		return
+	cur_event = e
+	cur_event_kind = "encounter"
+	cur_event_time_cost = int(e.get("time_cost", 90))
 	var option_views: Array = encounter_sys.build_option_views(e, _state())
-	if event_ui: event_ui.show_event("奇遇 · %s" % str(e.get("title", "")), str(e.get("text", "")), option_views, ArtCatalog.event_background(e))
+	if event_ui:
+		var background: Texture2D = ArtCatalog.event_background(e)
+		event_ui.show_event(
+			"奇遇 · %s" % str(e.get("title", "")),
+			str(e.get("text", "")),
+			option_views,
+			background
+		)
+
+
 func _choose_option(idx: int) -> void:
-	if cur_event == null: return
-	var st := _state(); var result: Dictionary
-	if cur_event_kind == "encounter": result = encounter_sys.apply_choice(cur_event, idx, st)
-	else: result = events_sys.apply_choice(cur_event, idx, st)
-	if not bool(result.get("ok", false)): return
+	if cur_event == null:
+		return
+	var st := _state()
+	var result: Dictionary
+	if cur_event_kind == "encounter":
+		result = encounter_sys.apply_choice(cur_event, idx, st)
+	else:
+		result = events_sys.apply_choice(cur_event, idx, st)
+	if not bool(result.get("ok", false)):
+		return
 	_sync_from_state(st)
-	if cur_event_kind == "encounter": cur_event_time_cost = int(result.get("time_cost", cur_event_time_cost))
-	if event_ui: event_ui.show_result(str(result.get("result", "")))
+	if cur_event_kind == "encounter":
+		cur_event_time_cost = int(result.get("time_cost", cur_event_time_cost))
+	if event_ui:
+		event_ui.show_result(str(result.get("result", "")))
+
+
 func _close_event() -> void:
-	if event_ui: event_ui.close_event()
-	var closed_kind := cur_event_kind; var time_cost := cur_event_time_cost
-	cur_event = null; cur_event_kind = "event"; cur_event_time_cost = 0
+	if event_ui:
+		event_ui.close_event()
+	var closed_kind := cur_event_kind
+	var time_cost := cur_event_time_cost
+	cur_event = null
+	cur_event_kind = "event"
+	cur_event_time_cost = 0
 	if closed_kind == "encounter":
-		if time_sys: time_sys.advance_minutes(time_cost)
-		_show_toast("这一段插曲过去了，城市时间继续向前。"); return
+		if time_sys:
+			time_sys.advance_minutes(time_cost)
+		_show_toast("这一段插曲过去了，城市时间继续向前。")
+		return
+	return
+
+
 func _year_pass() -> void:
-	var st := _state(); var res: Dictionary = rules_sys.year_tick(st); _sync_from_state(st)
-	if _evaluate_terminal_state(): return
-	var txt := "%d 岁  收入 %s / 支出 %s / 结余 %s" % [age, _fmt_money(int(res["income"])), _fmt_money(int(res["cost"])), _fmt_money(int(res["net"]))]
-	if str(res["promoted"]) != "": txt += "\n晋升为 %s！" % str(res["promoted"])
-	if bool(res["ipo"]): txt += "\n公司熬出头了，你成了老板。"
+	if _onboarding_active():
+		_show_toast(_onboarding_hint())
+		return
+	var st := _state()
+	var res: Dictionary = rules_sys.year_tick(st)
+	_sync_from_state(st)
+
+	if _evaluate_terminal_state():
+		return
+
+	var txt := "%d 岁  收入 %s / 支出 %s / 结余 %s" % [
+		age, _fmt_money(int(res["income"])), _fmt_money(int(res["cost"])), _fmt_money(int(res["net"]))
+	]
+	if str(res["promoted"]) != "":
+		txt += "\n晋升为 %s！" % str(res["promoted"])
+	if bool(res["ipo"]):
+		txt += "\n公司熬出头了，你成了老板。"
 	_show_toast(txt)
+
+
 func _evaluate_terminal_state() -> bool:
-	if game_over: return true
-	if rules_sys == null: return false
-	var st: Dictionary = _state(); var reason: String = rules_sys.death_reason(st)
-	if reason.is_empty(): return false
-	_show_ending(reason, st); return true
+	if game_over:
+		return true
+	if rules_sys == null:
+		return false
+	var st: Dictionary = _state()
+	var reason: String = rules_sys.death_reason(st)
+	if reason.is_empty():
+		return false
+	_show_ending(reason, st)
+	return true
+
+
 func _fmt_money(v: int) -> String:
-	return "%d 万" % int(v / 10000) if absi(v) >= 10000 else "%d 元" % v
+	if absi(v) >= 10000:
+		return "%d 万" % int(v / 10000)
+	return "%d 元" % v
+
+
 func _show_ending(reason: String, st: Dictionary) -> void:
 	game_over = true
 	var ending: Dictionary = rules_sys.judge_ending(st)
-	var reason_txt: String = {"health":"身体先垮了。", "mood":"心先于身体垮了。", "money":"债再也还不上了。", "age":"六十岁了。"}.get(reason, "")
+	var reason_txt: String = {
+		"health": "身体先垮了。",
+		"mood": "心先于身体垮了。",
+		"money": "债再也还不上了。",
+		"age": "六十岁了。",
+	}.get(reason, "")
 	var title_text := "「%s」" % str(ending.get("name", "？"))
-	var desc_text := "%s\n\n%s\n\n——你活了 %d 岁，最后存下 %s。收集到 %d/%d 条线索。" % [reason_txt, str(ending.get("desc", "")), age, _fmt_money(money), clues.size(), Data.DARK_CLUE_TOTAL]
-	if ending_ui: ending_ui.show_ending(title_text, desc_text)
+	var desc_text := "%s\n\n%s\n\n——你活了 %d 岁，最后存下 %s。收集到 %d/%d 条线索。" % [
+		reason_txt, str(ending.get("desc", "")), age, _fmt_money(money), clues.size(), Data.DARK_CLUE_TOTAL,
+	]
+	if ending_ui:
+		ending_ui.show_ending(title_text, desc_text)
+
+
 func _restart() -> void:
-	if activity_running: _show_toast("请等待当前行动完成。"); return
-	if ending_ui: ending_ui.close()
-	game_state.reset_default(); origin = {}; origin_open_pending = ""; dialog_queue.clear(); events_sys.reset_used()
-	if encounter_sys: encounter_sys.reset()
-	if time_sys: time_sys.reset()
-	if weather_sys: weather_sys.reset(time_sys)
-	if npc_schedule_sys: npc_schedule_sys.reset(time_sys, weather_sys)
-	if dark_location_sys: dark_location_sys.reset(time_sys, _state())
-	if player: player.position = Vector2(300, 400); player.set_target(Vector2(300, 400))
-	if location_sys: location_sys.set_active(false)
-	if inventory: inventory.reset()
-	if shop_ui and shop_ui.is_open(): shop_ui.close()
+	if activity_running:
+		_show_toast("请等待当前行动完成。")
+		return
+	if ending_ui:
+		ending_ui.close()
+	game_state.reset_default()
+	origin = {}
+	origin_open_pending = ""
+	dialog_queue.clear()
+	events_sys.reset_used()
+	if encounter_sys:
+		encounter_sys.reset()
+	if time_sys:
+		time_sys.reset()
+	if weather_sys:
+		weather_sys.reset(time_sys)
+	if npc_schedule_sys:
+		npc_schedule_sys.reset(time_sys, weather_sys)
+	if dark_location_sys:
+		dark_location_sys.reset(time_sys, _state())
+	if player:
+		player.position = Vector2(300, 400)
+		player.set_target(Vector2(300, 400))
+	if location_sys:
+		location_sys.set_active(false)
+	if inventory:
+		inventory.reset()
+	if shop_ui and shop_ui.is_open():
+		shop_ui.close()
 	_show_start_screen()
 
+# ---------------------------------------------------------------- 对话
+
 func _show_dialog(speaker: String, lines: Array) -> void:
-	if not lines.is_empty() and dialog_ui: dialog_ui.show_dialog(speaker, lines)
+	if lines.is_empty():
+		return
+	if dialog_ui:
+		dialog_ui.show_dialog(speaker, lines)
+
+
 func _enqueue_dialog(speaker: String, lines: Array) -> void:
-	if not lines.is_empty(): dialog_queue.append({"speaker": speaker, "lines": lines})
+	if lines.is_empty():
+		return
+	dialog_queue.append({"speaker": speaker, "lines": lines})
+
+
 func _on_dialog_finished() -> void:
 	var onboarding_contact_advanced := false
 	if dialog_pending_npc != "":
-		var talked_id := dialog_pending_npc; dialog_pending_npc = ""
+		var talked_id := dialog_pending_npc
+		dialog_pending_npc = ""
 		if npc_relations_sys != null:
-			var result: Dictionary = npc_relations_sys.talk(game_state.relations, game_state.talk_day, talked_id, time_sys.day if time_sys != null else 0)
+			var result: Dictionary = npc_relations_sys.talk(
+				game_state.relations,
+				game_state.talk_day,
+				talked_id,
+				time_sys.day if time_sys != null else 0
+			)
 			_apply_talk_result(talked_id, result)
-		if talked_id == "laozhang" and location_sys != null and location_sys.current_location == "office": onboarding_contact_advanced = _advance_onboarding(ONBOARDING_LAOZHANG, ONBOARDING_WORK)
+		if talked_id == "laozhang" and location_sys != null and location_sys.current_location == "office":
+			onboarding_contact_advanced = _advance_onboarding(ONBOARDING_LAOZHANG, ONBOARDING_WORK)
 	if dialog_pending_clue != "":
-		var npc_id := dialog_pending_clue; dialog_pending_clue = ""
-		var st := _state(); var clue_result: Dictionary = story_sys.claim_clue(npc_id, st) if story_sys else {"added": false}
-		if bool(clue_result.get("added", false)): _sync_from_state(st); _show_toast("记下了一条线索：%s" % str(clue_result.get("clue", "……")))
-	if onboarding_contact_advanced: _show_toast(_onboarding_hint(), true)
+		var npc_id := dialog_pending_clue
+		dialog_pending_clue = ""
+		var st := _state()
+		var clue_result: Dictionary = story_sys.claim_clue(npc_id, st) if story_sys else {"added": false}
+		if bool(clue_result.get("added", false)):
+			_sync_from_state(st)
+			_show_toast("记下了一条线索：%s" % str(clue_result.get("clue", "……")))
+	if onboarding_contact_advanced:
+		_show_toast(_onboarding_hint(), true)
 	if not dialog_queue.is_empty():
-		var nxt: Dictionary = dialog_queue.pop_front(); _show_dialog(nxt["speaker"], nxt["lines"])
+		var nxt: Dictionary = dialog_queue.pop_front()
+		_show_dialog(nxt["speaker"], nxt["lines"])
+
+
+# ---------------------------------------------------------------- 主线
 
 func _check_stage() -> void:
-	if _onboarding_active() or not story_sys: return
-	var st := _state(); var result: Dictionary = story_sys.check_and_advance_stage(st)
-	if bool(result.get("advanced", false)): _sync_from_state(st); _show_toast(str(result.get("text", "")))
+	if _onboarding_active():
+		return
+	if not story_sys:
+		return
+	var st := _state()
+	var result: Dictionary = story_sys.check_and_advance_stage(st)
+	if bool(result.get("advanced", false)):
+		_sync_from_state(st)
+		_show_toast(str(result.get("text", "")))
+
+
 func _notify_quest(event_id: String) -> void:
-	if _onboarding_active() or quest_sys == null: return
+	if _onboarding_active() or quest_sys == null:
+		return
 	quest_sys.notify(_state(), event_id)
+
+
 func _evaluate_quests() -> void:
-	if _onboarding_active() or quest_sys == null or time_sys == null: return
-	var st := _state(); var events: Array = quest_sys.evaluate(st, time_sys.day)
-	if events.is_empty(): return
+	if _onboarding_active():
+		return
+	if quest_sys == null or time_sys == null:
+		return
+	var st := _state()
+	var events: Array = quest_sys.evaluate(st, time_sys.day)
+	if events.is_empty():
+		return
 	_sync_from_state(st)
 	for ev in events:
-		var kind := str(ev.get("kind", "")); var text := str(ev.get("text", ""))
-		if kind == "intro": _show_toast("任务「%s」：%s" % [str(ev.get("title", "")), text], true)
-		elif kind == "step": _show_toast(text, true)
-		elif kind == "quest": _show_toast("任务完成 · %s\n%s" % [str(ev.get("title", "")), text], true); _apply_quest_reward(ev.get("reward", {}))
+		var kind := str(ev.get("kind", ""))
+		var text := str(ev.get("text", ""))
+		if kind == "intro":
+			_show_toast("任务「%s」：%s" % [str(ev.get("title", "")), text], true)
+		elif kind == "step":
+			_show_toast(text, true)
+		elif kind == "quest":
+			_show_toast("任务完成 · %s\n%s" % [str(ev.get("title", "")), text], true)
+			_apply_quest_reward(ev.get("reward", {}))
 	_refresh_ui()
+
+
 func _apply_quest_reward(reward) -> void:
-	if not reward is Dictionary: return
+	if not reward is Dictionary:
+		return
 	for key in reward:
 		var delta: int = int(reward[key])
 		match str(key):
-			"money": money = maxi(0, money + delta)
-			"mood": mood = clampi(mood + delta, 0, 100)
-			"health": health = clampi(health + delta, 0, 100)
-			"skill": skill = clampi(skill + delta, 0, 100)
-			"fullness": fullness = clampi(fullness + delta, 0, 100)
-			"energy": energy = clampi(energy + delta, 0, 100)
-			_: push_warning("[Game] 不认识的任务奖励字段：" + str(key))
+			"money":
+				money = maxi(0, money + delta)
+			"mood":
+				mood = clampi(mood + delta, 0, 100)
+			"health":
+				health = clampi(health + delta, 0, 100)
+			"skill":
+				skill = clampi(skill + delta, 0, 100)
+			"fullness":
+				fullness = clampi(fullness + delta, 0, 100)
+			"energy":
+				energy = clampi(energy + delta, 0, 100)
+			_:
+				push_warning("[Game] 不认识的任务奖励字段：" + str(key))
+
+
 func _show_toast(text: String, append: bool = false) -> void:
-	if not toast_label: return
-	toast_label.text = "%s\n%s" % [toast_label.text, text] if append and toast_label.visible and not toast_label.text.is_empty() else text
-	toast_label.visible = true; _toast_seq += 1
+	if not toast_label:
+		return
+	if append and toast_label.visible and not toast_label.text.is_empty():
+		toast_label.text = "%s\n%s" % [toast_label.text, text]
+	else:
+		toast_label.text = text
+	toast_label.visible = true
+	_toast_seq += 1
 	var seq: int = _toast_seq
 	await get_tree().create_timer(3.5).timeout
-	if toast_label and seq == _toast_seq: toast_label.visible = false
+	if toast_label and seq == _toast_seq:
+		toast_label.visible = false
