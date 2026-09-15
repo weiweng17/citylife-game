@@ -1,0 +1,23 @@
+name: Verify Cooking Action
+
+on:
+  push:
+    branches:
+      - agent/gameplay-cook-action-001
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  cooking-action:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run COOK-ACTION-001 headless integration
+        shell: bash
+        run: |
+          set -e
+          rm -rf .godot
+          docker run --rm -v "$PWD:/workspace" -w /workspace barichello/godot-ci:4.7.2 \
+            godot --headless --path /workspace --script res://tools/verify_cooking_action.gd
