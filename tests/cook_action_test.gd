@@ -71,7 +71,21 @@ func run() -> void:
 	if not _record(activities._cook_visual_active, "cook visual lifecycle started"):
 		return
 	if activities.has_cook_action_asset():
-		if not _record(activities.cook_sprite.visible and activities.cook_sprite.is_playing(), "dedicated cook animation keeps playing"):
+		var dedicated_ready: bool = (
+			activities.cook_sprite.visible
+			and activities.cook_sprite.sprite_frames != null
+			and activities.cook_sprite.sprite_frames.has_animation(&"cook_enter")
+			and activities.cook_sprite.animation in [&"cook_enter", &"cook_loop"]
+		)
+		if not _record(dedicated_ready, "dedicated cook sheet is visible and entered its animation"):
+			return
+		var start_frame: int = activities.cook_sprite.frame
+		await create_timer(0.24).timeout
+		if not _record(
+			activities.cook_sprite.animation == &"cook_loop"
+			or activities.cook_sprite.frame != start_frame,
+			"dedicated cook animation advances"
+		):
 			return
 	else:
 		if not _record(location.player_sprite.visible and location.player_sprite.is_playing(), "runtime cook animation keeps playing"):
