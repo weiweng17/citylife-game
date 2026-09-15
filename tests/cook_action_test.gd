@@ -78,7 +78,7 @@ func run() -> void:
 			return
 		if not _record(location.activity_prop.visible and location.activity_prop.kind == "pot", "cooking prop exists"):
 			return
-		var phase := location.activity_prop.phase
+		var phase: float = float(location.activity_prop.phase)
 		await create_timer(0.22).timeout
 		if not _record(location.activity_prop.phase > phase, "cooking prop animation advances"):
 			return
