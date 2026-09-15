@@ -13,6 +13,17 @@ const MoveMarkerScript := preload("res://scripts/world/MoveMarker.gd")
 const HomeInteractionVisualScript := preload("res://scripts/world/HomeInteractionVisual.gd")
 const PLAYER_FRAME := 256
 const PLAYER_SPEED := 260.0
+# 4×2 成组动作条。做饭使用 HomeActivities 中的专属九帧流程。
+const ACTIVITY_SHEETS := {
+	"study": "res://assets/art/production/player/actions/study_8pose.png",
+	"rest": "res://assets/art/production/player/actions/sleep_blue_8pose.png",
+	"work": "res://assets/art/production/player/actions/work_8pose.png",
+	"shop": "res://assets/art/production/player/actions/store_8pose.png",
+	"negotiate": "res://assets/art/production/player/actions/gesture_8pose.png",
+}
+const ACTIVITY_SHEET_COLUMNS := 4
+const ACTIVITY_SHEET_ROWS := 2
+const ACTIVITY_SHEET_SCALE := Vector2(0.24, 0.24)
 const NPC_HIRES_SHEETS := {
 	"xiaoyu": "res://assets/characters/sprites/prototype/xiaoyu_walk_candidate.png",
 	"chenjie": "res://assets/characters/sprites/prototype/chenjie_walk_candidate.png",
@@ -218,6 +229,8 @@ var travel_box: HBoxContainer
 var action_button: Button
 var hint_label: Label
 var player_sprite: AnimatedSprite2D
+var activity_sprite: AnimatedSprite2D
+var activity_sheet_active: bool = false
 var player_shadow: Sprite2D
 var player_feedback: Label
 var activity_prop: Node2D
@@ -279,6 +292,7 @@ func _build_ui() -> void:
 	player_sprite.modulate = Color(0.82, 0.87, 0.94, 1.0)
 	player_sprite.z_index = 5
 	root.add_child(player_sprite)
+	_build_activity_sheet_visual()
 
 	player_feedback = Label.new()
 	player_feedback.name = "PlayerFeedback"
@@ -376,6 +390,71 @@ func _sync_web_layout() -> void:
 	if root != null:
 		root.position = Vector2.ZERO
 		root.size = get_viewport().get_visible_rect().size
+
+
+func _build_activity_sheet_visual() -> void:
+	activity_sprite = AnimatedSprite2D.new()
+	activity_sprite.name = "ActivitySheetPlayer"
+	activity_sprite.visible = false
+	activity_sprite.centered = false
+	activity_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	root.add_child(activity_sprite)
+
+
+func _show_activity_sheet(activity_id: String, anchor: Dictionary) -> bool:
+	if activity_id == "meal" or not ACTIVITY_SHEETS.has(activity_id):
+		return false
+	var texture := load(str(ACTIVITY_SHEETS[activity_id])) as Texture2D
+	if texture == null or texture.get_width() <= 0 or texture.get_height() <= 0:
+		return false
+	var frame_width := float(texture.get_width()) / float(ACTIVITY_SHEET_COLUMNS)
+	var frame_height := float(texture.get_height()) / float(ACTIVITY_SHEET_ROWS)
+	var frames := SpriteFrames.new()
+	for default_name in frames.get_animation_names():
+		frames.remove_animation(default_name)
+	frames.add_animation(&"loop")
+	frames.set_animation_speed(&"loop", 6.0)
+	frames.set_animation_loop(&"loop", true)
+	for row in range(ACTIVITY_SHEET_ROWS):
+		for column in range(ACTIVITY_SHEET_COLUMNS):
+			var atlas := AtlasTexture.new()
+			atlas.atlas = texture
+			atlas.region = Rect2(float(column) * frame_width, float(row) * frame_height, frame_width, frame_height)
+			frames.add_frame(&"loop", atlas)
+	activity_sprite.sprite_frames = frames
+	activity_sprite.offset = Vector2(-frame_width * 0.5, -frame_height)
+	activity_sprite.position = anchor.get("position", player_sprite.position)
+	activity_sprite.scale = ACTIVITY_SHEET_SCALE
+	activity_sprite.modulate = player_sprite.modulate
+	activity_sprite.z_index = int(anchor.get("depth", activity_sprite.position.y))
+	activity_sprite.visible = true
+	activity_sprite.play(&"loop")
+	activity_sheet_active = true
+	begin_activity_control(activity_id)
+	player_sprite.visible = false
+	if home_interaction_visual:
+		home_interaction_visual.force_hidden()
+	if activity_prop:
+		activity_prop.visible = false
+	return true
+
+
+func _hide_activity_sheet() -> void:
+	if not activity_sheet_active:
+		return
+	activity_sprite.stop()
+	activity_sprite.visible = false
+	activity_sheet_active = false
+	player_sprite.visible = true
+	player_sprite.rotation = 0.0
+	player_sprite.scale = _depth_scale(player_sprite.position.y)
+	player_pose = "idle"
+	interaction_anchor = {}
+	if activity_prop:
+		activity_prop.setup("")
+	end_activity_control()
+	_update_player_grounding()
+
 
 func _make_player_frames() -> SpriteFrames:
 	var frames: SpriteFrames = SpriteFrames.new()
@@ -603,7 +682,7 @@ func stop_walking() -> void:
 	walk_path.clear()
 	player_target = player_sprite.position
 	# 活动动作由 HomeActivities 独占；不能以“停止走路”名义打断它。
-	if activity_controller == "cook":
+	if not activity_controller.is_empty():
 		return
 	player_sprite.stop()
 	player_sprite.frame = 0
@@ -614,7 +693,7 @@ func _animation_for_direction(direction: Vector2) -> StringName:
 	return &"walk_down" if direction.y > 0.0 else &"walk_up"
 
 func face_direction(direction: Vector2) -> void:
-	if activity_controller == "cook":
+	if not activity_controller.is_empty():
 		return
 	if player_sprite == null or direction.length_squared() < 0.01:
 		return
@@ -632,8 +711,15 @@ func set_activity_feedback(text: String, active_feedback: bool, activity_id: Str
 	player_feedback.text = text
 	player_feedback.visible = active_feedback
 	if active_feedback:
+		if _show_activity_sheet(activity_id, anchor):
+			_update_player_grounding()
+			return
 		_apply_interaction_pose(anchor)
 	else:
+		if activity_sheet_active:
+			player_feedback.visible = false
+			_hide_activity_sheet()
+			return
 		_restore_free_pose()
 	if player_shadow != null:
 		player_shadow.modulate.a = 0.70 if active_feedback and player_pose != "sleep" else (0.0 if player_pose == "sleep" else 1.0)
@@ -707,7 +793,7 @@ func _process(delta: float) -> void:
 	if not active or player_sprite == null:
 		return
 	# Activity Animation > Interaction Pose > Walk > Idle.
-	if activity_controller == "cook":
+	if not activity_controller.is_empty():
 		walk_path.clear()
 		player_target = player_sprite.position
 		return
@@ -749,7 +835,7 @@ func _advance_path(delta: float) -> void:
 		stop_walking()
 
 func _move_player(direction: Vector2, delta: float) -> void:
-	if activity_controller == "cook":
+	if not activity_controller.is_empty():
 		return
 	_ensure_navigation()
 	var before := player_sprite.position
