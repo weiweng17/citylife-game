@@ -82,7 +82,7 @@ func _detail_of(id: String) -> String:
 ## Game 的 signal handler 会在同一帧把 blocked 设为 true；下一帧再进入专属动作，
 ## 因而余额不足等被 Game 拒绝的请求不会误播放做饭动画。
 func _activate(id: String) -> void:
-	var can_activate := (
+	var can_activate: bool = (
 		not blocked
 		and layer != null
 		and layer.visible
