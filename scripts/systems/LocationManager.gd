@@ -17,6 +17,7 @@ const PLAYER_SPEED := 260.0
 const ACTIVITY_SHEETS := {
 	"study": "res://assets/art/production/player/actions/study_8pose.png",
 	"rest": "res://assets/art/production/player/actions/sleep_blue_8pose.png",
+	"rest_night": "res://assets/art/production/player/actions/sleep_white_8pose.png",
 	"work": "res://assets/art/production/player/actions/work_8pose.png",
 	"shop": "res://assets/art/production/player/actions/store_8pose.png",
 	"negotiate": "res://assets/art/production/player/actions/gesture_8pose.png",
@@ -402,9 +403,13 @@ func _build_activity_sheet_visual() -> void:
 
 
 func _show_activity_sheet(activity_id: String, anchor: Dictionary) -> bool:
-	if activity_id == "meal" or not ACTIVITY_SHEETS.has(activity_id):
+	if activity_id == "meal":
 		return false
-	var texture := load(str(ACTIVITY_SHEETS[activity_id])) as Texture2D
+	# 同一交互可按时段选用已入库的变体（例如白天小睡 / 夜间睡觉）。
+	var sheet_id: String = str(anchor.get("action_sheet", activity_id))
+	if not ACTIVITY_SHEETS.has(sheet_id):
+		return false
+	var texture := load(str(ACTIVITY_SHEETS[sheet_id])) as Texture2D
 	if texture == null or texture.get_width() <= 0 or texture.get_height() <= 0:
 		return false
 	var frame_width := float(texture.get_width()) / float(ACTIVITY_SHEET_COLUMNS)
