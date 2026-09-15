@@ -32,6 +32,12 @@ jobs:
           set -o pipefail
           docker run --rm -v "$PWD:/workspace" -w /workspace barichello/godot-ci:4.7.2 \
             godot --headless --path /workspace --script res://tests/cook_action_test.gd 2>&1 | tee godot.log
+      - name: Print cooking acceptance diagnostics
+        if: always()
+        shell: bash
+        run: |
+          test -f cook-test-report.md && cat cook-test-report.md || true
+          test -f godot.log && tail -n 160 godot.log || true
       - name: Upload cooking acceptance artifacts
         if: always()
         uses: actions/upload-artifact@v4
