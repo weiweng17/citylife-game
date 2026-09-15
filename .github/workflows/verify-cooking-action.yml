@@ -9,9 +9,14 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: verify-cooking-action-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   cooking-action:
     runs-on: ubuntu-latest
+    timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
       - name: Run COOK-ACTION-001 headless integration
