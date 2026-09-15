@@ -850,7 +850,7 @@ func _on_office_activity(id: String) -> void:
 ## 上班：拿钱、掉状态、攒熟练度。时薪按技能档位走，所以"多上班"本身会涨价。
 func _do_work_shift() -> void:
 	var wage: int = JobGrowthScript.wage_of(skill, game_state.raise_steps)
-	await _begin_activity(office_activities.prompt, "键盘敲个不停", "工作中", "work")
+	await _begin_activity(office_activities.prompt, "键盘敲个不停", "工作中", "work", office_activities.SPOTS["work"])
 	money += wage
 	health = maxi(0, health - 6)
 	mood = maxi(0, mood - 4)
@@ -894,7 +894,7 @@ func _do_negotiate() -> void:
 		_show_toast("你的岗位工资已经到顶了。剩下的路，不在这一间办公室里。")
 		return
 	game_state.raise_day = today
-	await _begin_activity(office_activities.prompt, "你在主管门口站了一会儿", "在门口", "negotiate")
+	await _begin_activity(office_activities.prompt, "你在主管门口站了一会儿", "在门口", "negotiate", office_activities.SPOTS["negotiate"])
 	var relation: int = 0
 	if npc_relations_sys != null:
 		relation = npc_relations_sys.value_of(game_state.relations, "laozhang")
@@ -928,6 +928,9 @@ func _on_store_activity(id: String) -> void:
 	if location_sys.current_location != "store" or not store_activities.SPOTS.has(id):
 		return
 	if id == "shop":
+		# 先播放货架选购动作，再打开已有的购买面板；不改变货币或时间结算。
+		await _begin_activity(store_activities.prompt, "你在货架前挑选", "选购中", "shop", store_activities.SPOTS["shop"])
+		_end_activity()
 		_open_shop()
 
 
