@@ -746,7 +746,11 @@ func _on_home_activity(id: String) -> void:
 	var progress_words := {"rest": "睡意渐浓", "study": "书页翻动", "meal": "锅里咕嘟作响"}
 	var activity_icons := {"rest": "Zzz", "study": "专注中", "meal": "烹饪中"}
 	# 先由 SpotActivities 自动走到 position，再把完整锚点交给地点表现层处理姿态与景深。
-	await _begin_activity(home_activities.prompt, str(progress_words.get(id, "进行中")), str(activity_icons.get(id, "进行中")), id, home_activities.SPOTS[id])
+	var activity_anchor: Dictionary = home_activities.SPOTS[id].duplicate(true)
+	# 同一张床不该永远播放同一套图：白天是蓝被小睡，夜里改用白被整夜睡姿。
+	if id == "rest" and _is_sleep_hour():
+		activity_anchor["action_sheet"] = "rest_night"
+	await _begin_activity(home_activities.prompt, str(progress_words.get(id, "进行中")), str(activity_icons.get(id, "进行中")), id, activity_anchor)
 	var feedback: String = ""
 	var slept_through := false
 	match id:
