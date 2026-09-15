@@ -176,6 +176,7 @@ func _add_cook_animation(
 
 
 func _begin_cook_visual() -> void:
+	location.begin_activity_control("cook")
 	_cook_visual_active = true
 	_cook_exit_requested = false
 	_cook_time = 0.0
@@ -280,6 +281,6 @@ func _finish_cook_visual() -> void:
 	location.face_direction(SPOTS["meal"]["facing"])
 	if location.activity_prop != null:
 		location.activity_prop.setup("")
-	# 只释放我们为退出动作追加的短锁；Game 的活动本体此时已经结束。
-	location.input_blocked = false
+	# 退出帧完成后才归还 LocationManager 的动画与输入控制权。
+	location.end_activity_control()
 	blocked = false
