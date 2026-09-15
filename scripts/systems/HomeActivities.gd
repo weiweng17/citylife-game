@@ -6,19 +6,23 @@ extends "res://scripts/systems/SpotActivities.gd"
 ## - 玩家仍然走到厨房站位后才可触发；
 ## - Game 仍然负责 20 元 / 30 分钟 / 饱食等结算；
 ## - 本脚本只负责 进入动作 -> 循环动作 -> 退出动作，以及和灶台的空间贴合；
-## - 有正式 5 帧动作条时优先使用；资源尚未入库时也必须用角色帧循环 + 动态锅/蒸汽完成真正的动作反馈，
+## - 有正式 9 帧动作条时优先使用；资源尚未入库时也必须用角色帧循环 + 动态锅/蒸汽完成真正的动作反馈，
 ##   不再退回“原地静态站立 + 一个锅图标”的旧表现。
 
-const COOK_ACTION_SHEET := "res://assets/art/production/player/actions/cook_5pose_1280x256.png"
-const COOK_FRAME_SIZE := 256
-const COOK_FRAME_COUNT := 5
+const COOK_ACTION_SHEET := "res://assets/art/production/player/actions/cook_9pose.png"
+const COOK_SHEET_WIDTH := 1774
+const COOK_SHEET_HEIGHT := 887
+const COOK_FRAME_COUNT := 9
+const COOK_FRAME_WIDTH := float(COOK_SHEET_WIDTH) / float(COOK_FRAME_COUNT)
+# 原图是高画布角色序列；按原主角的约 82px 屏幕身高缩放，并以脚底为锚点。
+const COOK_DISPLAY_SCALE := Vector2(0.32, 0.16)
 
 ## 床位的提示语由 Game 按当前时刻写进来：夜里是“睡到明早”，白天两小时小睡。
 ## 空着就退回 SPOTS 里的静态说明。
 var rest_detail: String = ""
 
-## 做饭专属表现层。正式资源是 5 帧横向条：
-## 0-1 = 进入灶台；1-3-2 = 循环烹饪；3-4 = 收尾离开。
+## 做饭专属表现层。正式资源是 9 帧横向条：
+## 0-2 = 走近/备菜；3-6-5-4 = 下锅与翻炒循环；7-8 = 装盘/收尾。
 var cook_sprite: AnimatedSprite2D
 var _cook_visual_requested: bool = false
 var _cook_visual_active: bool = false
@@ -121,8 +125,8 @@ func has_cook_action_asset() -> bool:
 	var texture := load(COOK_ACTION_SHEET) as Texture2D
 	return (
 		texture != null
-		and texture.get_width() == COOK_FRAME_SIZE * COOK_FRAME_COUNT
-		and texture.get_height() == COOK_FRAME_SIZE
+		and texture.get_width() == COOK_SHEET_WIDTH
+		and texture.get_height() == COOK_SHEET_HEIGHT
 	)
 
 
@@ -132,7 +136,7 @@ func _build_cook_visual() -> void:
 	cook_sprite.visible = false
 	cook_sprite.centered = false
 	# 与 LocationManager 普通 256x256 主角完全一致的脚底锚点。
-	cook_sprite.offset = Vector2(-128.0, -248.0)
+	cook_sprite.offset = Vector2(-COOK_FRAME_WIDTH * 0.50, -COOK_SHEET_HEIGHT)
 	cook_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	cook_sprite.z_index = int(SPOTS["meal"].get("depth", 488))
 	location.root.add_child(cook_sprite)
@@ -150,9 +154,9 @@ func _make_cook_frames() -> SpriteFrames:
 	if texture == null:
 		return frames
 
-	_add_cook_animation(frames, &"cook_enter", texture, [0, 1], 7.0, false)
-	_add_cook_animation(frames, &"cook_loop", texture, [1, 2, 3, 2], 7.5, true)
-	_add_cook_animation(frames, &"cook_exit", texture, [3, 4], 8.0, false)
+	_add_cook_animation(frames, &"cook_enter", texture, [0, 1, 2], 6.0, false)
+	_add_cook_animation(frames, &"cook_loop", texture, [3, 4, 5, 6, 5, 4], 7.0, true)
+	_add_cook_animation(frames, &"cook_exit", texture, [7, 8], 5.5, false)
 	return frames
 
 
@@ -171,7 +175,7 @@ func _add_cook_animation(
 		var index := int(raw_index)
 		var atlas := AtlasTexture.new()
 		atlas.atlas = texture
-		atlas.region = Rect2(index * COOK_FRAME_SIZE, 0, COOK_FRAME_SIZE, COOK_FRAME_SIZE)
+		atlas.region = Rect2(float(index) * COOK_FRAME_WIDTH, 0.0, COOK_FRAME_WIDTH, float(COOK_SHEET_HEIGHT))
 		frames.add_frame(name, atlas)
 
 
@@ -188,7 +192,7 @@ func _begin_cook_visual() -> void:
 		if cook_sprite.sprite_frames == null or not cook_sprite.sprite_frames.has_animation(&"cook_enter"):
 			cook_sprite.sprite_frames = _make_cook_frames()
 		cook_sprite.position = anchor["position"]
-		cook_sprite.scale = location.player_sprite.scale
+		cook_sprite.scale = COOK_DISPLAY_SCALE
 		cook_sprite.modulate = location.player_sprite.modulate
 		cook_sprite.z_index = int(anchor.get("depth", 488))
 		cook_sprite.visible = true
@@ -204,7 +208,7 @@ func _begin_cook_visual() -> void:
 	_cook_using_sheet = false
 	if not _cook_asset_warned:
 		_cook_asset_warned = true
-		push_warning("COOK-ACTION-001: dedicated 5-frame sheet not found; runtime cook rig is active until art ingest completes.")
+		push_warning("COOK-ACTION-001: dedicated 9-frame sheet not found; runtime cook rig is active until art ingest completes.")
 	location.player_sprite.visible = true
 	location.player_sprite.position = anchor["position"]
 	location.player_sprite.z_index = int(anchor.get("depth", 488))
