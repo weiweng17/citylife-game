@@ -19,10 +19,16 @@ jobs:
     timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
-      - name: Run COOK-ACTION-001 headless integration
+      - name: Import Godot assets and compile scripts
         shell: bash
         run: |
           set -e
           rm -rf .godot
+          docker run --rm -v "$PWD:/workspace" -w /workspace barichello/godot-ci:4.7.2 \
+            godot --headless --editor --path /workspace --quit
+      - name: Run COOK-ACTION-001 headless integration
+        shell: bash
+        run: |
+          set -e
           docker run --rm -v "$PWD:/workspace" -w /workspace barichello/godot-ci:4.7.2 \
             godot --headless --path /workspace --script res://tools/verify_cooking_action.gd
