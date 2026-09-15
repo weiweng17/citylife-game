@@ -12,7 +12,7 @@ const COOK_ACTION_SHEET := "res://assets/art/production/player/actions/cook_5pos
 const COOK_FRAME_SIZE := 256
 const COOK_FRAME_COUNT := 5
 
-## 床位的提示语由 Game 按当前时刻写进来：夜里是“睡到明早”，白天是两小时小睡。
+## 床位的提示语由 Game 按当前时刻写进来：夜里是“睡到明早”，白天两小时小睡。
 ## 空着就退回 SPOTS 里的静态说明。
 var rest_detail: String = ""
 
@@ -26,7 +26,7 @@ var _cook_asset_warned: bool = false
 
 
 func configure(manager) -> void:
-	super.configure(manager)
+	super(manager)
 	_build_cook_visual()
 
 
@@ -88,11 +88,11 @@ func _activate(id: String) -> void:
 	)
 	if can_activate and id == "meal":
 		_cook_visual_requested = true
-	super._activate(id)
+	super(id)
 
 
 func _process(delta: float) -> void:
-	super._process(delta)
+	super(delta)
 	if location == null:
 		return
 
