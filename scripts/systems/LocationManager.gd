@@ -201,6 +201,9 @@ var unlocked: Dictionary = {"home": true}
 var visited: Dictionary = {}
 var active: bool = false
 var input_blocked: bool = false
+# 活动动画拥有最高控制权：活动期间移动/待机系统不得触碰角色动画。
+var activity_controller: String = ""
+var player_state: String = "idle"
 var navigation = preload("res://scripts/systems/LocationNavigation.gd").new()
 var navigation_location: String = ""
 var walk_path := PackedVector2Array()
@@ -431,6 +434,23 @@ func set_active(value: bool) -> void:
 func is_active() -> bool:
 	return active
 
+
+func begin_activity_control(activity_id: String) -> void:
+	activity_controller = activity_id
+	player_state = activity_id
+	input_blocked = true
+	walk_path.clear()
+	player_target = player_sprite.position if player_sprite != null else Vector2.ZERO
+
+
+func end_activity_control() -> void:
+	activity_controller = ""
+	player_state = "idle"
+	input_blocked = false
+	walk_path.clear()
+	if player_sprite != null:
+		player_target = player_sprite.position
+
 func unlock(id: String) -> void:
 	if LOCATIONS.has(id):
 		unlocked[id] = true
@@ -582,6 +602,9 @@ func walk_to(target: Vector2) -> bool:
 func stop_walking() -> void:
 	walk_path.clear()
 	player_target = player_sprite.position
+	# 活动动作由 HomeActivities 独占；不能以“停止走路”名义打断它。
+	if activity_controller == "cook":
+		return
 	player_sprite.stop()
 	player_sprite.frame = 0
 
@@ -591,6 +614,8 @@ func _animation_for_direction(direction: Vector2) -> StringName:
 	return &"walk_down" if direction.y > 0.0 else &"walk_up"
 
 func face_direction(direction: Vector2) -> void:
+	if activity_controller == "cook":
+		return
 	if player_sprite == null or direction.length_squared() < 0.01:
 		return
 	player_sprite.stop()
@@ -599,6 +624,10 @@ func face_direction(direction: Vector2) -> void:
 
 func set_activity_feedback(text: String, active_feedback: bool, activity_id: String = "", anchor: Dictionary = {}) -> void:
 	if player_feedback == null or player_sprite == null:
+		return
+	# Game 结算会先撤销通用互动姿势；做饭退出段仍由活动动画控制，不能提前强制 idle。
+	if activity_controller == "cook" and not active_feedback:
+		player_feedback.visible = false
 		return
 	player_feedback.text = text
 	player_feedback.visible = active_feedback
@@ -677,6 +706,11 @@ func _process(delta: float) -> void:
 	_sync_web_layout()
 	if not active or player_sprite == null:
 		return
+	# Activity Animation > Interaction Pose > Walk > Idle.
+	if activity_controller == "cook":
+		walk_path.clear()
+		player_target = player_sprite.position
+		return
 	if input_blocked:
 		stop_walking()
 		_animate_pose(delta)
@@ -715,6 +749,8 @@ func _advance_path(delta: float) -> void:
 		stop_walking()
 
 func _move_player(direction: Vector2, delta: float) -> void:
+	if activity_controller == "cook":
+		return
 	_ensure_navigation()
 	var before := player_sprite.position
 	var displacement := direction * PLAYER_SPEED * minf(delta, 0.033)
